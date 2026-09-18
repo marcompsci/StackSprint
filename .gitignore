@@ -1,0 +1,13 @@
+# Local project-mirror references and agent metadata
+sources/
+AGENTS.md
+.agents/
+.codex/
+
+# Machine files, dependencies, and credentials
+.DS_Store
+node_modules/
+.env
+.env.*
+!.env.example
+*.log

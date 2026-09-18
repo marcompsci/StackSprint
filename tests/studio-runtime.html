@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>StackSprint runtime verification</title>
+<style>body{font:15px system-ui;padding:24px}pre{white-space:pre-wrap}iframe{position:fixed;left:-12000px;width:900px;height:800px}</style>
+<h1>Studio runtime checks</h1><p id="status">Starting browser validation…</p><pre id="results"></pre>
+<iframe id="app" src="../index.html" title="Application under test"></iframe>
+<script>
+document.getElementById('app').onload=async()=>{
+ const app=document.getElementById('app').contentWindow,output=document.getElementById('results');let passed=0,failed=0;
+ const check=(label,ok,detail='')=>{ok?passed++:failed++;output.textContent+=(ok?'PASS ':'FAIL ')+label+(detail?' — '+detail:'')+'\n';document.getElementById('status').textContent=passed+' passed, '+failed+' failed';};
+ try {
+  for(const m of app.StackSprintMissions.all()){
+   const reference=await app.StackSprintRuntime.test(m,m.solution);
+   check(m.track+' / '+m.title+' reference',reference.results?.length===3&&reference.results.every(r=>r.passed),reference.error||reference.results?.filter(r=>!r.passed).map(r=>r.error||r.name).join('; '));
+   const starter=await app.StackSprintRuntime.test(m,m.starter);
+   check(m.track+' / '+m.title+' starter stays locked',!starter.results?.every(r=>r.passed));
+  }
+  for(const m of app.StackSprintMissions.all().filter(m=>m.track==='building')){
+   const boot=await new Promise(resolve=>{
+    const frame=app.document.createElement('iframe'),token=crypto.randomUUID();app.document.body.append(frame);
+    const done=result=>{clearTimeout(timeout);app.removeEventListener('message',receive);frame.remove();resolve(result);};
+    const receive=e=>{if(e.source===frame.contentWindow&&e.data?.token===token&&(e.data.ready||e.data.error))done(e.data);};
+    const timeout=setTimeout(()=>done({error:'Play boot timeout'}),5000);app.addEventListener('message',receive);app.StackSprintRuntime.play(frame,m,m.solution,{readOnly:true,token});
+   });check(m.title+' playable renderer',boot.ready===true,boot.error);
+  }
+  const mission=app.StackSprintMissions.all().find(m=>m.track==='building');
+  const syntax=await app.StackSprintRuntime.test(mission,'function createState( {');check('Syntax error reported',!!syntax.error&&syntax.error.includes('SyntaxError'),syntax.error);
+  const loop=await app.StackSprintRuntime.test(mission,'while (true) {}');check('Infinite loop is terminated',!!loop.error&&/long|timed out/.test(loop.error),loop.error);
+  const frame=document.getElementById('app');frame.style.width='375px';
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  check('Phone layout has no horizontal overflow',app.document.documentElement.scrollWidth<=app.innerWidth,app.document.documentElement.scrollWidth+'px page / '+app.innerWidth+'px viewport');
+  check('Phone editor fits its screen',app.document.getElementById('studioCode').getBoundingClientRect().width<375);
+  frame.style.width='900px';
+ } catch(error){check('Harness execution',false,error.stack);}
+ document.getElementById('status').textContent='FINISHED: '+passed+' passed, '+failed+' failed';
+};
+</script></html>
