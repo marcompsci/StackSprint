@@ -8,11 +8,14 @@ Built for new coders and developers who want a quick refresher: learn a concept,
 
 - **Web Development 101:** 12 vocabulary flashcards covering front-end, back-end, and full-stack concepts, code-reading and typing practice, and three AI-prompting checkpoints per card.
 - **Web quiz:** 25 questions with feedback, plus a layer challenge and quick glossary.
+- **Python essentials:** 12 reveal/type/predict flashcards and 25 original questions across Output Sprint, Type Detective, Bug Rescue, and a full shuffled quiz. Missed-question rounds and local progress support repeat practice. Inspired by [Asabeneh’s Day 2 lesson](https://github.com/Asabeneh/30-Days-Of-Python/blob/master/02_Day_Variables_builtin_functions/02_variables_builtin_functions.md), with Python 3 corrections checked against the official documentation. Typing checks are example-matching exercises, not Python execution. This supplemental module has its own progress and does not change existing graduation requirements.
 - **Cybersecurity essentials:** 12 vocabulary cards and a 25-question end-of-course quiz.
 - **Design Games:** 30 guided CSS projects with browser-rendered checks.
 - **Building Games:** 30 guided JavaScript projects with executable checks and unlockable play.
 
 ## Run locally
+
+Python lessons now follow two checkpoints: recreate the provided code and predict its output, then type and run an original variation using the same concept. Creative exercises execute through Pyodide in a disposable web worker, with a limited beginner syntax/function allowlist and a three-second execution timeout after loading. Loading the interpreter requires internet access to jsDelivr. Creative drafts and completed checkpoints save locally; Shift+Tab exits the editor. These supplemental lessons do not change the original graduation requirements.
 
 No package installation, API keys, or build step required. The app uses HTML, CSS, and vanilla JavaScript.
 
@@ -36,6 +39,8 @@ Then visit `http://127.0.0.1:4176/`.
 Some arcade lessons deliberately use discrete steps so beginners can observe state transitions. These are small guided prototypes, not full game-engine projects. Design examples teach interface styling; the app supplies their initial game logic until the corresponding build has been completed.
 
 ## A daily habit
+
+**Friends & streaks** adds a seven-day activity view, shareable streak messages, coding-buddy challenge invitations, and encouragement messages. Native device sharing is used where supported, with a copy/paste fallback. Contacts are never accessed or uploaded. Public HTTPS deployments include the app link without query parameters; local-file and localhost URLs are excluded. There are no accounts, real-time friend connections, chat, or leaderboards in this local-first version.
 
 Three daily recall questions rotate through coding, design, web, and security concepts. Actual learning activity determines the streak. Rebuild reminders use increasing practice intervals, and repeat checks on the same day do not inflate that interval. XP comes from completed projects and daily recall answers.
 
