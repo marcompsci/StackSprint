@@ -13,6 +13,10 @@ Built for new coders and developers who want a quick refresher: learn a concept,
 - **Design Games:** 30 guided CSS projects with browser-rendered checks.
 - **Building Games:** 30 guided JavaScript projects with executable checks and unlockable play.
 
+## iOS app
+
+`ios/` holds a standalone iPhone/iPad Xcode project (SwiftUI lessons, quizzes and accounts, plus the web game studio bundled in a WKWebView). Open `ios/StackSprint.xcodeproj` and read `ios/SETUP.md` for backend and signing setup. Run `node ios/tests/package.test.cjs` to check its curriculum and bundled resources.
+
 ## Run locally
 
 Python lessons now follow two checkpoints: recreate the provided code and predict its output, then type and run an original variation using the same concept. Creative exercises execute through Pyodide in a disposable web worker, with a limited beginner syntax/function allowlist and a three-second execution timeout after loading. Loading the interpreter requires internet access to jsDelivr. Creative drafts and completed checkpoints save locally; Shift+Tab exits the editor. These supplemental lessons do not change the original graduation requirements.

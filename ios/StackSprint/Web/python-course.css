@@ -1,0 +1,18 @@
+.python-course { margin: 64px 0; padding: clamp(20px, 4vw, 40px); border: 1px solid #cbd5e1; border-radius: 28px; background: #f8fafc; color: #17233d; scroll-margin-top: 30px; }
+.python-course h2 { font-size: clamp(26px, 3vw, 40px); letter-spacing: -.04em; }
+.python-course h3 { font-size: 24px; overflow-wrap: anywhere; }
+.python-course p { line-height: 1.7; margin: 16px 0; }
+.python-course nav, .py-actions, .py-choices { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; }
+.python-course button { padding: 12px 18px; background: white; color: #243859; border: 1px solid #aabbd2; border-radius: 12px; cursor: pointer; font: inherit; }
+.python-course button[aria-pressed="true"], .python-course .py-correct { background: #d5f6e9; border-color: #168466; color: #135442; }
+.python-course button:disabled { cursor: default; opacity: .6; }
+.python-course button:focus-visible, .python-course input:focus-visible, .python-course textarea:focus-visible { outline: 3px solid #3565e9; outline-offset: 3px; }
+.python-course .py-content { border-radius: 20px; padding: clamp(16px, 3vw, 28px); background: white; margin-top: 24px; }
+.python-course pre { background: #111b30; color: #d5f6e9; padding: 20px; border-radius: 12px; overflow-x: auto; }
+.python-course label { display: block; margin: 16px 0; }
+.python-course textarea, .python-course input { display: block; width: 100%; box-sizing: border-box; margin-top: 8px; padding: 14px; border: 1px solid #aabbd2; border-radius: 10px; background: #f8fafc; color: #17233d; font: 16px monospace; }
+.python-course textarea { resize: vertical; }
+.python-course [role="status"] { font-weight: 600; }
+.python-course a { color: #224fc8; text-decoration: underline; }
+.python-course progress { width: 100%; accent-color: #168466; }
+.python-course summary { cursor: pointer; padding: 12px 0; }

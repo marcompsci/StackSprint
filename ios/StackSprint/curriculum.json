@@ -1,0 +1,930 @@
+{
+  "lessons": [
+    {
+      "id": "web-html",
+      "term": "HTML",
+      "category": "Web development",
+      "categoryLabel": "Front-end foundation",
+      "clue": "It gives every webpage its structure.",
+      "definition": "HTML is the structure and content of a page — headings, paragraphs, buttons, images, and links.",
+      "example": "A <b>button</b> or a page heading starts as HTML.",
+      "code": "<button>Save</button>",
+      "readAloud": "Read it like this: <b>opening button tag, Save, closing button tag.</b>"
+    },
+    {
+      "id": "web-css",
+      "term": "CSS",
+      "category": "Web development",
+      "categoryLabel": "Front-end foundation",
+      "clue": "It makes the page look and feel like itself.",
+      "definition": "CSS controls the visual style: colors, spacing, layout, fonts, and tiny animations.",
+      "example": "Making a button bright blue with soft corners is <b>CSS</b>.",
+      "code": "button { color: blue; }",
+      "readAloud": "Read it like this: <b>button, open brace, color blue, close brace.</b>"
+    },
+    {
+      "id": "web-javascript",
+      "term": "JavaScript",
+      "category": "Web development",
+      "categoryLabel": "Front-end behavior",
+      "clue": "It reacts when someone clicks, types, or scrolls.",
+      "definition": "JavaScript is code that makes a page respond and change when people interact with it.",
+      "example": "A menu opening after a click is <b>JavaScript</b> at work.",
+      "code": "openMenu();",
+      "readAloud": "Read it like this: <b>open menu, open parenthesis, close parenthesis.</b>"
+    },
+    {
+      "id": "web-dom",
+      "term": "DOM",
+      "category": "Web development",
+      "categoryLabel": "Front-end behavior",
+      "clue": "A live map of the page in the browser.",
+      "definition": "The DOM is how a browser represents page elements so JavaScript can read or change them.",
+      "example": "Changing “Hello” to “Welcome back” updates the <b>DOM</b>.",
+      "code": "document.querySelector(\"h1\");",
+      "readAloud": "Read it like this: <b>document dot query selector, h one.</b>"
+    },
+    {
+      "id": "web-frontend",
+      "term": "Front-end",
+      "category": "Web development",
+      "categoryLabel": "Front-end role",
+      "clue": "The part of an app people can actually see and use.",
+      "definition": "Front-end development builds the screens, interactions, and experiences that run in a browser.",
+      "example": "The login form, product photos, and checkout button are <b>front-end</b>.",
+      "code": "showLoginForm();",
+      "readAloud": "Read it like this: <b>show login form, open parenthesis, close parenthesis.</b>"
+    },
+    {
+      "id": "web-server",
+      "term": "Server",
+      "category": "Web development",
+      "categoryLabel": "Back-end engine",
+      "clue": "It listens for requests and sends useful answers back.",
+      "definition": "A server is a computer or cloud service that runs back-end code for an app.",
+      "example": "After you log in, a <b>server</b> can check whether your account exists.",
+      "code": "app.get(\"/profile\", getProfile);",
+      "readAloud": "Read it like this: <b>app dot get, profile, get profile.</b>"
+    },
+    {
+      "id": "web-database",
+      "term": "Database",
+      "category": "Web development",
+      "categoryLabel": "Back-end engine",
+      "clue": "A tidy place for an app to remember things.",
+      "definition": "A database stores organized information such as user accounts, posts, orders, or scores.",
+      "example": "Your saved profile details can live in a <b>database</b>.",
+      "code": "SELECT * FROM users;",
+      "readAloud": "Read it like this: <b>select star from users.</b>"
+    },
+    {
+      "id": "web-api",
+      "term": "API",
+      "category": "Web development",
+      "categoryLabel": "Back-end connection",
+      "clue": "A clear doorway for software to ask for information.",
+      "definition": "An API is an agreed way for different parts of software to request and share information.",
+      "example": "The front-end can ask an <b>API</b> for a list of your saved tasks.",
+      "code": "fetch(\"/api/tasks\");",
+      "readAloud": "Read it like this: <b>fetch, API tasks.</b>"
+    },
+    {
+      "id": "web-authentication",
+      "term": "Authentication",
+      "category": "Web development",
+      "categoryLabel": "Back-end protection",
+      "clue": "The check that answers: “Are you really you?”",
+      "definition": "Authentication verifies someone’s identity before an app lets them access protected information.",
+      "example": "Checking a password securely happens on the <b>back-end</b>.",
+      "code": "if (isValid) { logIn(); }",
+      "readAloud": "Read it like this: <b>if is valid, log in.</b>"
+    },
+    {
+      "id": "web-backend",
+      "term": "Back-end",
+      "category": "Web development",
+      "categoryLabel": "Back-end role",
+      "clue": "The behind-the-scenes logic that powers the screen.",
+      "definition": "Back-end development handles data, business rules, security, and requests away from the visible page.",
+      "example": "Calculating a total and saving an order are <b>back-end</b> jobs.",
+      "code": "saveOrder(order);",
+      "readAloud": "Read it like this: <b>save order, order.</b>"
+    },
+    {
+      "id": "web-request-response",
+      "term": "Request + response",
+      "category": "Web development",
+      "categoryLabel": "The connection",
+      "clue": "One part asks. Another part answers.",
+      "definition": "A request asks for something; a response is the information or result sent back.",
+      "example": "Your browser requests your profile, and the server <b>responds</b> with it.",
+      "code": "fetch(\"/api/profile\");",
+      "readAloud": "Read it like this: <b>fetch, API profile.</b>"
+    },
+    {
+      "id": "web-fullstack",
+      "term": "Full-stack",
+      "category": "Web development",
+      "categoryLabel": "Across the stack",
+      "clue": "It joins the visible experience and the system behind it.",
+      "definition": "Full-stack work spans both front-end and back-end, helping a feature travel from screen to data and back.",
+      "example": "A full-stack developer might build a form <b>and</b> the API that saves it.",
+      "code": "sendFormToApi();",
+      "readAloud": "Read it like this: <b>send form to API.</b>"
+    },
+    {
+      "id": "cyber-phishing",
+      "term": "Phishing",
+      "clue": "A fake message or site that tries to trick you.",
+      "definition": "Phishing uses believable messages, links, or websites to steal information such as passwords or payment details.",
+      "category": "Cybersecurity",
+      "code": ""
+    },
+    {
+      "id": "cyber-malware",
+      "term": "Malware",
+      "clue": "Software made to harm, spy, or break in.",
+      "definition": "Malware is malicious software designed to disrupt a device, steal data, or gain unwanted access.",
+      "category": "Cybersecurity",
+      "code": ""
+    },
+    {
+      "id": "cyber-ransomware",
+      "term": "Ransomware",
+      "clue": "Malware that locks data and demands money.",
+      "definition": "Ransomware can encrypt or block access to files, then demand payment for their return.",
+      "category": "Cybersecurity",
+      "code": ""
+    },
+    {
+      "id": "cyber-vulnerability",
+      "term": "Vulnerability",
+      "clue": "A weakness someone could take advantage of.",
+      "definition": "A vulnerability is a flaw in software, settings, or a process that could be exploited.",
+      "category": "Cybersecurity",
+      "code": ""
+    },
+    {
+      "id": "cyber-patch",
+      "term": "Patch / update",
+      "clue": "A repair that strengthens software.",
+      "definition": "A patch or update changes software to fix known problems, including security vulnerabilities.",
+      "category": "Cybersecurity",
+      "code": ""
+    },
+    {
+      "id": "cyber-mfa",
+      "term": "MFA",
+      "clue": "More than one way to prove it is you.",
+      "definition": "Multi-factor authentication asks for an extra sign-in factor, such as an authenticator code, in addition to a password.",
+      "category": "Cybersecurity",
+      "code": ""
+    },
+    {
+      "id": "cyber-authentication",
+      "term": "Authentication",
+      "clue": "The identity check at sign-in.",
+      "definition": "Authentication verifies who someone is before an account or system lets them in.",
+      "category": "Cybersecurity",
+      "code": ""
+    },
+    {
+      "id": "cyber-authorization",
+      "term": "Authorization",
+      "clue": "The permission check after sign-in.",
+      "definition": "Authorization decides what an authenticated person is allowed to view, change, or use.",
+      "category": "Cybersecurity",
+      "code": ""
+    },
+    {
+      "id": "cyber-least-privilege",
+      "term": "Least privilege",
+      "clue": "Only the access needed for the job.",
+      "definition": "Least privilege gives a person or system the minimum permissions needed, limiting the impact of mistakes or misuse.",
+      "category": "Cybersecurity",
+      "code": ""
+    },
+    {
+      "id": "cyber-encryption",
+      "term": "Encryption",
+      "clue": "Turning data into protected unreadable form.",
+      "definition": "Encryption transforms readable data into protected data that should only be understandable with the right key.",
+      "category": "Cybersecurity",
+      "code": ""
+    },
+    {
+      "id": "cyber-backups",
+      "term": "Backups",
+      "clue": "A separate copy for recovery.",
+      "definition": "Backups are copies of important data kept so it can be restored after loss, damage, or a ransomware incident.",
+      "category": "Cybersecurity",
+      "code": ""
+    },
+    {
+      "id": "cyber-sql-injection",
+      "term": "SQL injection",
+      "clue": "When unsafe input can change a database request.",
+      "definition": "SQL injection is a risk when untrusted input is treated as database-query instructions; parameterized queries help keep data separate from commands.",
+      "category": "Cybersecurity",
+      "code": ""
+    },
+    {
+      "id": "python-0",
+      "term": "Assignment",
+      "category": "Python",
+      "clue": "What does = do?",
+      "definition": "Bind a name to a value. Use == to compare.",
+      "code": "stars = 6\nprint(stars)"
+    },
+    {
+      "id": "python-1",
+      "term": "Names",
+      "category": "Python",
+      "clue": "How do you name a score?",
+      "definition": "Use descriptive snake_case. Names are case-sensitive; avoid keywords and leading digits.",
+      "code": "player_score = 8\nprint(player_score)"
+    },
+    {
+      "id": "python-2",
+      "term": "Built-ins",
+      "category": "Python",
+      "clue": "Do you import print?",
+      "definition": "No. Built-ins are available without imports. Avoid naming your variables print or len.",
+      "code": "print(\"Launch\", 2)"
+    },
+    {
+      "id": "python-3",
+      "term": "Length",
+      "category": "Python",
+      "clue": "What does len count?",
+      "definition": "For a list, len counts items; for a simple string, characters.",
+      "code": "print(len(\"orbit\"))"
+    },
+    {
+      "id": "python-4",
+      "term": "Types",
+      "category": "Python",
+      "clue": "How can you inspect a value?",
+      "definition": "type reveals its type. Quoted digits are text, not numbers.",
+      "code": "print(type(\"42\").__name__)"
+    },
+    {
+      "id": "python-5",
+      "term": "Input",
+      "category": "Python",
+      "clue": "Does input return a number?",
+      "definition": "input returns text. Convert numeric input before arithmetic.",
+      "code": "tickets = int(\"4\")\nprint(tickets + 2)"
+    },
+    {
+      "id": "python-6",
+      "term": "Casting",
+      "category": "Python",
+      "clue": "Can int parse decimal text?",
+      "definition": "int(\"6.8\") raises ValueError. Parse with float first if truncation is intended.",
+      "code": "print(int(float(\"6.8\")))"
+    },
+    {
+      "id": "python-7",
+      "term": "Numbers",
+      "category": "Python",
+      "clue": "Does int round decimals?",
+      "definition": "No: conversion truncates toward zero. Python has int, float, and complex numbers.",
+      "code": "print(int(-6.8))"
+    },
+    {
+      "id": "python-8",
+      "term": "Text conversion",
+      "category": "Python",
+      "clue": "How do you join text and a number?",
+      "definition": "Convert the number with str, or use an f-string.",
+      "code": "print(\"Level \" + str(3))"
+    },
+    {
+      "id": "python-9",
+      "term": "Collections",
+      "category": "Python",
+      "clue": "How is a list different from a dictionary?",
+      "definition": "A list holds a sequence; a dictionary maps keys to values.",
+      "code": "gear = [\"map\", \"torch\"]\nprint(len(gear))"
+    },
+    {
+      "id": "python-10",
+      "term": "Unpacking",
+      "category": "Python",
+      "clue": "Can one line assign two names?",
+      "definition": "Yes. Match the number of names and values.",
+      "code": "wins, losses = 3, 1\nprint(wins + losses)"
+    },
+    {
+      "id": "python-11",
+      "term": "Number tools",
+      "category": "Python",
+      "clue": "How do you total a collection?",
+      "definition": "sum adds numeric items. min and max find extremes; sorted makes a sorted list.",
+      "code": "print(sum([2, 4, 6]))"
+    }
+  ],
+  "questions": [
+    {
+      "question": "Which part of a web app do people see, tap, and type into?",
+      "choices": [
+        "The database",
+        "The front-end",
+        "The server room",
+        "Authentication"
+      ],
+      "answer": 1,
+      "explanation": "Exactly — the front-end is the visible, interactive experience.",
+      "id": "web-0"
+    },
+    {
+      "question": "Which language gives a webpage its structure, such as headings, paragraphs, links, and buttons?",
+      "choices": [
+        "CSS",
+        "JavaScript",
+        "HTML",
+        "SQL"
+      ],
+      "answer": 2,
+      "explanation": "HTML provides the meaningful building blocks and content of a webpage.",
+      "id": "web-1"
+    },
+    {
+      "question": "A page already has a button, but it needs a blue background, rounded corners, and more space around it. What should you use?",
+      "choices": [
+        "CSS",
+        "HTML",
+        "A database",
+        "Authentication"
+      ],
+      "answer": 0,
+      "explanation": "CSS controls how page elements look and are arranged: color, spacing, typography, and layout.",
+      "id": "web-2"
+    },
+    {
+      "question": "Which language is a good fit for opening a menu after someone clicks its icon?",
+      "choices": [
+        "HTML",
+        "CSS only",
+        "A database query",
+        "JavaScript"
+      ],
+      "answer": 3,
+      "explanation": "JavaScript adds behavior, including responding to clicks, typing, scrolling, and other events.",
+      "id": "web-3"
+    },
+    {
+      "question": "In the browser, what is the DOM?",
+      "choices": [
+        "A cloud service for storing files",
+        "A CSS color palette",
+        "A live representation of page elements JavaScript can read or change",
+        "A kind of database"
+      ],
+      "answer": 2,
+      "explanation": "The DOM is the browser’s live map of the page, so JavaScript can find, update, add, or remove elements.",
+      "id": "web-4"
+    },
+    {
+      "question": "Where should an app safely check a password and load private account data?",
+      "choices": [
+        "On the back-end",
+        "In a CSS file",
+        "In a browser tab title",
+        "Inside an image"
+      ],
+      "answer": 0,
+      "explanation": "Sensitive checks and data work belong on the back-end, away from code every browser visitor can inspect.",
+      "id": "web-5"
+    },
+    {
+      "question": "What is a server’s main job in a typical web app?",
+      "choices": [
+        "Paint every button blue",
+        "Replace HTML",
+        "Listen for requests, run back-end logic, and send responses",
+        "Store only fonts"
+      ],
+      "answer": 2,
+      "explanation": "A server receives requests, does useful work such as checking rules or data, and returns a response.",
+      "id": "web-6"
+    },
+    {
+      "question": "Which item is a good fit for a database?",
+      "choices": [
+        "A visitor’s saved task list",
+        "The color of one heading while it is loading",
+        "A browser’s Back button",
+        "A CSS media query"
+      ],
+      "answer": 0,
+      "explanation": "Databases store organized information an app needs to remember, such as accounts, tasks, posts, or orders.",
+      "id": "web-7"
+    },
+    {
+      "question": "What does an API give different parts of software?",
+      "choices": [
+        "A replacement for all HTML",
+        "A shared, agreed way to request and exchange data",
+        "A way to make passwords visible",
+        "A permanent screen layout"
+      ],
+      "answer": 1,
+      "explanation": "An API is a clear contract for how one part of software can ask another part for information or an action.",
+      "id": "web-8"
+    },
+    {
+      "question": "What question does authentication answer?",
+      "choices": [
+        "“What color should this button be?”",
+        "“Which database is fastest?”",
+        "“How wide is this screen?”",
+        "“Are you really who you say you are?”"
+      ],
+      "answer": 3,
+      "explanation": "Authentication verifies identity, such as when an app checks sign-in credentials.",
+      "id": "web-9"
+    },
+    {
+      "question": "A browser sends “please give me my saved tasks” to an API. That outgoing message is a…",
+      "choices": [
+        "Response",
+        "Request",
+        "Database",
+        "Style rule"
+      ],
+      "answer": 1,
+      "explanation": "A request asks for something. The API or server then sends a response with a result, data, or an error.",
+      "id": "web-10"
+    },
+    {
+      "question": "A developer builds a checkout screen, an API route to receive the order, and database code to save it. What kind of work is this?",
+      "choices": [
+        "Only front-end",
+        "Only back-end",
+        "Full-stack",
+        "Only graphic design"
+      ],
+      "answer": 2,
+      "explanation": "Full-stack work spans the visible experience and the systems behind it, connecting a feature end to end.",
+      "id": "web-11"
+    },
+    {
+      "question": "Which sequence best describes saving a new task from a web page?",
+      "choices": [
+        "Database → browser → CSS → response",
+        "Browser → database → HTML → server",
+        "Browser sends a request → server validates it → database saves it → server sends a response",
+        "CSS sends a request → DOM saves it → browser restarts"
+      ],
+      "answer": 2,
+      "explanation": "A common full-stack flow starts in the browser, travels through a server to data storage, then returns a result.",
+      "id": "web-12"
+    },
+    {
+      "question": "A person submits a new comment. Which HTTP-style action most closely matches creating that new item?",
+      "choices": [
+        "GET",
+        "POST",
+        "DELETE",
+        "CSS"
+      ],
+      "answer": 1,
+      "explanation": "POST is commonly used when sending data to create a new resource, such as a comment or account.",
+      "id": "web-13"
+    },
+    {
+      "question": "After someone signs in, an app checks whether they may edit a team’s billing details. What is that permission check called?",
+      "choices": [
+        "HTML",
+        "Authorization",
+        "Responsive design",
+        "A DOM event"
+      ],
+      "answer": 1,
+      "explanation": "Authentication establishes who someone is; authorization determines what that signed-in person is allowed to do.",
+      "id": "web-14"
+    },
+    {
+      "question": "A layout looks great on a laptop but its cards overflow on a phone. What is the best next step?",
+      "choices": [
+        "Add responsive CSS for smaller screens",
+        "Move the cards into a database",
+        "Turn off HTML",
+        "Store the phone in a server"
+      ],
+      "answer": 0,
+      "explanation": "Responsive CSS, often with flexible layouts or media queries, lets an interface adapt to different screen sizes.",
+      "id": "web-15"
+    },
+    {
+      "question": "Which choice makes a sign-up form more accessible to people using a screen reader?",
+      "choices": [
+        "Use placeholder text instead of labels",
+        "Make all text tiny",
+        "Use only color to explain errors",
+        "Give every input a clear visible label"
+      ],
+      "answer": 3,
+      "explanation": "Clear labels help everyone understand each field and give assistive technology a reliable name for it.",
+      "id": "web-16"
+    },
+    {
+      "question": "A custom clickable card should also work for someone navigating with a keyboard. What is the strongest starting choice?",
+      "choices": [
+        "Use a plain div and only mouse clicks",
+        "Make it a semantic button when it performs an action",
+        "Hide its focus outline",
+        "Require a touch screen"
+      ],
+      "answer": 1,
+      "explanation": "A real button brings helpful keyboard behavior and accessibility information by default.",
+      "id": "web-17"
+    },
+    {
+      "question": "Your task list fails to load. What is a useful first debugging move?",
+      "choices": [
+        "Change every color in the app",
+        "Delete the database immediately",
+        "Check the browser console and Network panel for errors or failed requests",
+        "Ignore the issue and refresh forever"
+      ],
+      "answer": 2,
+      "explanation": "The console and Network panel can reveal JavaScript errors, failed API calls, response details, and other useful clues.",
+      "id": "web-18"
+    },
+    {
+      "question": "An app builds a database query from untrusted text someone typed. Which approach is safer?",
+      "choices": [
+        "Use parameterized queries and validate input",
+        "Paste the text directly into the query",
+        "Trust every input because it came from a form",
+        "Put the query in CSS"
+      ],
+      "answer": 0,
+      "explanation": "Parameterized queries keep data separate from query instructions, helping protect against injection attacks.",
+      "id": "web-19"
+    },
+    {
+      "question": "Which prompt gives an AI agent the clearest request for a phone-friendly profile card?",
+      "choices": [
+        "“Make it better.”",
+        "“Use CSS to make the profile card responsive below 600px, stack its content, and keep text readable.”",
+        "“Use the database to fix the screen.”",
+        "“Remove the card on phones.”"
+      ],
+      "answer": 1,
+      "explanation": "A strong prompt names the tool, the goal, the context, and clear success criteria.",
+      "id": "web-20"
+    },
+    {
+      "question": "Which prompt best asks an AI agent for an accessible sign-up form?",
+      "choices": [
+        "“Make a cool form.”",
+        "“Use only placeholders so the form is cleaner.”",
+        "“Build semantic HTML with visible labels, an email field, and clear error feedback.”",
+        "“Hide every error message.”"
+      ],
+      "answer": 2,
+      "explanation": "Naming semantic HTML, labels, fields, and feedback gives the agent useful accessibility requirements.",
+      "id": "web-21"
+    },
+    {
+      "question": "An AI agent suggests placing a private API key in front-end JavaScript. What is the right response?",
+      "choices": [
+        "Ask it to move the secret to protected server-side configuration",
+        "Leave it there because the code is minified",
+        "Put the key in a CSS comment",
+        "Show the key in the login form"
+      ],
+      "answer": 0,
+      "explanation": "Anything sent to the browser can be inspected. Private keys and other secrets must stay on the server.",
+      "id": "web-22"
+    },
+    {
+      "question": "Which prompt gives an AI agent the clearest API task?",
+      "choices": [
+        "“Make an API.”",
+        "“Do something with tasks.”",
+        "“Create a POST /api/tasks endpoint that validates a title, saves the task, returns JSON on success, and explains validation errors.”",
+        "“Make the request invisible.”"
+      ],
+      "answer": 2,
+      "explanation": "A useful implementation prompt specifies the route, input, behavior, successful response, and failure behavior.",
+      "id": "web-23"
+    },
+    {
+      "question": "An AI-generated task list is blank. Which follow-up prompt is most useful for debugging?",
+      "choices": [
+        "“Try harder.”",
+        "“Check the browser console and Network request for the tasks API; explain any error, status code, and fix.”",
+        "“Change the background color.”",
+        "“Delete all task code.”"
+      ],
+      "answer": 1,
+      "explanation": "A focused debugging prompt gives the agent evidence to inspect and asks for an explanation plus a safe next step.",
+      "id": "web-24"
+    },
+    {
+      "question": "What is phishing designed to do?",
+      "choices": [
+        "Make a device run faster",
+        "Trick someone into sharing information or taking an unsafe action",
+        "Create a backup",
+        "Encrypt a trusted file for storage"
+      ],
+      "answer": 1,
+      "explanation": "Phishing relies on deception — often a convincing message, link, or login page — to steal information or prompt an unsafe action.",
+      "id": "cyber-0"
+    },
+    {
+      "question": "An unexpected email says your account will close today and asks you to sign in through its link. What is the safest first move?",
+      "choices": [
+        "Use the link quickly",
+        "Reply with your password",
+        "Open the service through a known app or typed address and check there",
+        "Forward the email to everyone"
+      ],
+      "answer": 2,
+      "explanation": "Avoid using a surprising link. Reach the service through a trusted route and check whether the alert is real.",
+      "id": "cyber-1"
+    },
+    {
+      "question": "Which description best fits malware?",
+      "choices": [
+        "A browser bookmark",
+        "Software designed to harm, spy on, or gain unwanted access",
+        "A routine software update",
+        "A method for making a password longer"
+      ],
+      "answer": 1,
+      "explanation": "Malware is malicious software. It can disrupt devices, steal information, or enable unwanted access.",
+      "id": "cyber-2"
+    },
+    {
+      "question": "What is ransomware known for?",
+      "choices": [
+        "Improving Wi-Fi speed",
+        "Locking or encrypting data and demanding payment",
+        "Checking permissions after sign-in",
+        "Creating a new user account"
+      ],
+      "answer": 1,
+      "explanation": "Ransomware commonly blocks access to data, then demands payment. Prepared backups can make recovery possible.",
+      "id": "cyber-3"
+    },
+    {
+      "question": "What is a vulnerability?",
+      "choices": [
+        "A strength in an app",
+        "A weakness in software, settings, or a process that could be exploited",
+        "A type of password manager",
+        "A backup copy of a database"
+      ],
+      "answer": 1,
+      "explanation": "A vulnerability is a weakness that could be used to compromise a system, account, or data.",
+      "id": "cyber-4"
+    },
+    {
+      "question": "Why do software patches and updates matter?",
+      "choices": [
+        "They only change an app’s icon",
+        "They can fix known bugs and security vulnerabilities",
+        "They remove every password",
+        "They guarantee no future risk"
+      ],
+      "answer": 1,
+      "explanation": "Updates often repair known issues, including security flaws. They reduce risk, though no single step eliminates all risk.",
+      "id": "cyber-5"
+    },
+    {
+      "question": "What does MFA add to a sign-in?",
+      "choices": [
+        "A second or additional proof of identity",
+        "A second username only",
+        "A public password",
+        "A way to skip authentication"
+      ],
+      "answer": 0,
+      "explanation": "MFA asks for more than one factor, such as a password plus an authenticator approval or security key.",
+      "id": "cyber-6"
+    },
+    {
+      "question": "A person enters a password and then approves a code in an authenticator app. What are they using?",
+      "choices": [
+        "Authorization",
+        "A backup",
+        "MFA",
+        "SQL injection"
+      ],
+      "answer": 2,
+      "explanation": "A password plus an authenticator approval is a common multi-factor authentication flow.",
+      "id": "cyber-7"
+    },
+    {
+      "question": "Authentication answers which question?",
+      "choices": [
+        "What color should the page be?",
+        "Who are you?",
+        "Which files can you edit?",
+        "How much storage is left?"
+      ],
+      "answer": 1,
+      "explanation": "Authentication verifies identity — for example, confirming that a sign-in belongs to the account holder.",
+      "id": "cyber-8"
+    },
+    {
+      "question": "Authorization answers which question?",
+      "choices": [
+        "Are you really this account holder?",
+        "What are you allowed to access or change?",
+        "Is the password long enough?",
+        "Has the device installed an update?"
+      ],
+      "answer": 1,
+      "explanation": "Authorization comes after identity is established and determines what that person is permitted to do.",
+      "id": "cyber-9"
+    },
+    {
+      "question": "A teammate can view a report but cannot edit it. Which concept is controlling that difference?",
+      "choices": [
+        "Encryption",
+        "Authorization",
+        "Malware",
+        "A phishing link"
+      ],
+      "answer": 1,
+      "explanation": "Authorization controls permissions, such as whether a signed-in person may view, edit, or administer something.",
+      "id": "cyber-10"
+    },
+    {
+      "question": "What does least privilege mean?",
+      "choices": [
+        "Everyone gets administrator access",
+        "People receive only the access needed for their work",
+        "Passwords should be shared with a team",
+        "Every account should have the same role"
+      ],
+      "answer": 1,
+      "explanation": "Least privilege limits access to what is needed, reducing the impact of mistakes, compromised accounts, or misuse.",
+      "id": "cyber-11"
+    },
+    {
+      "question": "A new contractor only needs to read one project folder. Which permission choice best follows least privilege?",
+      "choices": [
+        "Give full administrator access",
+        "Give access to every company folder",
+        "Give read-only access to that project folder",
+        "Share another employee’s account"
+      ],
+      "answer": 2,
+      "explanation": "The narrow, read-only permission meets the need without granting unrelated access.",
+      "id": "cyber-12"
+    },
+    {
+      "question": "What does encryption do to data?",
+      "choices": [
+        "Deletes it permanently",
+        "Turns readable data into protected data that needs the right key to read",
+        "Makes every account public",
+        "Removes the need for access controls"
+      ],
+      "answer": 1,
+      "explanation": "Encryption protects confidentiality by transforming readable data into a protected form that requires the appropriate key.",
+      "id": "cyber-13"
+    },
+    {
+      "question": "Which statement about encryption is most accurate?",
+      "choices": [
+        "It replaces passwords, permissions, and updates",
+        "It is one protection that works alongside other security practices",
+        "It makes phishing impossible",
+        "It is only useful for photos"
+      ],
+      "answer": 1,
+      "explanation": "Encryption is valuable, but security works in layers — it complements strong sign-ins, permissions, updates, and careful habits.",
+      "id": "cyber-14"
+    },
+    {
+      "question": "Why are backups important in a ransomware situation?",
+      "choices": [
+        "They can provide a separate copy for recovery",
+        "They make a suspicious link safe",
+        "They automatically identify every scam",
+        "They turn off MFA"
+      ],
+      "answer": 0,
+      "explanation": "Separate, usable backups can help restore data after an incident instead of relying on the affected copy.",
+      "id": "cyber-15"
+    },
+    {
+      "question": "Which is the best description of a useful backup?",
+      "choices": [
+        "The only copy of a file on the same device",
+        "A separate copy that can be restored when needed",
+        "A password written in a chat",
+        "A file that everyone can change"
+      ],
+      "answer": 1,
+      "explanation": "A backup should be a separate recoverable copy, and it is wise to check that restoration actually works.",
+      "id": "cyber-16"
+    },
+    {
+      "question": "What creates the risk of SQL injection?",
+      "choices": [
+        "Treating untrusted input as part of a database command",
+        "Using a strong passphrase",
+        "Turning on MFA",
+        "Keeping software updated"
+      ],
+      "answer": 0,
+      "explanation": "SQL injection can happen when input is interpreted as query instructions instead of handled purely as data.",
+      "id": "cyber-17"
+    },
+    {
+      "question": "Which approach helps reduce SQL injection risk?",
+      "choices": [
+        "Build a query by pasting user input directly into it",
+        "Use parameterized queries and validate input",
+        "Hide the query in a CSS file",
+        "Trust input because it came from a form"
+      ],
+      "answer": 1,
+      "explanation": "Parameterized queries keep data separate from query instructions, while validation limits unexpected input.",
+      "id": "cyber-18"
+    },
+    {
+      "question": "You receive a chat message from a coworker asking for an urgent gift-card purchase. What is the safest next step?",
+      "choices": [
+        "Act immediately because it sounds urgent",
+        "Verify the request through a known, separate channel",
+        "Send your account password first",
+        "Post the request publicly"
+      ],
+      "answer": 1,
+      "explanation": "Urgency is a common social-engineering tactic. Verify unusual requests using a trusted way to reach the person.",
+      "id": "cyber-19"
+    },
+    {
+      "question": "An app alerts you to a sign-in you do not recognize. What is a sensible immediate response?",
+      "choices": [
+        "Ignore it if the app still works",
+        "Change the password, review active sessions, and report it through the service",
+        "Share the alert online with your password",
+        "Install unrelated browser extensions"
+      ],
+      "answer": 1,
+      "explanation": "Treat unexpected sign-in alerts seriously: secure the account, remove unknown sessions, and use the service’s official support path if needed.",
+      "id": "cyber-20"
+    },
+    {
+      "question": "Which password habit is strongest?",
+      "choices": [
+        "Reuse one memorable password everywhere",
+        "Use long, unique passwords stored in a reputable password manager",
+        "Share a password in a group chat",
+        "Use a short word plus your birth year"
+      ],
+      "answer": 1,
+      "explanation": "Unique, long passwords limit damage from one compromised site. A password manager makes them practical to use.",
+      "id": "cyber-21"
+    },
+    {
+      "question": "What is the main benefit of using different passwords for different accounts?",
+      "choices": [
+        "It makes phishing messages more believable",
+        "One stolen password cannot unlock every account",
+        "It removes the need for MFA",
+        "It turns a vulnerability into a patch"
+      ],
+      "answer": 1,
+      "explanation": "Unique passwords contain the fallout if one service experiences a breach or a password is exposed.",
+      "id": "cyber-22"
+    },
+    {
+      "question": "Someone sends you an unexpected file and says, “Enable editing right away.” What is the safer choice?",
+      "choices": [
+        "Enable it without checking",
+        "Open it on every device",
+        "Verify the sender and purpose before opening or enabling anything",
+        "Forward it to your contacts"
+      ],
+      "answer": 2,
+      "explanation": "Unexpected files and unusual instructions deserve a pause. Verify independently before opening or enabling content.",
+      "id": "cyber-23"
+    },
+    {
+      "question": "Which response best combines authentication, authorization, and least privilege?",
+      "choices": [
+        "Verify a person’s identity, then give only the permissions needed for their role",
+        "Let anyone edit everything after entering an email",
+        "Use the same administrator account for the whole team",
+        "Skip sign-in if the person knows the project name"
+      ],
+      "answer": 0,
+      "explanation": "A safer system confirms identity, checks the role, and grants only the minimum access that role needs.",
+      "id": "cyber-24"
+    }
+  ]
+}
