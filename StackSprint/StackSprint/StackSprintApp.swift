@@ -109,7 +109,7 @@ struct CourseMenuView: View {
         case 1: RapidLearningDeck()
         case 2: LayerChallengeView()
         case 3: GlossaryView()
-        case 4: CourseCategoryView(title: "Cybersecurity", category: "Cybersecurity")
+        case 4: CybersecurityCourseView()
         case 5: CourseCategoryView(title: "Python essentials", category: "Python")
         case 7: TogetherView()
         case 8: ProjectPortalView(title: "Design games", subtitle: "30 guided design projects", hash: "design-games")
@@ -199,6 +199,118 @@ struct CourseCategoryView: View {
     let title: String, category: String
     @EnvironmentObject private var store: LearningStore
     var body: some View { List(store.curriculum?.lessons.filter { $0.category == category } ?? []) { lesson in NavigationLink { LessonView(lesson: lesson) } label: { VStack(alignment: .leading) { Text(lesson.term).font(.headline); Text(lesson.clue).font(.caption).foregroundStyle(.secondary) }.padding(.vertical, 6) } }.navigationTitle(title) }
+}
+
+struct CybersecurityCourseView: View {
+    @EnvironmentObject private var store: LearningStore
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @State private var revealed: Set<String> = []
+    private var lessons: [Lesson] { store.curriculum?.lessons.filter { $0.category == "Cybersecurity" } ?? [] }
+    private var questions: [Question] { store.curriculum?.questions.filter { $0.id.hasPrefix("cyber-") } ?? [] }
+    private var columns: [GridItem] {
+        [GridItem(.adaptive(minimum: sizeClass == .compact ? 155 : 220), spacing: 14)]
+    }
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 26) {
+                HStack(alignment: .bottom, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("COURSE 02 · SAFETY ESSENTIALS").font(.caption.bold()).tracking(1.3).foregroundStyle(.blue)
+                        Text("Cybersecurity\nMini Course").font(.system(.largeTitle, design: .rounded, weight: .bold))
+                        Text("Build calm, practical safety instincts — from suspicious messages to safer sign-ins.")
+                            .font(.title3).foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
+                    if sizeClass != .compact {
+                        Label("\(lessons.count) terms\n\(questions.count)-question finish", systemImage: "bolt.fill")
+                            .font(.subheadline.bold()).padding(18).background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+                    }
+                }
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 7) {
+                            Text("VOCABULARY WARM-UP").font(.caption.bold()).tracking(1.3).foregroundStyle(.secondary)
+                            Text("Tap a term. See the safety move.").font(.title2.bold())
+                            Text("A quick vocabulary pass makes the checkpoint feel much easier.").foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Text("\(lessons.count) cards").font(.system(.subheadline, design: .monospaced).bold()).foregroundStyle(.purple)
+                            .padding(.horizontal, 14).padding(.vertical, 9).background(.purple.opacity(0.14), in: Capsule())
+                    }
+                    LazyVGrid(columns: columns, spacing: 14) {
+                        ForEach(Array(lessons.enumerated()), id: \.element.id) { number, lesson in
+                            Button { withAnimation(.easeOut(duration: 0.18)) { toggle(lesson.id) } } label: {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Text(String(format: "%02d", number + 1)).font(.system(.caption, design: .monospaced).bold()).foregroundStyle(.purple)
+                                    Spacer(minLength: 6)
+                                    Text(lesson.term).font(.headline).foregroundStyle(.primary)
+                                    Text(revealed.contains(lesson.id) ? safetyMove(for: lesson) : lesson.clue)
+                                        .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                                    Text(revealed.contains(lesson.id) ? "Hide safety move ↑" : "Tap to reveal →")
+                                        .font(.caption.bold()).foregroundStyle(.purple)
+                                }
+                                .padding(16).frame(maxWidth: .infinity, minHeight: 190, alignment: .leading)
+                                .background(SprintPalette.card.opacity(0.72), in: RoundedRectangle(cornerRadius: 20))
+                                .overlay(RoundedRectangle(cornerRadius: 20).stroke(revealed.contains(lesson.id) ? Color.purple : Color.white.opacity(0.12), lineWidth: 1.5))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("\(lesson.term). \(revealed.contains(lesson.id) ? safetyMove(for: lesson) : lesson.clue)")
+                            .accessibilityHint(revealed.contains(lesson.id) ? "Hides the safety move" : "Reveals the recommended safety move")
+                        }
+                    }
+                }
+                .padding(sizeClass == .compact ? 18 : 28)
+                .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 28))
+                VStack(alignment: .leading, spacing: 20) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("FINAL CHECKPOINT").font(.caption.bold()).tracking(1.3).foregroundStyle(.secondary)
+                            Text("Can you spot the safer move?").font(.title2.bold())
+                        }
+                        Spacer()
+                        Text("1 / \(questions.count)").font(.system(.subheadline, design: .monospaced)).foregroundStyle(.blue)
+                            .padding(.horizontal, 14).padding(.vertical, 9).background(.blue.opacity(0.14), in: RoundedRectangle(cornerRadius: 12))
+                    }
+                    ProgressView(value: 0, total: Double(max(questions.count, 1)))
+                    if let first = questions.first {
+                        Text(first.question).font(.title3.bold())
+                        ForEach(first.choices.indices, id: \.self) { choice in
+                            HStack(spacing: 14) {
+                                Text(["A", "B", "C", "D"][min(choice, 3)]).font(.caption.bold()).foregroundStyle(.secondary)
+                                    .frame(width: 38, height: 38).background(Color.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 10))
+                                Text(first.choices[choice]).font(.subheadline.bold())
+                                Spacer()
+                            }.padding(10).overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.12)))
+                        }
+                    }
+                    NavigationLink { QuizView(questions: questions) } label: {
+                        Text("Start 25-question checkpoint →").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 14)
+                    }.buttonStyle(.borderedProminent).tint(.purple)
+                    Text("Choose the answer that keeps people and information safer.").font(.caption).foregroundStyle(.secondary)
+                }
+                .padding(sizeClass == .compact ? 18 : 28)
+                .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 28))
+            }.padding(22).frame(maxWidth: 980)
+        }.navigationTitle("Cybersecurity").modifier(SprintTheme())
+    }
+    private func toggle(_ id: String) { if revealed.contains(id) { revealed.remove(id) } else { revealed.insert(id) } }
+    private func safetyMove(for lesson: Lesson) -> String {
+        let moves: [String: String] = [
+            "cyber-phishing": "Pause. Verify the sender through a trusted route before tapping or replying.",
+            "cyber-malware": "Use trusted downloads, keep protection updated, and do not open surprise files.",
+            "cyber-ransomware": "Disconnect the device, report it, and recover from a tested backup — never improvise alone.",
+            "cyber-vulnerability": "Document the weakness and report it responsibly so it can be repaired.",
+            "cyber-patch": "Install verified updates promptly; patches close known weaknesses.",
+            "cyber-mfa": "Use an authenticator or passkey and never share approval codes.",
+            "cyber-authentication": "Prove identity with a unique password, passkey, or another trusted factor.",
+            "cyber-authorization": "Grant only the actions the signed-in person actually needs.",
+            "cyber-least-privilege": "Start with minimal access and add permissions only when the job requires them.",
+            "cyber-encryption": "Encrypt sensitive information in transit and at rest, then protect the keys.",
+            "cyber-backups": "Keep separate, tested copies so recovery does not depend on the damaged device.",
+            "cyber-sql-injection": "Use parameterized queries and validate input instead of joining raw input into SQL."
+        ]
+        return moves[lesson.id] ?? lesson.definition
+    }
 }
 struct GlossaryView: View {
     @EnvironmentObject private var store: LearningStore
