@@ -1,0 +1,62 @@
+import Combine
+import Foundation
+import SwiftUI
+
+struct Lesson: Codable, Identifiable {
+    let id: String
+    let term: String
+    let category: String
+    let clue: String
+    let definition: String
+    let code: String
+}
+
+struct Question: Codable, Identifiable {
+    let id: String
+    let question: String
+    let choices: [String]
+    let answer: Int
+    let explanation: String
+}
+
+struct Curriculum: Codable {
+    let lessons: [Lesson]
+    let questions: [Question]
+
+    static func load() throws -> Curriculum {
+        guard let url = Bundle.main.url(forResource: "curriculum", withExtension: "json") else {
+            throw CocoaError(.fileNoSuchFile)
+        }
+        return try JSONDecoder().decode(Self.self, from: Data(contentsOf: url))
+    }
+}
+
+struct ProgressRow: Codable {
+    let user_id: String
+    let lesson_id: String
+}
+
+@MainActor final class LearningStore: ObservableObject {
+    @Published var completed: Set<String> = []
+    @Published var curriculum: Curriculum?
+    @Published var error: String?
+    private var namespace = "guest"
+
+    init() {
+        do { curriculum = try Curriculum.load() } catch { self.error = "Lesson content could not load: \(error.localizedDescription)" }
+        switchUser(nil)
+    }
+
+    func switchUser(_ id: String?) {
+        namespace = id ?? "guest"
+        completed = Set(UserDefaults.standard.stringArray(forKey: "native.completed.\(namespace)") ?? [])
+    }
+
+    func complete(_ id: String) { completed.insert(id); persist() }
+
+    func merge(_ rows: [ProgressRow]) { completed.formUnion(rows.map(\.lesson_id)); persist() }
+
+    private func persist() {
+        UserDefaults.standard.set(Array(completed), forKey: "native.completed.\(namespace)")
+    }
+}

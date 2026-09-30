@@ -11,3 +11,6 @@ node_modules/
 .env.*
 !.env.example
 *.log
+
+# Xcode per-user schemes (hold local secrets like ANTHROPIC_API_KEY)
+**/xcuserdata/**/*.xcscheme
