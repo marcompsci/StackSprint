@@ -22,6 +22,7 @@ import AVFoundation
 }
 struct RootView: View {
     @State private var showingBite = false
+    @State private var showingMenu = false
     @AppStorage("onboarding.finished") private var welcomed = false
     var body: some View {
         TabView {
@@ -35,9 +36,189 @@ struct RootView: View {
                 .buttonStyle(.plain).accessibilityLabel("Ask Bite, your coding assistant")
                 .padding(.trailing, 16).padding(.bottom, 60)
         }
+        .overlay(alignment: .topTrailing) {
+            Button { showingMenu = true } label: {
+                Image(systemName: "line.3.horizontal")
+                    .font(.title2.bold())
+                    .frame(width: 52, height: 52)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Open course navigation")
+            .padding(.top, 8).padding(.trailing, 16)
+        }
         .sheet(isPresented: $showingBite) { BiteAssistantView() }
+        .sheet(isPresented: $showingMenu) { CourseMenuView() }
         .fullScreenCover(isPresented: Binding(get: { !welcomed }, set: { if !$0 { welcomed = true } })) { WelcomeAdventure() }
     }
+}
+
+struct CourseMenuView: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var store: LearningStore
+    private let menuItems: [(String, String, Int?)] = [
+        ("Daily Sprint", "sparkles", nil), ("Flash cards", "rectangle.stack.fill", 12),
+        ("Layer challenge", "circle.dashed", nil), ("Quick glossary", "command", nil),
+        ("Cybersecurity", "bolt.fill", 25), ("Python essentials", "textformat", 12),
+        ("Daily practice", "sparkle", nil), ("Friends & streaks", "heart", nil),
+        ("Design games", "pencil.and.outline", 30), ("Building games", "curlybraces", 30)
+    ]
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "chevron.left.forwardslash.chevron.right").font(.title2.bold()).foregroundStyle(.mint)
+                        Text("StackSprint").font(.title.bold())
+                    }
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("CURRENT COURSE").font(.caption.bold()).tracking(1.2).foregroundStyle(.secondary)
+                        Text("Web Development 101").font(.headline)
+                    }
+                    .padding(18).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+                    ForEach(Array(menuItems.enumerated()), id: \.offset) { index, item in
+                        NavigationLink { destination(for: index) } label: {
+                            HStack(spacing: 16) {
+                                Image(systemName: item.1).frame(width: 28).foregroundStyle(index == 1 ? .blue : .secondary)
+                                Text(item.0).font(.headline)
+                                Spacer()
+                                if let count = item.2 {
+                                    Text("\(count)").font(.subheadline.bold()).foregroundStyle(index >= 8 ? .mint : .blue)
+                                        .padding(.horizontal, 10).padding(.vertical, 6)
+                                        .background((index >= 8 ? Color.mint : Color.blue).opacity(0.14), in: Capsule())
+                                }
+                                Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
+                            }
+                            .padding(.horizontal, 16).frame(minHeight: 58)
+                            .background(index == 1 ? Color.blue.opacity(0.14) : Color.clear, in: RoundedRectangle(cornerRadius: 16))
+                        }.buttonStyle(.plain)
+                    }
+                }.padding(22)
+            }
+            .background(SprintPalette.navy)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } }
+            }
+            .navigationTitle("Course navigation").navigationBarTitleDisplayMode(.inline)
+        }.modifier(SprintTheme())
+    }
+    @ViewBuilder private func destination(for index: Int) -> some View {
+        switch index {
+        case 0, 6: DailyPracticeView()
+        case 1: RapidLearningDeck()
+        case 2: LayerChallengeView()
+        case 3: GlossaryView()
+        case 4: CourseCategoryView(title: "Cybersecurity", category: "Cybersecurity")
+        case 5: CourseCategoryView(title: "Python essentials", category: "Python")
+        case 7: TogetherView()
+        case 8: ProjectPortalView(title: "Design games", subtitle: "30 guided design projects", hash: "design-games")
+        default: ProjectPortalView(title: "Building games", subtitle: "30 hands-on coding projects", hash: "building-games")
+        }
+    }
+}
+
+struct RapidLearningDeck: View {
+    @EnvironmentObject private var store: LearningStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var index = 0
+    @State private var revealed = false
+    @State private var filter = "All cards"
+    @State private var mode = 0
+    private var webLessons: [Lesson] { store.curriculum?.lessons.filter { $0.category == "Web development" } ?? [] }
+    private var filtered: [Lesson] {
+        switch filter {
+        case "Front-end": return webLessons.filter { ["web-html", "web-css", "web-javascript", "web-dom", "web-frontend"].contains($0.id) }
+        case "Back-end": return webLessons.filter { ["web-server", "web-database", "web-api", "web-authentication", "web-backend", "web-request-response"].contains($0.id) }
+        case "Full-stack": return webLessons.filter { $0.id == "web-fullstack" }
+        default: return webLessons
+        }
+    }
+    private var lesson: Lesson? { filtered.isEmpty ? nil : filtered[min(index, filtered.count - 1)] }
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("RAPID LEARNING DECK").font(.caption.bold()).tracking(1.4).foregroundStyle(.secondary)
+                        Text("Take a card.\nTake a guess.").font(.largeTitle.bold())
+                    }
+                    Spacer()
+                    Picker("Deck mode", selection: $mode) { Text("Study").tag(0); Text("Quiz").tag(1) }
+                        .pickerStyle(.segmented).frame(maxWidth: 190)
+                }
+                ProgressView(value: Double(min(index + 1, filtered.count)), total: Double(max(filtered.count, 1)))
+                Text("\(min(index + 1, filtered.count), format: .number.precision(.integerLength(2))) / \(filtered.count, format: .number.precision(.integerLength(2)))")
+                    .font(.system(.subheadline, design: .monospaced)).foregroundStyle(.secondary)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack { ForEach(["All cards", "Front-end", "Back-end", "Full-stack"], id: \.self) { name in
+                        Button(name + (name == "All cards" ? "  \(webLessons.count)" : "")) { filter = name; index = 0; revealed = false }
+                            .buttonStyle(.borderedProminent).tint(filter == name ? .blue : SprintPalette.card)
+                    }}
+                }
+                if mode == 1 {
+                    QuizView(questions: store.curriculum?.questions.filter { $0.id.hasPrefix("web-") } ?? [])
+                        .frame(minHeight: 520)
+                } else if let lesson {
+                    Button { withAnimation(reduceMotion ? .easeOut(duration: 0.15) : .spring(response: 0.38, dampingFraction: 0.86)) { revealed.toggle() } } label: {
+                        VStack(alignment: .leading, spacing: 18) {
+                            Text(filter == "All cards" ? deckLabel(for: lesson) : filter.uppercased()).font(.caption.bold()).tracking(1.1)
+                                .padding(.horizontal, 14).padding(.vertical, 8).overlay(Capsule().stroke(.white.opacity(0.5)))
+                            Spacer()
+                            Text(revealed ? lesson.definition : lesson.term).font(.system(size: 42, weight: .bold, design: .rounded))
+                            if !revealed { Text(lesson.clue).font(.title3.weight(.semibold)) }
+                            else if !lesson.code.isEmpty { Text(lesson.code).font(.system(.body, design: .monospaced)).lineLimit(5) }
+                            Spacer()
+                            Label(revealed ? "Tap to see term" : "Tap to flip", systemImage: "arrow.triangle.2.circlepath").font(.subheadline.bold())
+                        }
+                        .foregroundStyle(.white).padding(28).frame(maxWidth: .infinity, minHeight: 390, alignment: .leading)
+                        .background(LinearGradient(colors: [.blue, Color(red: 0.22, green: 0.42, blue: 0.88)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 30))
+                        .shadow(color: .blue.opacity(0.25), radius: 24, y: 14)
+                    }.buttonStyle(.plain).accessibilityLabel(revealed ? "Answer: \(lesson.definition)" : "Card term: \(lesson.term). Tap to reveal")
+                    HStack {
+                        Button { move(-1) } label: { Image(systemName: "arrow.left").frame(width: 48, height: 48) }.buttonStyle(.bordered).disabled(index == 0)
+                        Button { revealed.toggle() } label: { Label(revealed ? "Hide answer" : "Reveal answer", systemImage: "sparkles").frame(maxWidth: .infinity) }.buttonStyle(.borderedProminent)
+                        Button { move(1) } label: { Image(systemName: "arrow.right").frame(width: 48, height: 48) }.buttonStyle(.bordered).disabled(index >= filtered.count - 1)
+                    }
+                    Text(revealed ? "How did that feel?" : "Flip the card to start its two-step checkpoint.").font(.subheadline).foregroundStyle(.secondary).frame(maxWidth: .infinity)
+                    HStack { ForEach(["Teach me again", "Almost there", "I knew it"], id: \.self) { label in
+                        Button(label) { store.complete(lesson.id); if index < filtered.count - 1 { move(1) } }.buttonStyle(.bordered).disabled(!revealed)
+                    }}
+                }
+            }.padding(24).frame(maxWidth: 760)
+        }.navigationTitle("Flash cards").modifier(SprintTheme())
+    }
+    private func move(_ amount: Int) { index = min(max(0, index + amount), max(0, filtered.count - 1)); revealed = false }
+    private func deckLabel(for lesson: Lesson) -> String {
+        if lesson.id == "web-fullstack" { return "FULL-STACK BRIDGE" }
+        return ["web-html", "web-css", "web-javascript", "web-dom", "web-frontend"].contains(lesson.id) ? "FRONT-END FOUNDATION" : "BACK-END FOUNDATION"
+    }
+}
+
+struct CourseCategoryView: View {
+    let title: String, category: String
+    @EnvironmentObject private var store: LearningStore
+    var body: some View { List(store.curriculum?.lessons.filter { $0.category == category } ?? []) { lesson in NavigationLink { LessonView(lesson: lesson) } label: { VStack(alignment: .leading) { Text(lesson.term).font(.headline); Text(lesson.clue).font(.caption).foregroundStyle(.secondary) }.padding(.vertical, 6) } }.navigationTitle(title) }
+}
+struct GlossaryView: View {
+    @EnvironmentObject private var store: LearningStore
+    @State private var query = ""
+    private var lessons: [Lesson] {
+        let all = store.curriculum?.lessons ?? []
+        return query.isEmpty ? all : all.filter { $0.term.localizedCaseInsensitiveContains(query) || $0.definition.localizedCaseInsensitiveContains(query) }
+    }
+    var body: some View { List(lessons) { lesson in DisclosureGroup(lesson.term) { Text(lesson.definition).padding(.vertical, 8) } }.searchable(text: $query, prompt: "Search coding terms").navigationTitle("Quick glossary") }
+}
+struct DailyPracticeView: View {
+    @EnvironmentObject private var store: LearningStore
+    var body: some View { ScrollView { VStack(alignment: .leading, spacing: 20) { Text("A tiny win for today").font(.largeTitle.bold()); Text("One card, one prediction, one line of code.").foregroundStyle(.secondary); NavigationLink("Start rapid cards") { RapidLearningDeck() }.buttonStyle(.borderedProminent); NavigationLink("Open the studio") { StudioView() }.buttonStyle(.bordered) }.padding(24).frame(maxWidth: .infinity, alignment: .leading) }.navigationTitle("Daily Sprint") }
+}
+struct LayerChallengeView: View {
+    var body: some View { ScrollView { VStack(alignment: .leading, spacing: 18) { Text("Place the layers").font(.largeTitle.bold()); ForEach([("Front-end", "What people see and use"), ("Back-end", "Logic, data, and rules"), ("Full-stack", "The bridge across both sides")], id: \.0) { layer in HStack { Image(systemName: "square.stack.3d.up.fill").foregroundStyle(.mint); VStack(alignment: .leading) { Text(layer.0).font(.headline); Text(layer.1).foregroundStyle(.secondary) } }.padding().frame(maxWidth: .infinity, alignment: .leading).background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 18)) } }.padding(24) }.navigationTitle("Layer challenge") }
+}
+struct ProjectPortalView: View {
+    let title: String, subtitle: String, hash: String
+    var body: some View { VStack(spacing: 20) { Image(systemName: hash == "design-games" ? "paintpalette.fill" : "gamecontroller.fill").font(.system(size: 62)).foregroundStyle(.mint); Text(title).font(.largeTitle.bold()); Text(subtitle).foregroundStyle(.secondary); NavigationLink("Open all projects") { StudioView() }.buttonStyle(.borderedProminent) }.padding(24).navigationTitle(title) }
 }
 struct LearnView: View {
     @EnvironmentObject var store: LearningStore
