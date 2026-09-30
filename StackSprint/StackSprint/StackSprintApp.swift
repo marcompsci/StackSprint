@@ -31,7 +31,7 @@ struct RootView: View {
             NavigationStack { AccountView().modifier(SprintTheme()) }.tabItem { Label("Account", systemImage: "person.crop.circle") }
         }
         .overlay(alignment: .bottomTrailing) {
-            Button { showingBite = true } label: { BiteAvatar().frame(width: 64, height: 72) }
+            Button { showingBite = true } label: { BiteAvatar().frame(width: 66, height: 90) }
                 .buttonStyle(.plain).accessibilityLabel("Ask Bite, your coding assistant")
                 .padding(.trailing, 16).padding(.bottom, 60)
         }
@@ -239,17 +239,31 @@ struct FlashcardDocument: FileDocument {
 struct BiteAvatar: View {
     var body: some View {
         Canvas { context, size in
-            let unit = min(size.width / 24, size.height / 26)
+            // The reference sprite is an 11 × 15 grid. Centering the grid keeps
+            // every edge square at every size without adding a background.
+            let unit = floor(min(size.width / 11, size.height / 15))
+            let origin = CGPoint(
+                x: floor((size.width - unit * 11) / 2),
+                y: floor((size.height - unit * 15) / 2)
+            )
             func block(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, _ color: Color) {
-                context.fill(Path(CGRect(x: x * unit, y: y * unit, width: w * unit, height: h * unit)), with: .color(color))
+                context.fill(Path(CGRect(x: origin.x + x * unit, y: origin.y + y * unit, width: w * unit, height: h * unit)), with: .color(color))
             }
-            block(10, 0, 4, 4, .mint); block(11, 4, 2, 4, .orange)
-            block(4, 8, 16, 15, Color(red: 1, green: 0.70, blue: 0.58))
-            block(2, 10, 20, 11, Color(red: 1, green: 0.70, blue: 0.58))
-            block(5, 23, 4, 3, .orange); block(15, 23, 4, 3, .orange)
-            block(5, 11, 14, 7, Color(red: 0.12, green: 0.17, blue: 0.27))
-            block(7, 13, 3, 3, .white); block(14, 13, 3, 3, .white)
-            block(10, 20, 4, 1, .indigo)
+            let mint = Color(red: 0.61, green: 0.90, blue: 0.82)
+            let peach = Color(red: 1.00, green: 0.66, blue: 0.54)
+            let highlight = Color(red: 1.00, green: 0.84, blue: 0.72)
+            let shadow = Color(red: 0.73, green: 0.39, blue: 0.32)
+            let visor = Color(red: 0.10, green: 0.15, blue: 0.26)
+            block(4, 0, 2, 2, mint)
+            block(5, 2, 1, 2, peach)
+            block(1, 4, 8, 1, highlight)
+            block(0, 5, 11, 7, peach)
+            block(0, 6, 1, 5, highlight)
+            block(0, 11, 1, 1, shadow); block(10, 11, 1, 1, shadow)
+            block(2, 12, 2, 2, shadow); block(7, 12, 2, 2, shadow)
+            block(1, 6, 9, 4, visor)
+            block(2, 7, 2, 2, .white); block(7, 7, 2, 2, .white)
+            block(4, 11, 2, 1, visor)
         }.accessibilityHidden(true)
     }
 }
@@ -321,7 +335,7 @@ struct WelcomeAdventure: View {
                     }
                 }
                 Spacer(minLength: 8)
-                BiteAvatar().frame(width: 64, height: 76)
+                BiteAvatar().frame(width: 66, height: 90)
             }
         }.padding(24).background(SprintPalette.navy.ignoresSafeArea()).preferredColorScheme(.dark)
     }
@@ -385,7 +399,7 @@ struct BiteAssistantView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    HStack { BiteAvatar().frame(width: 64, height: 72); Text("Your little coding co-pilot").font(.title2.bold()) }
+                    HStack { BiteAvatar().frame(width: 66, height: 90); Text("Your little coding co-pilot").font(.title2.bold()) }
                     Text(tutor.mode).font(.caption).foregroundStyle(.secondary)
                     Text("Questions stay on this device. AI can make mistakes; test suggestions in Studio. Bite cannot complete checkpoints for you.").font(.caption)
                     Text(tutor.answer).textSelection(.enabled)

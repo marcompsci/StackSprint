@@ -1,7 +1,7 @@
 #bite-pet{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:calc(12px + env(safe-area-inset-bottom) + var(--bite-lift,0px));z-index:10000;font:14px/1.4 system-ui,sans-serif;color:#fff;display:flex;align-items:flex-end;flex-direction:column;pointer-events:none;max-width:calc(100vw - 24px)}
 #bite-pet button{font:inherit;cursor:pointer;min-height:44px;pointer-events:auto}
 #bite-pet .bite-body{width:76px;padding:4px;background:transparent;border:0;box-shadow:none;border-radius:0;color:#fff;display:grid;justify-items:center}
-#bite-pet svg{width:66px;height:72px;overflow:visible}#bite-pet .bite-body span{display:none}
+#bite-pet svg{width:66px;height:90px;overflow:visible;image-rendering:pixelated}#bite-pet .bite-body span{display:none}
 #bite-pet .bite-bubble{pointer-events:auto;background:#202b44;border:2px solid #9ce7cf;padding:12px;margin-bottom:12px;width:230px;max-width:calc(100vw - 48px);box-sizing:border-box;border-radius:12px;box-shadow:3px 3px 0 #11182b}
 #bite-pet .bite-bubble[hidden]{display:none}#bite-pet p{margin:0 0 8px;color:#fff;font:14px/1.4 system-ui,sans-serif}
 #bite-pet .bite-bubble button{display:block;width:100%;background:#35445e;border:0;border-radius:6px;color:#fff;margin-top:4px;padding:7px}
