@@ -1,11 +1,18 @@
 # StackSprint
 
+## iPhone and iPad project
+
+`StackSprint-iOS/StackSprint.xcodeproj` contains a buildable SwiftUI app with native courses, quizzes, sharing, CSV flashcard export, an embedded version of the game studio, and Supabase auth/progress client code. See `StackSprint-iOS/SETUP.md` for backend deployment and Apple signing. The backend is supplied as SQL and is not hosted automatically. Native and studio progress are currently separate.
+
 A browser learning app with web vocabulary, hands-on code and AI prompting exercises, a cybersecurity course, and a game studio.
 
 Built for new coders and developers who want a quick refresher: learn a concept, practice it, check your work, then play what you built.
 
 ## Courses and checkpoints
 
+- **Welcome adventure:** a replayable four-step onboarding flow introduces Bite, lets learners choose a goal and a gentle 3/5/10-minute daily intention, and ends with a no-penalty Python prediction. Choices save locally, and the native Account screen can replay the experience.
+- **Dark learning space:** the web and SwiftUI surfaces use StackSprint's deep-navy, mint, peach, and slate palette throughout so lesson colors and the transparent pixel companion remain vivid.
+- **Daily Sprint / First Spark:** an original Bit companion, three sequential matching, Python line-ordering, and output-prediction challenges, supportive retries, 30 XP per first completion, and an earned badge. Replay for refreshers. Progress saves on this device under `stacksprint-sprints-v1`, separately from course and studio progress; this is a fixed introductory unit, not a rotating daily curriculum. Included in the Xcode app's embedded Studio. Responsive touch targets, visible keyboard focus, and reduced-motion/transparency support are included.
 - **Web Development 101:** 12 vocabulary flashcards covering front-end, back-end, and full-stack concepts, code-reading and typing practice, and three AI-prompting checkpoints per card.
 - **Web quiz:** 25 questions with feedback, plus a layer challenge and quick glossary.
 - **Python essentials:** 12 reveal/type/predict flashcards and 25 original questions across Output Sprint, Type Detective, Bug Rescue, and a full shuffled quiz. Missed-question rounds and local progress support repeat practice. Inspired by [Asabeneh’s Day 2 lesson](https://github.com/Asabeneh/30-Days-Of-Python/blob/master/02_Day_Variables_builtin_functions/02_variables_builtin_functions.md), with Python 3 corrections checked against the official documentation. Typing checks are example-matching exercises, not Python execution. This supplemental module has its own progress and does not change existing graduation requirements.
