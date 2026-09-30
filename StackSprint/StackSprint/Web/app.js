@@ -2294,6 +2294,8 @@ function setupEvents() {
 
   document.addEventListener("keydown", (event) => {
     const activeElement = document.activeElement;
+    if (document.querySelector("dialog[open]")) return;
+    if (activeElement instanceof Element && activeElement.closest("#sprint-path")) return;
     if (state.mode !== "study") return;
     if (activeElement instanceof Element && activeElement.closest("#game-lab")) return;
     if (activeElement instanceof Element && activeElement.closest("input, textarea, select, [contenteditable='true']")) return;

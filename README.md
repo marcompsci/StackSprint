@@ -2,7 +2,7 @@
 
 ## iPhone and iPad project
 
-`StackSprint-iOS/StackSprint.xcodeproj` contains a buildable SwiftUI app with native courses, quizzes, sharing, CSV flashcard export, an embedded version of the game studio, and Supabase auth/progress client code. See `StackSprint-iOS/SETUP.md` for backend deployment and Apple signing. The backend is supplied as SQL and is not hosted automatically. Native and studio progress are currently separate.
+`StackSprint/StackSprint.xcodeproj` contains the canonical buildable SwiftUI app with native courses, quizzes, onboarding, Bite's on-device assistant, sharing, CSV flashcard export, and the embedded game studio. See `StackSprint/SETUP.md` for backend deployment and Apple signing. The backend is supplied as SQL and is not hosted automatically. Native and studio progress are currently separate.
 
 A browser learning app with web vocabulary, hands-on code and AI prompting exercises, a cybersecurity course, and a game studio.
 

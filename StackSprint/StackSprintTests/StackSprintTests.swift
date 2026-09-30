@@ -1,43 +1,19 @@
-//
-//  StackSprintTests.swift
-//  StackSprintTests
-//
-//  Created by Omari Bell on 9/22/26.
-//
-
 import Testing
 import Foundation
+@testable import StackSprint
 
 struct StackSprintTests {
-
-    // Runs before each @Test — used here to debug the Anthropic REST API connection
-    init() async throws {
-        let url = URL(string: "https://api.anthropic.com/v1/messages")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "content-type")
-        request.setValue(ProcessInfo.processInfo.environment["ANTHROPIC_API_KEY"] ?? "", forHTTPHeaderField: "x-api-key")
-        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-
-        let body: [String: Any] = [
-            "model": "claude-opus-4-8",
-            "max_tokens": 16,
-            "messages": [["role": "user", "content": "Hello"]]
-        ]
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
-        print("[Anthropic Debug] Status: \(statusCode)")
-        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            print("[Anthropic Debug] Response: \(json)")
-        }
+    @Test func bundledCurriculumIsComplete() throws {
+        let curriculum = try Curriculum.load()
+        #expect(curriculum.lessons.count == 36)
+        #expect(curriculum.questions.count == 50)
+        #expect(Set(curriculum.lessons.map(\.id)).count == curriculum.lessons.count)
+        #expect(curriculum.questions.allSatisfy { $0.answer >= 0 && $0.answer < $0.choices.count })
     }
 
-    @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
-        // Swift Testing Documentation
-        // https://developer.apple.com/documentation/testing
+    @Test func distributedBackendConfigContainsNoCredential() throws {
+        let config = try #require(Bundle.main.url(forResource: "BackendConfig", withExtension: "json"))
+        let text = try String(contentsOf: config, encoding: .utf8)
+        #expect(text.contains("YOUR_"))
     }
-
 }
