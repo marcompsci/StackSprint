@@ -510,41 +510,140 @@ struct ProjectPlaygroundView: View {
 }
 struct LearnView: View {
     @EnvironmentObject var store: LearningStore
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var exporting = false
     @State private var exportError: String?
+    @State private var category = "Web development"
+    @State private var selectedID: String?
+    private let categories = ["Web development", "Python", "Cybersecurity"]
+    private var lessons: [Lesson] { store.curriculum?.lessons.filter { $0.category == category } ?? [] }
+    private var selected: Lesson? { lessons.first { $0.id == selectedID } }
+    private var columns: [GridItem] { [GridItem(.adaptive(minimum: sizeClass == .compact ? 150 : 220), spacing: 14)] }
+    private var total: Int { max(store.curriculum?.lessons.count ?? 1, 1) }
     var body: some View {
-        List {
-            Section {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Little lessons.\nReal superpowers.").font(.largeTitle.bold())
-                    Text("Learn a little. Build something yours.").foregroundStyle(.secondary)
-                    ProgressView(value: Double(store.completed.count), total: Double(max(store.curriculum?.lessons.count ?? 1, 1)))
-                    Text("\(store.completed.count) lessons practiced").font(.caption.bold())
-                }.padding(.vertical)
-            }
-            if let error = store.error { Text(error).foregroundStyle(.red) }
-            ForEach(["Web development", "Python", "Cybersecurity"], id: \.self) { category in
-                Section(category) {
-                    ForEach(store.curriculum?.lessons.filter { $0.category == category } ?? []) { lesson in
-                        NavigationLink { LessonView(lesson: lesson) } label: {
-                            HStack {
-                                Image(systemName: store.completed.contains(lesson.id) ? "checkmark.seal.fill" : "bolt.circle.fill").foregroundStyle(.indigo)
-                                VStack(alignment: .leading) { Text(lesson.term).font(.headline); Text(lesson.clue).font(.caption).foregroundStyle(.secondary) }
-                            }.padding(.vertical, 6)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("LEARN · PLAY · REMEMBER").font(.caption.bold()).tracking(1.4).foregroundStyle(.mint)
+                    Text("Pick a power-up.").font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    Text("Tap a card, make a prediction, then try the idea yourself.").font(.title3).foregroundStyle(.secondary)
+                    HStack(spacing: 12) {
+                        ProgressView(value: Double(store.completed.count), total: Double(total)).tint(.mint)
+                        Text("\(store.completed.count) / \(total)").font(.system(.caption, design: .monospaced).bold())
+                    }
+                    Text(store.completed.isEmpty ? "Your first tiny win is waiting." : "Nice streak—every completed card powers up Bit.")
+                        .font(.caption.bold()).foregroundStyle(.mint)
+                }
+                .padding(22)
+                .background(LinearGradient(colors: [Color.indigo.opacity(0.35), Color.mint.opacity(0.12)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 28))
+
+                if let error = store.error { Text(error).foregroundStyle(.red) }
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(categories, id: \.self) { name in
+                            Button {
+                                withAnimation(.easeOut(duration: 0.2)) { category = name; selectedID = nil }
+                            } label: {
+                                Label(shortName(name), systemImage: categoryIcon(name))
+                                    .font(.subheadline.bold()).padding(.horizontal, 15).padding(.vertical, 11)
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(category == name ? Color(red: 0.05, green: 0.12, blue: 0.22) : .primary)
+                            .background(category == name ? lessonColor(forCategory: name) : SprintPalette.card, in: Capsule())
+                            .overlay(Capsule().stroke(category == name ? lessonColor(forCategory: name) : Color.secondary.opacity(0.18), lineWidth: 1.5))
                         }
                     }
                 }
+
+                HStack(alignment: .bottom) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(category.uppercased()).font(.caption.bold()).tracking(1.2).foregroundStyle(lessonColor(forCategory: category))
+                        Text("Choose your next challenge").font(.title2.bold())
+                    }
+                    Spacer()
+                    Text("\(lessons.count) cards").font(.system(.caption, design: .monospaced).bold()).foregroundStyle(.secondary)
+                }
+
+                if let selected {
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack {
+                            Label("READY TO LEARN", systemImage: "sparkles").font(.caption.bold()).foregroundStyle(lessonColor(selected))
+                            Spacer()
+                            Button { withAnimation { selectedID = nil } } label: { Image(systemName: "xmark.circle.fill").font(.title2) }.buttonStyle(.plain).accessibilityLabel("Close lesson preview")
+                        }
+                        Text(selected.term).font(.system(.largeTitle, design: .rounded, weight: .bold))
+                        Text(selected.definition).font(.title3)
+                        Text("Prediction: \(selected.clue)").font(.subheadline).foregroundStyle(.secondary)
+                        NavigationLink { LessonView(lesson: selected) } label: {
+                            Label(store.completed.contains(selected.id) ? "Practice again" : "Start this tiny win", systemImage: "play.fill")
+                                .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 14)
+                        }.buttonStyle(.borderedProminent).tint(lessonColor(selected))
+                    }
+                    .padding(20)
+                    .background(lessonColor(selected).opacity(0.13), in: RoundedRectangle(cornerRadius: 24))
+                    .overlay(RoundedRectangle(cornerRadius: 24).stroke(lessonColor(selected).opacity(0.75), lineWidth: 2))
+                    .transition(.scale(scale: 0.96).combined(with: .opacity))
+                }
+
+                LazyVGrid(columns: columns, spacing: 14) {
+                    ForEach(Array(lessons.enumerated()), id: \.element.id) { number, lesson in
+                        Button {
+                            withAnimation(reduceMotion ? .easeOut(duration: 0.12) : .spring(response: 0.32, dampingFraction: 0.82)) { selectedID = lesson.id }
+                        } label: {
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack {
+                                    Circle().fill(lessonColor(lesson)).frame(width: 11, height: 11)
+                                    Text(String(format: "%02d", number + 1)).font(.system(.caption, design: .monospaced).bold()).foregroundStyle(.secondary)
+                                    Spacer()
+                                    Image(systemName: store.completed.contains(lesson.id) ? "checkmark.seal.fill" : "arrow.up.right")
+                                        .foregroundStyle(store.completed.contains(lesson.id) ? .green : lessonColor(lesson))
+                                }
+                                Spacer(minLength: 8)
+                                Text(lesson.term).font(.headline).foregroundStyle(.primary).multilineTextAlignment(.leading)
+                                Text(cardLabel(lesson)).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                                Text(store.completed.contains(lesson.id) ? "Mastered · tap to replay" : "Tap to power up →")
+                                    .font(.caption.bold()).foregroundStyle(lessonColor(lesson))
+                            }
+                            .padding(16).frame(maxWidth: .infinity, minHeight: 160, alignment: .leading)
+                            .background(selectedID == lesson.id ? lessonColor(lesson).opacity(0.16) : SprintPalette.card.opacity(0.82), in: RoundedRectangle(cornerRadius: 22))
+                            .overlay(RoundedRectangle(cornerRadius: 22).stroke(selectedID == lesson.id ? lessonColor(lesson) : Color.secondary.opacity(0.18), lineWidth: selectedID == lesson.id ? 2 : 1.2))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(lesson.term), \(cardLabel(lesson)). \(store.completed.contains(lesson.id) ? "Completed" : "Not completed")")
+                        .accessibilityHint("Shows a preview and start button")
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("RECALL ARCADE").font(.caption.bold()).tracking(1.3).foregroundStyle(.orange)
+                    Text("Ready for a boss round?").font(.title2.bold())
+                    NavigationLink { QuizView(questions: store.curriculum?.questions.filter { $0.id.hasPrefix("web-") } ?? []) } label: { Label("Web quiz · 25 questions", systemImage: "gamecontroller.fill").frame(maxWidth: .infinity, alignment: .leading).padding(14) }.buttonStyle(.bordered)
+                    NavigationLink { QuizView(questions: store.curriculum?.questions.filter { $0.id.hasPrefix("cyber-") } ?? []) } label: { Label("Cybersecurity quiz · 25 questions", systemImage: "shield.checkered").frame(maxWidth: .infinity, alignment: .leading).padding(14) }.buttonStyle(.bordered)
+                    Button("Export flashcards (CSV)", systemImage: "square.and.arrow.up") { exporting = true }.buttonStyle(.bordered)
+                    if let exportError { Text(exportError).foregroundStyle(.red) }
+                }.padding(20).background(Color.orange.opacity(0.09), in: RoundedRectangle(cornerRadius: 24))
             }
-            Section("Recall arcade") {
-                NavigationLink("Web quiz · 25 questions") { QuizView(questions: store.curriculum?.questions.filter { $0.id.hasPrefix("web-") } ?? []) }
-                NavigationLink("Cybersecurity quiz · 25 questions") { QuizView(questions: store.curriculum?.questions.filter { $0.id.hasPrefix("cyber-") } ?? []) }
-                Button("Export flashcards (CSV)", systemImage: "square.and.arrow.up") { exporting = true }
-                if let exportError { Text(exportError).foregroundStyle(.red) }
-            }
-        }.navigationTitle("StackSprint")
+            .padding(.horizontal, 18).padding(.top, 72).padding(.bottom, 110).frame(maxWidth: 980)
+        }.navigationTitle("StackSprint").navigationBarTitleDisplayMode(.inline)
         .fileExporter(isPresented: $exporting, document: FlashcardDocument(lessons: store.curriculum?.lessons ?? []), contentType: .commaSeparatedText, defaultFilename: "StackSprint-flashcards") { result in
             if case .failure(let error) = result { exportError = error.localizedDescription }
         }
+    }
+    private func shortName(_ value: String) -> String { value == "Web development" ? "Web" : value }
+    private func categoryIcon(_ value: String) -> String { value == "Web development" ? "globe" : value == "Python" ? "chevron.left.forwardslash.chevron.right" : "shield.fill" }
+    private func lessonColor(forCategory value: String) -> Color { value == "Python" ? .orange : value == "Cybersecurity" ? .purple : .blue }
+    private func lessonColor(_ lesson: Lesson) -> Color {
+        if lesson.category == "Python" { return .orange }
+        if lesson.category == "Cybersecurity" { return .purple }
+        if lesson.id == "web-fullstack" || lesson.id == "web-request-response" { return .purple }
+        if ["web-server", "web-database", "web-api", "web-authentication", "web-backend"].contains(lesson.id) { return .mint }
+        return .blue
+    }
+    private func cardLabel(_ lesson: Lesson) -> String {
+        let web: [String: String] = ["web-html": "Front-end foundation", "web-css": "Front-end foundation", "web-javascript": "Front-end behavior", "web-dom": "Front-end behavior", "web-frontend": "Front-end role", "web-server": "Back-end engine", "web-database": "Back-end engine", "web-api": "Back-end connection", "web-authentication": "Back-end protection", "web-backend": "Back-end role", "web-request-response": "The connection", "web-fullstack": "Across the stack"]
+        return web[lesson.id] ?? lesson.clue
     }
 }
 struct LessonView: View {
