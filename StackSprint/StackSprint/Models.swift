@@ -38,6 +38,7 @@ struct ProgressRow: Codable {
 
 @MainActor final class LearningStore: ObservableObject {
     @Published var completed: Set<String> = []
+    @Published private(set) var practicedDays: Set<String> = []
     @Published var curriculum: Curriculum?
     @Published var error: String?
     private var namespace = "guest"
@@ -50,13 +51,32 @@ struct ProgressRow: Codable {
     func switchUser(_ id: String?) {
         namespace = id ?? "guest"
         completed = Set(UserDefaults.standard.stringArray(forKey: "native.completed.\(namespace)") ?? [])
+        practicedDays = Set(UserDefaults.standard.stringArray(forKey: "native.practiceDays.\(namespace)") ?? [])
     }
 
-    func complete(_ id: String) { completed.insert(id); persist() }
+    func complete(_ id: String) { completed.insert(id); practicedDays.insert(Self.dayKey(Date())); persist() }
 
     func merge(_ rows: [ProgressRow]) { completed.formUnion(rows.map(\.lesson_id)); persist() }
 
     private func persist() {
         UserDefaults.standard.set(Array(completed), forKey: "native.completed.\(namespace)")
+        UserDefaults.standard.set(Array(practicedDays), forKey: "native.practiceDays.\(namespace)")
+    }
+
+    var currentStreak: Int {
+        let calendar = Calendar.current
+        var date = calendar.startOfDay(for: Date())
+        var count = 0
+        while practicedDays.contains(Self.dayKey(date)) {
+            count += 1
+            guard let previous = calendar.date(byAdding: .day, value: -1, to: date) else { break }
+            date = previous
+        }
+        return count
+    }
+
+    private static func dayKey(_ date: Date) -> String {
+        let parts = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
     }
 }

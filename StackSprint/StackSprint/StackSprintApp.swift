@@ -524,10 +524,21 @@ struct LearnView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                VStack(alignment: .leading, spacing: 14) {
-                    Text("LEARN · PLAY · REMEMBER").font(.caption.bold()).tracking(1.4).foregroundStyle(.mint)
-                    Text("Pick a power-up.").font(.system(.largeTitle, design: .rounded, weight: .bold))
-                    Text("Tap a card, make a prediction, then try the idea yourself.").font(.title3).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("YOUR POCKET CODING ARCADE").font(.caption.bold()).tracking(1.5).foregroundStyle(.mint)
+                    HStack(alignment: .center, spacing: 18) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Little lessons.\nReal superpowers.").font(.system(.largeTitle, design: .rounded, weight: .bold))
+                            Text("Learn a little. Build something yours.").font(.title3).foregroundStyle(.secondary)
+                            Text("No hearts to lose. Mistakes are welcome.").font(.subheadline).foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 4)
+                        VStack(spacing: 2) {
+                            BiteAvatar().frame(width: 74, height: 100)
+                            Text("I’ve got you.").font(.caption.bold()).foregroundStyle(.mint)
+                        }
+                    }
+                    Text("Tap a card, make a prediction, then try the idea yourself.").font(.subheadline).foregroundStyle(.secondary)
                     HStack(spacing: 12) {
                         ProgressView(value: Double(store.completed.count), total: Double(total)).tint(.mint)
                         Text("\(store.completed.count) / \(total)").font(.system(.caption, design: .monospaced).bold())
@@ -615,6 +626,36 @@ struct LearnView: View {
                         .accessibilityHint("Shows a preview and start button")
                     }
                 }
+
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("MY CODING STREAK").font(.caption.bold()).tracking(1.3).foregroundStyle(.secondary)
+                            Text("\(store.currentStreak) \(store.currentStreak == 1 ? "day" : "days")").font(.system(size: 46, weight: .bold, design: .rounded))
+                        }
+                        Spacer()
+                        Image(systemName: "flame.fill").font(.system(size: 34)).foregroundStyle(.orange)
+                            .frame(width: 64, height: 64).background(.orange.opacity(0.14), in: RoundedRectangle(cornerRadius: 20))
+                    }
+                    Text(store.currentStreak == 0 ? "Your first tiny win starts today. You belong here." : "You showed up today. Keep the spark going with one small lesson tomorrow.")
+                        .font(.title3)
+                    HStack(spacing: 9) {
+                        ForEach(0..<7, id: \.self) { day in
+                            ZStack {
+                                Circle().fill(day < min(store.currentStreak, 7) ? Color.orange : SprintPalette.card)
+                                Image(systemName: day < min(store.currentStreak, 7) ? "flame.fill" : "circle.dotted")
+                                    .font(.caption).foregroundStyle(day < min(store.currentStreak, 7) ? .white : .secondary)
+                            }.frame(width: 38, height: 38)
+                        }
+                    }
+                    Text("Real learning activity · saved on this device").font(.caption).foregroundStyle(.secondary)
+                    ShareLink(item: "I’m on a \(store.currentStreak)-day coding streak in StackSprint! Want to build one tiny win with me?") {
+                        Label("Share my streak", systemImage: "square.and.arrow.up").font(.headline).padding(.vertical, 4)
+                    }.buttonStyle(.bordered)
+                }
+                .padding(20)
+                .background(Color.orange.opacity(0.11), in: RoundedRectangle(cornerRadius: 26))
+                .overlay(RoundedRectangle(cornerRadius: 26).stroke(Color.orange.opacity(0.35), lineWidth: 1.5))
 
                 VStack(alignment: .leading, spacing: 14) {
                     Text("RECALL ARCADE").font(.caption.bold()).tracking(1.3).foregroundStyle(.orange)
