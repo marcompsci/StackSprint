@@ -123,7 +123,7 @@ struct CourseMenuView: View {
         case 2: LayerChallengeView()
         case 3: GlossaryView()
         case 4: CybersecurityCourseView()
-        case 5: CourseCategoryView(title: "Python essentials", category: "Python")
+        case 5: PythonEssentialsView()
         case 7: TogetherView()
         case 8: ProjectPlaygroundView(initialTrack: .design)
         default: ProjectPlaygroundView(initialTrack: .build)
@@ -212,6 +212,116 @@ struct CourseCategoryView: View {
     let title: String, category: String
     @EnvironmentObject private var store: LearningStore
     var body: some View { List(store.curriculum?.lessons.filter { $0.category == category } ?? []) { lesson in NavigationLink { LessonView(lesson: lesson) } label: { VStack(alignment: .leading) { Text(lesson.term).font(.headline); Text(lesson.clue).font(.caption).foregroundStyle(.secondary) }.padding(.vertical, 6) } }.navigationTitle(title) }
+}
+
+struct PythonEssentialsView: View {
+    @EnvironmentObject private var store: LearningStore
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var mode = "Flashcards"
+    @State private var index = 0
+    @State private var revealed = false
+    private let modes = ["Flashcards", "Output sprint", "Type detective", "Bug rescue"]
+    private var lessons: [Lesson] { store.curriculum?.lessons.filter { $0.category == "Python" } ?? [] }
+    private var lesson: Lesson? { lessons.isEmpty ? nil : lessons[min(index, lessons.count - 1)] }
+    private var practiced: Int { lessons.filter { store.completed.contains($0.id) }.count }
+    private var columns: [GridItem] { [GridItem(.adaptive(minimum: sizeClass == .compact ? 145 : 210), spacing: 14)] }
+    private var quiz: [Question] {
+        lessons.enumerated().map { number, item in
+            let distractors = (1...3).compactMap { offset in lessons.isEmpty ? nil : lessons[(number + offset) % lessons.count].definition }
+            return Question(id: "python-quiz-\(item.id)", question: item.clue, choices: [item.definition] + distractors, answer: 0, explanation: item.definition)
+        }
+    }
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("PYTHON ESSENTIALS · DAY 2 PRACTICE").font(.caption.bold()).tracking(1.4).foregroundStyle(.orange)
+                    Text("Small concepts.\nBig possibilities.").font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    Text("Learn → recreate → create → run. \(practiced)/\(lessons.count) cards practiced.")
+                        .font(.title3).foregroundStyle(.secondary)
+                    ProgressView(value: Double(practiced), total: Double(max(lessons.count, 1))).tint(.orange)
+                }
+
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 135), spacing: 10)], spacing: 10) {
+                    ForEach(modes, id: \.self) { item in
+                        Button {
+                            withAnimation(.easeOut(duration: 0.18)) { mode = item; revealed = false }
+                        } label: {
+                            Text(item).font(.headline).frame(maxWidth: .infinity, minHeight: 48)
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(mode == item ? Color(red: 0.05, green: 0.18, blue: 0.16) : .primary)
+                        .background(mode == item ? Color.mint.opacity(0.32) : SprintPalette.card, in: RoundedRectangle(cornerRadius: 16))
+                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(mode == item ? Color.mint : Color.secondary.opacity(0.25), lineWidth: 1.5))
+                    }
+                    NavigationLink { QuizView(questions: quiz) } label: {
+                        Text("Full quiz").font(.headline).frame(maxWidth: .infinity, minHeight: 48)
+                    }.buttonStyle(.plain).background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16))
+                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.secondary.opacity(0.25), lineWidth: 1.5))
+                }
+
+                if let lesson {
+                    VStack(alignment: .leading, spacing: 18) {
+                        HStack {
+                            Text("Card \(index + 1) / \(lessons.count)").font(.system(.subheadline, design: .monospaced))
+                            Spacer()
+                            if store.completed.contains(lesson.id) { Label("Practiced", systemImage: "checkmark.seal.fill").font(.caption.bold()).foregroundStyle(.green) }
+                        }
+                        Text(cardTitle(lesson)).font(.system(.largeTitle, design: .rounded, weight: .bold))
+                        Text(cardPrompt(lesson)).font(.title3)
+                        if mode == "Output sprint" { Text(lesson.code).font(.system(.body, design: .monospaced)).padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Color.black.opacity(0.18), in: RoundedRectangle(cornerRadius: 14)) }
+                        Button(revealed ? "Hide answer" : "Reveal & practice", systemImage: revealed ? "eye.slash" : "sparkles") {
+                            withAnimation(reduceMotion ? .easeOut(duration: 0.12) : .spring(response: 0.32, dampingFraction: 0.85)) { revealed.toggle() }
+                        }.buttonStyle(.borderedProminent).tint(.orange)
+                        if revealed {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text(lesson.definition).font(.headline)
+                                if mode != "Output sprint" && !lesson.code.isEmpty { Text(lesson.code).font(.system(.body, design: .monospaced)).padding(12).frame(maxWidth: .infinity, alignment: .leading).background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 12)) }
+                                NavigationLink { LessonView(lesson: lesson) } label: { Label("Recreate it, then make it yours", systemImage: "keyboard").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12) }.buttonStyle(.borderedProminent).tint(.mint)
+                            }.transition(.move(edge: .top).combined(with: .opacity))
+                        }
+                        HStack {
+                            Button("Previous", systemImage: "arrow.left") { move(-1) }.buttonStyle(.bordered).disabled(index == 0)
+                            Button("Next", systemImage: "arrow.right") { move(1) }.buttonStyle(.bordered).disabled(index >= lessons.count - 1)
+                        }
+                        Text("Complete both checkpoints: recreate the example, then build your own variation from memory.").font(.subheadline).foregroundStyle(.secondary)
+                    }
+                    .padding(sizeClass == .compact ? 18 : 28)
+                    .background(SprintPalette.card.opacity(0.82), in: RoundedRectangle(cornerRadius: 28))
+                }
+
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("YOUR PYTHON TOOLBOX").font(.caption.bold()).tracking(1.3).foregroundStyle(.orange)
+                    Text("Tap a concept to jump to its card.").foregroundStyle(.secondary)
+                    LazyVGrid(columns: columns, spacing: 14) {
+                        ForEach(Array(lessons.enumerated()), id: \.element.id) { number, item in
+                            Button {
+                                withAnimation(.easeOut(duration: 0.18)) { index = number; revealed = false }
+                            } label: {
+                                VStack(alignment: .leading, spacing: 9) {
+                                    HStack { Circle().fill(.orange).frame(width: 10); Text(item.term).font(.headline).foregroundStyle(.primary); Spacer(); if store.completed.contains(item.id) { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) } }
+                                    Text(item.clue).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                                }.padding(16).frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
+                                    .background(index == number ? Color.orange.opacity(0.15) : SprintPalette.card.opacity(0.72), in: RoundedRectangle(cornerRadius: 20))
+                                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(index == number ? Color.orange : Color.secondary.opacity(0.18), lineWidth: index == number ? 2 : 1))
+                            }.buttonStyle(.plain)
+                        }
+                    }
+                }
+                DisclosureGroup("Lesson sources & Python 3 notes") {
+                    Text("Practice covers variables, assignment, built-in functions, types, casting, collections, unpacking, and number tools. Run experiments in StackSprint Studio using Python 3 behavior.").font(.subheadline).foregroundStyle(.secondary).padding(.top, 8)
+                }.font(.headline)
+            }.padding(.horizontal, 20).padding(.top, 24).padding(.bottom, 110).frame(maxWidth: 980)
+        }.navigationTitle("Python essentials").navigationBarTitleDisplayMode(.inline).modifier(SprintTheme())
+    }
+    private func move(_ amount: Int) { index = min(max(0, index + amount), max(lessons.count - 1, 0)); revealed = false }
+    private func cardTitle(_ lesson: Lesson) -> String {
+        switch mode { case "Output sprint": return "Predict the output"; case "Type detective": return "Type detective"; case "Bug rescue": return "Bug rescue"; default: return lesson.term }
+    }
+    private func cardPrompt(_ lesson: Lesson) -> String {
+        switch mode { case "Output sprint": return "Read the code before you run it. What will Python print?"; case "Type detective": return "Which Python type or conversion makes this idea work? \(lesson.clue)"; case "Bug rescue": return "Spot the likely beginner mistake, explain it, then repair the example."; default: return lesson.clue }
+    }
 }
 
 struct CybersecurityCourseView: View {
