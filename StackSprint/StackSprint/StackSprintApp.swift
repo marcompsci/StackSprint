@@ -521,7 +521,172 @@ struct GlossaryView: View {
 }
 struct DailyPracticeView: View {
     @EnvironmentObject private var store: LearningStore
-    var body: some View { ScrollView { VStack(alignment: .leading, spacing: 20) { Text("A tiny win for today").font(.largeTitle.bold()); Text("One card, one prediction, one line of code.").foregroundStyle(.secondary); NavigationLink("Start rapid cards") { RapidLearningDeck() }.buttonStyle(.borderedProminent); NavigationLink("Open the studio") { StudioView() }.buttonStyle(.bordered) }.padding(24).frame(maxWidth: .infinity, alignment: .leading) }.navigationTitle("Daily Sprint") }
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @State private var recallIndex = 0
+    @State private var selectedChoice: Int?
+    @State private var projectsBuilt = 0
+
+    private var questions: [Question] {
+        let all = store.curriculum?.questions ?? []
+        guard !all.isEmpty else { return [] }
+        let featured = all.first { $0.id == "cyber-17" }
+        let others = all.filter { $0.id != featured?.id }
+        let day = Calendar.current.ordinality(of: .day, in: .era, for: Date()) ?? 0
+        let rotating = (0..<min(3 - (featured == nil ? 0 : 1), others.count)).map { others[(day + $0) % others.count] }
+        return (featured.map { [$0] } ?? []) + rotating
+    }
+    private var recallCount: Int { questions.filter { store.recalledToday($0.id) }.count }
+    private var completedWeb: Int { store.completed.filter { $0.hasPrefix("web-") }.count }
+    private var completedSafety: Int { store.completed.filter { $0.hasPrefix("cyber-") }.count }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 26) {
+                VStack(alignment: .leading, spacing: 13) {
+                    Text("YOUR DAILY SHIPPING HABIT").font(.caption.bold()).tracking(1.5).foregroundStyle(.blue)
+                    Text("A little practice.\nSomething real.").font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    Text("Recall a concept, rebuild a skill, then make one small thing your own.")
+                        .font(.title3).foregroundStyle(.secondary)
+                }
+
+                HStack(spacing: sizeClass == .compact ? 20 : 38) {
+                    metric("\(store.currentStreak)", "day streak", icon: "flame.fill")
+                    metric("\(store.practiceXP + projectsBuilt * 25)", "XP earned", icon: "bolt.fill")
+                    metric("\(projectsBuilt)/2", "starter builds", icon: "gamecontroller.fill")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 4)
+
+                if sizeClass == .compact {
+                    VStack(spacing: 16) { recallPanel; buildPanel }
+                } else {
+                    HStack(alignment: .top, spacing: 18) {
+                        recallPanel.frame(maxWidth: .infinity)
+                        buildPanel.frame(maxWidth: .infinity)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 15) {
+                    Text("Your path to shipping").font(.title2.bold())
+                    HStack(alignment: .top, spacing: 15) {
+                        Image(systemName: recallCount == questions.count && !questions.isEmpty ? "checkmark.diamond.fill" : "diamond")
+                            .foregroundStyle(.purple).font(.title2)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("\(completedWeb)/12 web concepts · \(completedSafety)/12 safety terms · \(recallCount)/\(questions.count) recall reps")
+                                .foregroundStyle(.secondary)
+                            Text("One recalled idea and one remix can become something you can share.")
+                                .font(.subheadline).foregroundStyle(.secondary)
+                        }
+                    }
+                    NavigationLink { RapidLearningDeck() } label: { Label("Review flashcards", systemImage: "rectangle.stack.fill") }
+                        .buttonStyle(.bordered)
+                }
+                .padding(22)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(SprintPalette.card.opacity(0.75), in: RoundedRectangle(cornerRadius: 26))
+            }
+            .padding(.horizontal, 20).padding(.top, 26).padding(.bottom, 110).frame(maxWidth: 980)
+        }
+        .navigationTitle("Daily practice").navigationBarTitleDisplayMode(.inline).modifier(SprintTheme())
+        .onAppear {
+            projectsBuilt = ["Design Games", "Building Games"].filter { UserDefaults.standard.string(forKey: "project.\($0).passing") != nil }.count
+            recallIndex = questions.firstIndex { !store.recalledToday($0.id) } ?? questions.count
+        }
+    }
+
+    private func metric(_ value: String, _ label: String, icon: String) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Image(systemName: icon).font(.caption).foregroundStyle(.orange)
+            Text(value).font(.system(size: sizeClass == .compact ? 27 : 36, weight: .bold, design: .rounded)).minimumScaleFactor(0.75).lineLimit(1)
+            Text(label).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        }.frame(maxWidth: sizeClass == .compact ? .infinity : 140, alignment: .leading)
+    }
+
+    private func recallChoice(_ question: Question, choice: Int) -> some View {
+        let isSelected = selectedChoice == choice
+        let isCorrect = choice == question.answer
+        let accent: Color = isCorrect ? .mint : .orange
+        let background = isSelected ? accent.opacity(0.22) : SprintPalette.card
+        let border = isSelected ? accent : Color.secondary.opacity(0.15)
+        return Button {
+            selectedChoice = choice
+            if isCorrect { store.recordDailyRecall(question.id) }
+        } label: {
+            HStack(spacing: 12) {
+                Text(question.choices[choice]).multilineTextAlignment(.leading)
+                Spacer(minLength: 2)
+                if isSelected { Image(systemName: isCorrect ? "checkmark.circle.fill" : "arrow.clockwise.circle.fill") }
+            }
+            .font(.subheadline.weight(.medium))
+            .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+            .padding(.horizontal, 15)
+        }
+        .buttonStyle(.plain)
+        .background(background, in: RoundedRectangle(cornerRadius: 15))
+        .overlay(RoundedRectangle(cornerRadius: 15).stroke(border, lineWidth: 1.4))
+        .disabled(selectedChoice != nil)
+    }
+
+    private var recallPanel: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("3 QUICK RECALL REPS · \(recallCount)/\(questions.count)")
+                .font(.caption.bold()).tracking(1.2).foregroundStyle(.blue)
+            if questions.isEmpty {
+                Text("Questions will appear when the course loads.").foregroundStyle(.secondary)
+            } else if recallIndex >= questions.count {
+                Image(systemName: "checkmark.seal.fill").font(.system(size: 48)).foregroundStyle(.mint)
+                Text("Today’s recall is complete!").font(.title2.bold())
+                Text("Come back tomorrow for a new mix, or keep building now.").foregroundStyle(.secondary)
+            } else {
+                let question = questions[recallIndex]
+                Text(question.question).font(.title2.bold()).fixedSize(horizontal: false, vertical: true)
+                ForEach(question.choices.indices, id: \.self) { choice in
+                    recallChoice(question, choice: choice)
+                }
+                if let selectedChoice {
+                    Text(selectedChoice == question.answer ? "That’s it! \(question.explanation)" : "Good try. \(question.explanation)")
+                        .font(.subheadline).foregroundStyle(selectedChoice == question.answer ? .mint : .orange)
+                    Button(selectedChoice == question.answer ? "Next recall →" : "Try again") {
+                        if selectedChoice == question.answer { recallIndex += 1 }
+                        self.selectedChoice = nil
+                    }.buttonStyle(.borderedProminent).tint(.blue)
+                } else {
+                    Text("Choose the best answer to keep today’s practice moving.").font(.subheadline).foregroundStyle(.secondary)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(20).frame(maxWidth: .infinity, minHeight: sizeClass == .compact ? 350 : 480, alignment: .topLeading)
+        .background(Color.indigo.opacity(0.08), in: RoundedRectangle(cornerRadius: 26))
+        .overlay(RoundedRectangle(cornerRadius: 26).stroke(Color.indigo.opacity(0.12)))
+    }
+
+    private var buildPanel: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("REBUILD & REMIX").font(.caption.bold()).tracking(1.2).foregroundStyle(.blue)
+            Text("Your next tiny build").font(.title2.bold())
+            Text("Complete a mission, play it, then change a color or a rule. Make the result yours.")
+                .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            NavigationLink { ProjectPlaygroundView(initialTrack: .build) } label: {
+                Label(projectsBuilt == 0 ? "Start a build mission" : "Remix your project", systemImage: "hammer.fill")
+                    .font(.headline).frame(maxWidth: .infinity, minHeight: 52)
+            }.buttonStyle(.borderedProminent).tint(.mint)
+            NavigationLink { ProjectPlaygroundView(initialTrack: .design) } label: {
+                Label("Try a design mission", systemImage: "paintpalette.fill")
+                    .font(.subheadline.bold()).frame(maxWidth: .infinity, minHeight: 48)
+            }.buttonStyle(.bordered)
+            NavigationLink { StudioView() } label: {
+                Label("Explore the 60-project route", systemImage: "square.grid.2x2.fill")
+                    .font(.subheadline.bold()).frame(maxWidth: .infinity, minHeight: 48)
+            }.buttonStyle(.bordered)
+            Text("\(store.practicedDays.count) active \(store.practicedDays.count == 1 ? "day" : "days") · progress saved on this device")
+                .font(.subheadline).foregroundStyle(.secondary)
+            Spacer(minLength: 0)
+        }
+        .padding(20).frame(maxWidth: .infinity, minHeight: sizeClass == .compact ? 260 : 480, alignment: .topLeading)
+        .background(Color.indigo.opacity(0.08), in: RoundedRectangle(cornerRadius: 26))
+        .overlay(RoundedRectangle(cornerRadius: 26).stroke(Color.indigo.opacity(0.12)))
+    }
 }
 struct LayerChallengeView: View {
     var body: some View { ScrollView { VStack(alignment: .leading, spacing: 18) { Text("Place the layers").font(.largeTitle.bold()); ForEach([("Front-end", "What people see and use"), ("Back-end", "Logic, data, and rules"), ("Full-stack", "The bridge across both sides")], id: \.0) { layer in HStack { Image(systemName: "square.stack.3d.up.fill").foregroundStyle(.mint); VStack(alignment: .leading) { Text(layer.0).font(.headline); Text(layer.1).foregroundStyle(.secondary) } }.padding().frame(maxWidth: .infinity, alignment: .leading).background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 18)) } }.padding(24) }.navigationTitle("Layer challenge") }

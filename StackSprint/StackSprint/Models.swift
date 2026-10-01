@@ -39,6 +39,7 @@ struct ProgressRow: Codable {
 @MainActor final class LearningStore: ObservableObject {
     @Published var completed: Set<String> = []
     @Published private(set) var practicedDays: Set<String> = []
+    @Published private(set) var correctRecallAnswers: Set<String> = []
     @Published var curriculum: Curriculum?
     @Published var error: String?
     private var namespace = "guest"
@@ -52,15 +53,29 @@ struct ProgressRow: Codable {
         namespace = id ?? "guest"
         completed = Set(UserDefaults.standard.stringArray(forKey: "native.completed.\(namespace)") ?? [])
         practicedDays = Set(UserDefaults.standard.stringArray(forKey: "native.practiceDays.\(namespace)") ?? [])
+        correctRecallAnswers = Set(UserDefaults.standard.stringArray(forKey: "native.dailyRecall.\(namespace)") ?? [])
     }
 
     func complete(_ id: String) { completed.insert(id); practicedDays.insert(Self.dayKey(Date())); persist() }
+
+    func recordDailyRecall(_ questionID: String) {
+        correctRecallAnswers.insert("\(Self.dayKey(Date()))|\(questionID)")
+        practicedDays.insert(Self.dayKey(Date()))
+        persist()
+    }
+
+    func recalledToday(_ questionID: String) -> Bool {
+        correctRecallAnswers.contains("\(Self.dayKey(Date()))|\(questionID)")
+    }
+
+    var practiceXP: Int { completed.count * 10 + correctRecallAnswers.count * 5 }
 
     func merge(_ rows: [ProgressRow]) { completed.formUnion(rows.map(\.lesson_id)); persist() }
 
     private func persist() {
         UserDefaults.standard.set(Array(completed), forKey: "native.completed.\(namespace)")
         UserDefaults.standard.set(Array(practicedDays), forKey: "native.practiceDays.\(namespace)")
+        UserDefaults.standard.set(Array(correctRecallAnswers), forKey: "native.dailyRecall.\(namespace)")
     }
 
     var currentStreak: Int {
