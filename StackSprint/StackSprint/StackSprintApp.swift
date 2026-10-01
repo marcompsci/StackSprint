@@ -112,8 +112,8 @@ struct CourseMenuView: View {
         case 4: CybersecurityCourseView()
         case 5: CourseCategoryView(title: "Python essentials", category: "Python")
         case 7: TogetherView()
-        case 8: ProjectPortalView(title: "Design games", subtitle: "30 guided design projects", hash: "design-games")
-        default: ProjectPortalView(title: "Building games", subtitle: "30 hands-on coding projects", hash: "building-games")
+        case 8: ProjectPlaygroundView(initialTrack: .design)
+        default: ProjectPlaygroundView(initialTrack: .build)
         }
     }
 }
@@ -328,9 +328,97 @@ struct DailyPracticeView: View {
 struct LayerChallengeView: View {
     var body: some View { ScrollView { VStack(alignment: .leading, spacing: 18) { Text("Place the layers").font(.largeTitle.bold()); ForEach([("Front-end", "What people see and use"), ("Back-end", "Logic, data, and rules"), ("Full-stack", "The bridge across both sides")], id: \.0) { layer in HStack { Image(systemName: "square.stack.3d.up.fill").foregroundStyle(.mint); VStack(alignment: .leading) { Text(layer.0).font(.headline); Text(layer.1).foregroundStyle(.secondary) } }.padding().frame(maxWidth: .infinity, alignment: .leading).background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 18)) } }.padding(24) }.navigationTitle("Layer challenge") }
 }
-struct ProjectPortalView: View {
-    let title: String, subtitle: String, hash: String
-    var body: some View { VStack(spacing: 20) { Image(systemName: hash == "design-games" ? "paintpalette.fill" : "gamecontroller.fill").font(.system(size: 62)).foregroundStyle(.mint); Text(title).font(.largeTitle.bold()); Text(subtitle).foregroundStyle(.secondary); NavigationLink("Open all projects") { StudioView() }.buttonStyle(.borderedProminent) }.padding(24).navigationTitle(title) }
+enum ProjectTrack: String, CaseIterable { case design = "Design Games"; case build = "Building Games" }
+struct ProjectPlaygroundView: View {
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @State private var track: ProjectTrack
+    @State private var code: String
+    @State private var openStep = 1
+    @State private var terminal = ""
+    @State private var log = "Ready."
+    @State private var passed = false
+    @State private var previewing = false
+    init(initialTrack: ProjectTrack) {
+        _track = State(initialValue: initialTrack)
+        _code = State(initialValue: Self.starter(for: initialTrack))
+    }
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                HStack(alignment: .bottom, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 9) {
+                        Text("COURSE 03 · PROJECT PLAYGROUND").font(.caption.bold()).tracking(1.3).foregroundStyle(.blue)
+                        Text("Game Project Lab").font(.largeTitle.bold())
+                        Text("Write real code, test your ideas, and play what you build. 30 design missions and 30 game builds take you from your first edit to a pocket portfolio.").font(.title3).foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
+                    if sizeClass != .compact { Label("60 projects\n30 design · 30 build", systemImage: "sparkle").font(.subheadline.bold()).padding(18).background(.mint.opacity(0.12), in: RoundedRectangle(cornerRadius: 20)) }
+                }
+                HStack(spacing: 12) { ForEach(ProjectTrack.allCases, id: \.self) { item in
+                    Button { switchTrack(item) } label: {
+                        HStack { Image(systemName: item == .design ? "pencil.and.outline" : "curlybraces"); Text(item.rawValue).font(.headline); Spacer(); Text("30 missions").font(.caption.monospaced()).foregroundStyle(.secondary) }
+                            .padding(16).frame(maxWidth: .infinity).background(track == item ? Color.mint.opacity(0.16) : Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 18))
+                            .overlay(RoundedRectangle(cornerRadius: 18).stroke(track == item ? Color.mint : Color.white.opacity(0.12), lineWidth: 1.5))
+                    }.buttonStyle(.plain)
+                }}
+                VStack(alignment: .leading, spacing: 22) {
+                    HStack { Text(track == .design ? "DESIGN STUDIO · CSS" : "BUILD STUDIO · JAVASCRIPT").font(.caption.bold()).tracking(1.3).foregroundStyle(.blue); Spacer(); Text("1 / 30").font(.body.monospaced()).foregroundStyle(.mint).padding(.horizontal, 14).padding(.vertical, 9).background(.mint.opacity(0.12), in: RoundedRectangle(cornerRadius: 12)) }
+                    Text(track == .design ? "🎨 Palette Pop" : "🕹️ Tap Dash").font(.largeTitle.bold())
+                    Text(track == .design ? "A tiny arcade café needs a three-color look that feels fizzy and friendly. Build a color mission that makes one bright choice without losing readability." : "Build a one-button reflex game. Tap the target, update the score, and make each successful hit feel quick and satisfying.")
+                        .font(.title3).foregroundStyle(.secondary).lineSpacing(6)
+                    HStack { ForEach(["01 Learn & edit", "02 Run checks", "03 Play & remix"], id: \.self) { Text($0).font(.caption.bold()).padding(10).background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 10)) } }
+                    ForEach(1...3, id: \.self) { step in
+                        VStack(alignment: .leading, spacing: 12) {
+                            Button { withAnimation(.easeOut(duration: 0.18)) { openStep = openStep == step ? 0 : step } } label: {
+                                HStack { Text("\(step)").foregroundStyle(.blue).frame(width: 34, height: 34).background(.blue.opacity(0.12), in: RoundedRectangle(cornerRadius: 9)); Text(stepTitle(step)).font(.headline); Spacer(); Image(systemName: openStep == step ? "chevron.up" : "chevron.down") }.frame(maxWidth: .infinity)
+                            }.buttonStyle(.plain)
+                            if openStep == step {
+                                Text(stepInstruction(step)).foregroundStyle(.secondary)
+                                DisclosureGroup("Show a worked example") { Text(workedExample(step)).font(.system(.subheadline, design: .monospaced)).foregroundStyle(.mint).padding(.top, 8).textSelection(.enabled) }
+                            }
+                        }.padding(16).background(Color.white.opacity(0.035), in: RoundedRectangle(cornerRadius: 18)).overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(0.12)))
+                    }
+                    codeWorkspace
+                    playableResult
+                }.padding(sizeClass == .compact ? 18 : 28).background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 28))
+            }.padding(22).frame(maxWidth: 1000)
+        }.navigationTitle("Project Playground").modifier(SprintTheme())
+        .onAppear { if let saved = UserDefaults.standard.string(forKey: draftKey) { code = saved } }
+    }
+    private var codeWorkspace: some View {
+        VStack(spacing: 0) {
+            HStack { Circle().fill(.mint).frame(width: 10); Text(track == .design ? "styles.css" : "game.js").font(.body.monospaced()); Spacer(); Text(track == .design ? "CSS · local workspace" : "JavaScript · local workspace").font(.caption.monospaced()).foregroundStyle(.secondary) }.padding(16).background(Color(red: 0.10, green: 0.15, blue: 0.25))
+            TextEditor(text: $code).font(.system(.body, design: .monospaced)).scrollContentBackground(.hidden).foregroundStyle(Color(red: 0.82, green: 0.91, blue: 0.94)).padding(14).frame(minHeight: 300).background(Color(red: 0.055, green: 0.09, blue: 0.15)).autocorrectionDisabled().textInputAutocapitalization(.never)
+            HStack { Button("▶ Run checks") { runChecks() }.buttonStyle(.borderedProminent).tint(.mint); Button("Play my game") { previewing = true }.buttonStyle(.bordered).disabled(!passed); Button("Preview design") { previewing = true }.buttonStyle(.bordered); Button("Save source ↓") { UserDefaults.standard.set(code, forKey: draftKey); log += "\nDraft saved on this device." }.buttonStyle(.bordered) }.padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Color(red: 0.055, green: 0.09, blue: 0.15))
+            VStack(alignment: .leading, spacing: 12) {
+                HStack { Text("TERMINAL").font(.caption.monospaced()); Spacer(); Text("Browser JavaScript & CSS workspace").font(.caption.monospaced()) }.foregroundStyle(.secondary)
+                Text(log).font(.system(.subheadline, design: .monospaced)).foregroundStyle(.mint).frame(maxWidth: .infinity, alignment: .leading)
+                HStack { Text("sprint $").font(.body.monospaced()).foregroundStyle(.mint); TextField("Type help, test, play, preview", text: $terminal).textFieldStyle(.plain).font(.body.monospaced()).onSubmit { runCommand() }; Button("Run") { runCommand() }.buttonStyle(.bordered) }
+            }.padding(16).background(Color(red: 0.035, green: 0.065, blue: 0.11))
+        }.clipShape(RoundedRectangle(cornerRadius: 22)).overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.white.opacity(0.16)))
+    }
+    private var playableResult: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack { Text("Your playable result").font(.title2.bold()); Spacer(); Button("Export game.html ↓") { log += "\nExport is available in the full Studio workspace." }.buttonStyle(.bordered).disabled(!passed) }
+            VStack(spacing: 14) {
+                Image(systemName: previewing ? (track == .design ? "paintpalette.fill" : "gamecontroller.fill") : "diamond").font(.system(size: 42)).foregroundStyle(.mint)
+                Text(previewing ? (passed ? "Your project is playable!" : "Design preview") : "Build it. Then bring it to life.").font(.headline)
+                Text(previewing ? previewText : "Pass the three code checks to unlock your game. Design previews are available while you work.").multilineTextAlignment(.center).foregroundStyle(.secondary)
+            }.padding(28).frame(maxWidth: .infinity, minHeight: 220).background(Color.white.opacity(0.035), in: RoundedRectangle(cornerRadius: 24)).overlay(RoundedRectangle(cornerRadius: 24).stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6])).foregroundStyle(.mint.opacity(0.65)))
+            HStack { Button("Practice from memory") { code = ""; passed = false; previewing = false }.buttonStyle(.bordered); Button("Restore last passing code") { if let saved = UserDefaults.standard.string(forKey: passKey) { code = saved; passed = true } }.buttonStyle(.bordered); Button("Next mission →") { log += "\nMission 2 unlocks after this project is saved." }.buttonStyle(.borderedProminent).tint(.mint).disabled(!passed) }
+            Text("Short prototypes, real code. The app supplies the display and controls; you implement the rules or visual design.").foregroundStyle(.secondary)
+        }
+    }
+    private var draftKey: String { "project.\(track.rawValue).draft" }
+    private var passKey: String { "project.\(track.rawValue).passing" }
+    private var previewText: String { track == .design ? "Your palette uses the deep arena, bright target, and readable text you coded." : "Tap Dash is ready: the target responds, the score updates, and your rules control the round." }
+    private func switchTrack(_ newTrack: ProjectTrack) { track = newTrack; code = UserDefaults.standard.string(forKey: "project.\(newTrack.rawValue).draft") ?? Self.starter(for: newTrack); passed = false; previewing = false; log = "Ready." }
+    private static func starter(for track: ProjectTrack) -> String { track == .design ? ".arena {\n  /* TODO: background-color */\n}\n\n.target {\n  /* TODO: background-color */\n}\n\n.arena {\n  /* TODO: color */\n}" : "let score = 0;\n\nconst target = document.querySelector('.target');\n\n// TODO: respond to a tap\n// TODO: update the score\n// TODO: start the game loop" }
+    private func stepTitle(_ step: Int) -> String { ["", track == .design ? "Set the visual foundation" : "Wire the first interaction", track == .design ? "Shape the interaction" : "Update the game state", track == .design ? "Polish for the player" : "Polish the game loop"][step] }
+    private func stepInstruction(_ step: Int) -> String { track == .design ? ["", "Select .arena and set background-color to #172554. Then run checks to see the change in the design preview.", "Give .target a bright background-color so the player knows where to tap.", "Set a readable color on .arena and preview the complete palette."][step] : ["", "Add an event listener to the target so a device tap triggers your game.", "Increase score inside the interaction and show the new value.", "Use requestAnimationFrame to keep the game loop smooth."][step] }
+    private func workedExample(_ step: Int) -> String { track == .design ? ["", ".arena { background-color: #172554; }", ".target { background-color: #5eead4; }", ".arena { color: white; }"][step] : ["", "target.addEventListener('click', hit);", "score += 1;", "requestAnimationFrame(loop);"][step] }
+    private func runChecks() { let lower = code.lowercased(); let foregroundRules = lower.replacingOccurrences(of: "background-color", with: ""); let checks = track == .design ? [lower.contains("#172554"), lower.contains(".target") && lower.contains("background-color"), foregroundRules.contains("color:")] : [lower.contains("addeventlistener"), lower.contains("score") && (lower.contains("+=") || lower.contains("score =")), lower.contains("requestanimationframe")]; let count = checks.filter { $0 }.count; passed = count == 3; log = "StackSprint Studio · \(track.rawValue)\n\(count) / 3 checks passed." + (passed ? "\nAll checks passed. Play unlocked!" : "\nKeep going — compare your code with the three steps."); if passed { UserDefaults.standard.set(code, forKey: passKey) } }
+    private func runCommand() { let command = terminal.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(); terminal = ""; switch command { case "test": runChecks(); case "play", "preview": previewing = true; log += "\nPreview opened."; case "clear": log = "Ready."; case "help": log += "\nCommands: help · test · play · preview · clear"; default: log += "\nUnknown command. Type help." } }
 }
 struct LearnView: View {
     @EnvironmentObject var store: LearningStore
