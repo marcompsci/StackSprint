@@ -9,11 +9,12 @@ import AVFoundation
 @main struct StackSprintApp: App {
     @StateObject private var store = LearningStore()
     @StateObject private var backend = Backend()
+    @AppStorage("appearance.mode") private var appearance = "dark"
     var body: some Scene {
         WindowGroup {
             RootView().environmentObject(store).environmentObject(backend)
                 .tint(.mint)
-                .preferredColorScheme(.dark)
+                .preferredColorScheme(appearance == "light" ? .light : .dark)
                 .modifier(SprintTheme())
                 .onAppear { store.switchUser(backend.session?.user.id) }
                 .onChange(of: backend.session?.user.id) { _, id in store.switchUser(id) }
@@ -24,6 +25,7 @@ struct RootView: View {
     @State private var showingBite = false
     @State private var showingMenu = false
     @AppStorage("onboarding.finished") private var welcomed = false
+    @AppStorage("appearance.mode") private var appearance = "dark"
     var body: some View {
         TabView {
             NavigationStack { LearnView().modifier(SprintTheme()) }.tabItem { Label("Learn", systemImage: "sparkles") }
@@ -32,20 +34,31 @@ struct RootView: View {
             NavigationStack { AccountView().modifier(SprintTheme()) }.tabItem { Label("Account", systemImage: "person.crop.circle") }
         }
         .overlay(alignment: .bottomTrailing) {
-            Button { showingBite = true } label: { BiteAvatar().frame(width: 66, height: 90) }
-                .buttonStyle(.plain).accessibilityLabel("Ask Bite, your coding assistant")
-                .padding(.trailing, 16).padding(.bottom, 60)
+            if welcomed {
+                Button { showingBite = true } label: { BiteAvatar().frame(width: 66, height: 90) }
+                    .buttonStyle(.plain).accessibilityLabel("Ask Bite, your coding assistant")
+                    .padding(.trailing, 16).padding(.bottom, 60)
+            }
         }
         .overlay(alignment: .topTrailing) {
-            Button { showingMenu = true } label: {
-                Image(systemName: "line.3.horizontal")
-                    .font(.title2.bold())
-                    .frame(width: 52, height: 52)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+            if welcomed { HStack(spacing: 10) {
+                Button { withAnimation(.easeInOut(duration: 0.2)) { appearance = appearance == "dark" ? "light" : "dark" } } label: {
+                    Image(systemName: appearance == "dark" ? "sun.max.fill" : "moon.fill")
+                        .font(.title3.bold()).frame(width: 52, height: 52)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(appearance == "dark" ? "Turn on light mode" : "Turn on dark mode")
+                Button { showingMenu = true } label: {
+                    Image(systemName: "line.3.horizontal")
+                        .font(.title2.bold())
+                        .frame(width: 52, height: 52)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Open course navigation")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Open course navigation")
-            .padding(.top, 8).padding(.trailing, 16)
+            .padding(.top, 8).padding(.trailing, 16) }
         }
         .sheet(isPresented: $showingBite) { BiteAssistantView() }
         .sheet(isPresented: $showingMenu) { CourseMenuView() }
@@ -725,8 +738,8 @@ struct BiteAvatar: View {
 }
 
 enum SprintPalette {
-    static let navy = Color(red: 0.094, green: 0.125, blue: 0.22)
-    static let card = Color(red: 0.21, green: 0.26, blue: 0.40)
+    static let navy = Color(uiColor: UIColor { traits in traits.userInterfaceStyle == .dark ? UIColor(red: 0.094, green: 0.125, blue: 0.22, alpha: 1) : UIColor(red: 0.955, green: 0.968, blue: 0.992, alpha: 1) })
+    static let card = Color(uiColor: UIColor { traits in traits.userInterfaceStyle == .dark ? UIColor(red: 0.21, green: 0.26, blue: 0.40, alpha: 1) : UIColor.white })
 }
 struct SprintTheme: ViewModifier {
     func body(content: Content) -> some View {
@@ -740,6 +753,7 @@ struct WelcomeAdventure: View {
     @AppStorage("onboarding.finished") private var finished = false
     @AppStorage("onboarding.goal") private var goal = "Build my first website"
     @AppStorage("onboarding.minutes") private var minutes = 5
+    @AppStorage("appearance.mode") private var appearance = "dark"
     @State private var step = 0
     @State private var correct = false
     @State private var feedback = "No pressure. This is a playground, not an exam."
@@ -750,24 +764,39 @@ struct WelcomeAdventure: View {
                 Spacer()
                 Button("Skip welcome") { finished = true }
             }
-            ProgressView(value: Double(step + 1), total: 4).tint(.mint)
-                .accessibilityLabel("Welcome step \(step + 1) of 4")
+            ProgressView(value: Double(step + 1), total: 5).tint(.mint)
+                .accessibilityLabel("Welcome step \(step + 1) of 5")
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
-                    Text(["Big ideas start\nwith a tiny hello.", "What will you make?", "A little time.\nA real habit.", "Your first tiny win."][step])
-                        .font(.system(.largeTitle, design: .rounded).bold())
-                    Text(["I’m Bite, your coding buddy. Learn a concept, try it yourself, then make something only you would make.", "Choose a starting intention. Every course stays available, and you can change this later.", "Choose a daily intention. No timers or penalties — just a little room to explore.", "Python can do math! What will this code print?"][step]).foregroundStyle(.secondary)
                     if step == 0 {
-                        ForEach(["① Learn a small idea", "② Type it. Remix it.", "③ Play what you build"], id: \.self) { Text($0).font(.headline).padding().frame(maxWidth: .infinity, alignment: .leading).background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 18)) }
+                        VStack(spacing: 20) {
+                            Text("Hello, user!").font(.system(size: 46, weight: .bold, design: .rounded)).multilineTextAlignment(.center)
+                            BiteAvatar().frame(width: 132, height: 180)
+                            Text("Hello, user!").font(.title2.bold()).padding(.horizontal, 24).padding(.vertical, 14).background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20)).overlay(alignment: .bottom) { Triangle().fill(SprintPalette.card).frame(width: 22, height: 12).offset(y: 10) }
+                            Text("I’m Bit, your coding buddy. We’ll learn a small idea, type it ourselves, and turn it into something you can play.").multilineTextAlignment(.center).foregroundStyle(.secondary)
+                        }.frame(maxWidth: .infinity).padding(.top, 20)
                     } else if step == 1 {
+                        Text("Choose your learning space").font(.system(.largeTitle, design: .rounded).bold())
+                        Text("Pick the home screen that feels easiest on your eyes. You can switch anytime with the button in the top-right corner.").foregroundStyle(.secondary)
+                        HStack(alignment: .top, spacing: 14) {
+                            themeChoice("dark", title: "Dark mode")
+                            themeChoice("light", title: "Light mode")
+                        }
+                    } else if step == 2 {
+                        Text("What will you make?").font(.system(.largeTitle, design: .rounded).bold())
+                        Text("Choose a starting intention. Every course stays available, and you can change this later.").foregroundStyle(.secondary)
                         ForEach(["Build my first website", "Make games", "Refresh my coding skills"], id: \.self) { choice in
                             choiceButton(choice, selected: goal == choice) { goal = choice }
                         }
-                    } else if step == 2 {
+                    } else if step == 3 {
+                        Text("A little time.\nA real habit.").font(.system(.largeTitle, design: .rounded).bold())
+                        Text("Choose a daily intention. No timers or penalties — just a little room to explore.").foregroundStyle(.secondary)
                         ForEach([3, 5, 10], id: \.self) { value in
                             choiceButton("\(value) minutes · \(value == 3 ? "Tiny spark" : value == 5 ? "Steady builder" : "Curious explorer")", selected: minutes == value) { minutes = value }
                         }
                     } else {
+                        Text("Your first tiny win.").font(.system(.largeTitle, design: .rounded).bold())
+                        Text("Python can do math! What will this code print?").foregroundStyle(.secondary)
                         Text("print(2 + 3)").font(.system(.title2, design: .monospaced)).padding().frame(maxWidth: .infinity).background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16))
                         ForEach(["23", "5", "Hello"], id: \.self) { choice in
                             choiceButton(choice, selected: correct && choice == "5") {
@@ -781,19 +810,19 @@ struct WelcomeAdventure: View {
             }
             HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(step == 3 && correct ? "“Look at you, already coding!”" : "“I’m right here with you.”").font(.callout).foregroundStyle(.secondary)
+                    Text(step == 4 && correct ? "“Look at you, already coding!”" : "“I’m right here with you.”").font(.callout).foregroundStyle(.secondary)
                     HStack {
                         if step > 0 { Button("Back") { step -= 1 }.buttonStyle(.bordered) }
-                        Button(step == 3 ? "Let’s start building" : step == 0 ? "Meet your adventure →" : "Continue →") {
-                            if step < 3 { step += 1 } else { finished = true }
-                        }.buttonStyle(.borderedProminent).tint(.mint).foregroundStyle(SprintPalette.navy)
-                            .disabled(step == 3 && !correct)
+                        Button(step == 4 ? "Let’s start building" : step == 0 ? "Choose my look →" : "Continue →") {
+                            if step < 4 { step += 1 } else { finished = true }
+                        }.buttonStyle(.borderedProminent).tint(.mint).foregroundStyle(Color(red: 0.06, green: 0.16, blue: 0.15))
+                            .disabled(step == 4 && !correct)
                     }
                 }
                 Spacer(minLength: 8)
                 BiteAvatar().frame(width: 66, height: 90)
             }
-        }.padding(24).background(SprintPalette.navy.ignoresSafeArea()).preferredColorScheme(.dark)
+        }.padding(24).background(SprintPalette.navy.ignoresSafeArea()).preferredColorScheme(appearance == "light" ? .light : .dark)
     }
     private func choiceButton(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -803,6 +832,35 @@ struct WelcomeAdventure: View {
                 .overlay(RoundedRectangle(cornerRadius: 16).stroke(selected ? Color.mint : .clear, lineWidth: 2))
         }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : [])
     }
+    private func themeChoice(_ mode: String, title: String) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) { appearance = mode }
+        } label: {
+            VStack(alignment: .leading, spacing: 12) {
+                ThemeHomePreview(dark: mode == "dark")
+                HStack { Text(title).font(.headline); Spacer(); Image(systemName: appearance == mode ? "checkmark.circle.fill" : "circle").foregroundStyle(appearance == mode ? .mint : .secondary) }
+            }.padding(10).background(appearance == mode ? Color.mint.opacity(0.15) : Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 20)).overlay(RoundedRectangle(cornerRadius: 20).stroke(appearance == mode ? Color.mint : Color.primary.opacity(0.12), lineWidth: 2))
+        }.buttonStyle(.plain).accessibilityAddTraits(appearance == mode ? .isSelected : [])
+    }
+}
+
+struct ThemeHomePreview: View {
+    let dark: Bool
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack { Circle().fill(.mint).frame(width: 10); RoundedRectangle(cornerRadius: 3).fill(foreground.opacity(0.7)).frame(width: 45, height: 7); Spacer(); Image(systemName: "line.3.horizontal").font(.caption) }
+            RoundedRectangle(cornerRadius: 10).fill(panel).frame(height: 54).overlay(alignment: .leading) { VStack(alignment: .leading, spacing: 5) { RoundedRectangle(cornerRadius: 2).fill(foreground).frame(width: 70, height: 7); RoundedRectangle(cornerRadius: 2).fill(foreground.opacity(0.45)).frame(width: 92, height: 5) }.padding(10) }
+            HStack { ForEach(0..<3) { _ in RoundedRectangle(cornerRadius: 7).fill(panel).frame(height: 46) } }
+            HStack { Image(systemName: "sparkles"); Spacer(); Image(systemName: "curlybraces"); Spacer(); Image(systemName: "person.crop.circle") }.font(.caption).padding(.top, 3)
+        }.foregroundStyle(foreground).padding(12).frame(maxWidth: .infinity, minHeight: 150).background(background, in: RoundedRectangle(cornerRadius: 15))
+    }
+    private var background: Color { dark ? Color(red: 0.08, green: 0.11, blue: 0.19) : Color(red: 0.96, green: 0.97, blue: 0.99) }
+    private var panel: Color { dark ? Color(red: 0.18, green: 0.23, blue: 0.36) : .white }
+    private var foreground: Color { dark ? .white : Color(red: 0.08, green: 0.11, blue: 0.19) }
+}
+
+struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path { var path = Path(); path.move(to: CGPoint(x: rect.midX, y: rect.maxY)); path.addLine(to: CGPoint(x: rect.minX, y: rect.minY)); path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY)); path.closeSubpath(); return path }
 }
 
 @MainActor final class BiteTutor: ObservableObject {
