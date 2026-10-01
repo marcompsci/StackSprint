@@ -770,9 +770,17 @@ struct WelcomeAdventure: View {
                 VStack(alignment: .leading, spacing: 22) {
                     if step == 0 {
                         VStack(spacing: 20) {
-                            Text("Hello, user!").font(.system(size: 46, weight: .bold, design: .rounded)).multilineTextAlignment(.center)
+                            Text("Hello, I’m Bit! **Let’s figure it out together.**")
+                                .font(.system(size: 42, weight: .regular, design: .rounded))
+                                .multilineTextAlignment(.center)
                             BiteAvatar().frame(width: 132, height: 180)
-                            Text("Hello, user!").font(.title2.bold()).padding(.horizontal, 24).padding(.vertical, 14).background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20)).overlay(alignment: .bottom) { Triangle().fill(SprintPalette.card).frame(width: 22, height: 12).offset(y: 10) }
+                            Text("Hello, I’m Bit! **Let’s figure it out together.**")
+                                .font(.title3)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 14)
+                                .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+                                .overlay(alignment: .bottom) { Triangle().fill(SprintPalette.card).frame(width: 22, height: 12).offset(y: 10) }
                             Text("I’m Bit, your coding buddy. We’ll learn a small idea, type it ourselves, and turn it into something you can play.").multilineTextAlignment(.center).foregroundStyle(.secondary)
                         }.frame(maxWidth: .infinity).padding(.top, 20)
                     } else if step == 1 {
