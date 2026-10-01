@@ -14,3 +14,4 @@ node_modules/
 
 # Xcode per-user schemes (hold local secrets like ANTHROPIC_API_KEY)
 **/xcuserdata/**/*.xcscheme
+**/xcuserdata/

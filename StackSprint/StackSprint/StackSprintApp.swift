@@ -314,12 +314,87 @@ struct CybersecurityCourseView: View {
 }
 struct GlossaryView: View {
     @EnvironmentObject private var store: LearningStore
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var query = ""
+    @State private var selectedID: String?
     private var lessons: [Lesson] {
-        let all = store.curriculum?.lessons ?? []
+        let all = store.curriculum?.lessons.filter { $0.category == "Web development" } ?? []
         return query.isEmpty ? all : all.filter { $0.term.localizedCaseInsensitiveContains(query) || $0.definition.localizedCaseInsensitiveContains(query) }
     }
-    var body: some View { List(lessons) { lesson in DisclosureGroup(lesson.term) { Text(lesson.definition).padding(.vertical, 8) } }.searchable(text: $query, prompt: "Search coding terms").navigationTitle("Quick glossary") }
+    private var selected: Lesson? {
+        let all = store.curriculum?.lessons.filter { $0.category == "Web development" } ?? []
+        return all.first { $0.id == selectedID }
+    }
+    private var columns: [GridItem] { [GridItem(.adaptive(minimum: sizeClass == .compact ? 150 : 210), spacing: 14)] }
+    var body: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    HStack(alignment: .bottom) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("KEEP THESE CLOSE").font(.caption.bold()).tracking(1.4).foregroundStyle(.blue)
+                            Text("Your pocket glossary").font(.largeTitle.bold())
+                        }
+                        Spacer()
+                        if sizeClass != .compact { Text("Tap a term to bring its flash card back to the top.").font(.title3).foregroundStyle(.secondary) }
+                    }.id("glossary-top")
+                    if sizeClass == .compact { Text("Tap a term to bring its flash card back to the top.").foregroundStyle(.secondary) }
+                    if let selected {
+                        VStack(alignment: .leading, spacing: 14) {
+                            HStack { Circle().fill(dotColor(for: selected)).frame(width: 11); Text(categoryLabel(for: selected)).font(.caption.bold()).tracking(1).foregroundStyle(dotColor(for: selected)); Spacer(); Button { selectedID = nil } label: { Image(systemName: "xmark.circle.fill") }.buttonStyle(.plain).accessibilityLabel("Close selected glossary card") }
+                            Text(selected.term).font(.system(.largeTitle, design: .rounded, weight: .bold))
+                            Text(selected.definition).font(.title3)
+                            if !selected.code.isEmpty { Text(selected.code).font(.system(.body, design: .monospaced)).foregroundStyle(.mint).padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 14)) }
+                            NavigationLink("Practice this term →") { LessonView(lesson: selected) }.font(.headline).foregroundStyle(.white)
+                        }
+                        .padding(22).background(LinearGradient(colors: [dotColor(for: selected).opacity(0.42), SprintPalette.card], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 26))
+                        .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
+                    }
+                    TextField("Search HTML, API, full-stack…", text: $query)
+                        .textFieldStyle(.plain).padding(14).background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 15))
+                        .overlay(RoundedRectangle(cornerRadius: 15).stroke(Color.white.opacity(0.12))).autocorrectionDisabled()
+                    LazyVGrid(columns: columns, spacing: 14) {
+                        ForEach(lessons) { lesson in
+                            Button {
+                                withAnimation(.easeOut(duration: 0.2)) { selectedID = lesson.id }
+                                withAnimation(.easeOut(duration: 0.35)) { proxy.scrollTo("glossary-top", anchor: .top) }
+                            } label: {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack(spacing: 10) { Circle().fill(dotColor(for: lesson)).frame(width: 10); Text(lesson.term).font(.headline).multilineTextAlignment(.leading) }
+                                    Text(categoryLabel(for: lesson)).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                                    Spacer(minLength: 0)
+                                }
+                                .padding(18).frame(maxWidth: .infinity, minHeight: 128, alignment: .leading)
+                                .background(selectedID == lesson.id ? dotColor(for: lesson).opacity(0.15) : Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 20))
+                                .overlay(RoundedRectangle(cornerRadius: 20).stroke(selectedID == lesson.id ? dotColor(for: lesson) : Color.white.opacity(0.13), lineWidth: 1.5))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("\(lesson.term), \(categoryLabel(for: lesson))")
+                            .accessibilityHint("Shows this term's flash card at the top")
+                        }
+                    }
+                    if lessons.isEmpty { ContentUnavailableView.search(text: query) }
+                }.padding(22).frame(maxWidth: 1000)
+            }
+            .navigationTitle("Quick glossary").modifier(SprintTheme())
+        }
+    }
+    private func dotColor(for lesson: Lesson) -> Color {
+        if lesson.id == "web-fullstack" || lesson.id == "web-request-response" { return .purple }
+        if ["web-server", "web-database", "web-api", "web-authentication", "web-backend"].contains(lesson.id) { return .mint }
+        return .blue
+    }
+    private func categoryLabel(for lesson: Lesson) -> String {
+        let labels: [String: String] = [
+            "web-html": "Front-end foundation", "web-css": "Front-end foundation",
+            "web-javascript": "Front-end behavior", "web-dom": "Front-end behavior",
+            "web-frontend": "Front-end role", "web-server": "Back-end engine",
+            "web-database": "Back-end engine", "web-api": "Back-end connection",
+            "web-authentication": "Back-end protection", "web-backend": "Back-end role",
+            "web-request-response": "The connection", "web-fullstack": "Across the stack"
+        ]
+        return labels[lesson.id] ?? lesson.category
+    }
 }
 struct DailyPracticeView: View {
     @EnvironmentObject private var store: LearningStore
