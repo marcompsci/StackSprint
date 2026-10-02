@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import Combine
 import WebKit
 import UniformTypeIdentifiers
@@ -9,15 +10,39 @@ import AVFoundation
 @main struct StackSprintApp: App {
     @StateObject private var store = LearningStore()
     @StateObject private var backend = Backend()
+    @StateObject private var socialAuth = SocialAuthManager()
+    @StateObject private var notifications = NotificationManager()
     @AppStorage("appearance.mode") private var appearance = "dark"
     var body: some Scene {
         WindowGroup {
-            RootView().environmentObject(store).environmentObject(backend)
+            RootView()
+                .environmentObject(store)
+                .environmentObject(backend)
+                .environmentObject(socialAuth)
+                .environmentObject(notifications)
                 .tint(.mint)
                 .preferredColorScheme(appearance == "light" ? .light : .dark)
                 .modifier(SprintTheme())
-                .onAppear { store.switchUser(backend.session?.user.id) }
-                .onChange(of: backend.session?.user.id) { _, id in store.switchUser(id) }
+                .onAppear {
+                    store.switchUser(backend.session?.user.id)
+                    store.onPractice = { [weak notifications, weak store, weak backend] in
+                        notifications?.refreshAfterPractice()
+                        if let total = store?.curriculum?.lessons.count, total > 0,
+                           let done = store?.completed.count {
+                            let pct = done * 100 / total
+                            for milestone in [25, 50, 75, 100] where pct >= milestone {
+                                notifications?.fireMilestone(pct: milestone)
+                            }
+                        }
+                        if backend?.session != nil {
+                            Task { try? await backend?.sync(store!) }
+                        }
+                    }
+                }
+                .onChange(of: backend.session?.user.id) { _, id in
+                    store.switchUser(id)
+                    if id != nil { Task { try? await backend.sync(store) } }
+                }
         }
     }
 }
@@ -838,6 +863,7 @@ struct LayerChallengeView: View {
 }
 enum ProjectTrack: String, CaseIterable { case design = "Design Games"; case build = "Building Games" }
 struct ProjectPlaygroundView: View {
+    @EnvironmentObject var socialAuth: SocialAuthManager
     @Environment(\.horizontalSizeClass) private var sizeClass
     private let studioFirst: Bool
     @State private var track: ProjectTrack
@@ -848,6 +874,8 @@ struct ProjectPlaygroundView: View {
     @State private var log = "Ready."
     @State private var passed = false
     @State private var previewing = false
+    @State private var pushing = false
+    @State private var pushResult = ""
     init(initialTrack: ProjectTrack, studioFirst: Bool = false) {
         self.studioFirst = studioFirst
         _track = State(initialValue: initialTrack)
@@ -905,6 +933,7 @@ struct ProjectPlaygroundView: View {
     }
     private var studioLanding: some View {
         VStack(alignment: .leading, spacing: 20) {
+            GitHubStudioPanel()
             VStack(alignment: .leading, spacing: 8) {
                 Text("YOUR LOCAL CODE WORKSPACE").font(.caption.bold()).tracking(1.3).foregroundStyle(.mint)
                 Text("Write it. Check it. Make it yours.").font(.system(.largeTitle, design: .rounded, weight: .bold))
@@ -942,7 +971,46 @@ struct ProjectPlaygroundView: View {
                 .background(Color(red: 0.055, green: 0.09, blue: 0.15))
                 .autocorrectionDisabled().textInputAutocapitalization(.never)
                 .accessibilityLabel(track == .design ? "CSS source editor" : "JavaScript source editor")
-            HStack { Button("▶ Run checks") { runChecks() }.buttonStyle(.borderedProminent).tint(.mint); Button("Play my game") { previewing = true }.buttonStyle(.bordered).disabled(!passed); Button("Preview design") { previewing = true }.buttonStyle(.bordered); Button("Save source ↓") { UserDefaults.standard.set(code, forKey: draftKey); log += "\nDraft saved on this device." }.buttonStyle(.bordered) }.padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Color(red: 0.055, green: 0.09, blue: 0.15))
+            HStack(spacing: 8) {
+                Button("▶ Run checks") { runChecks() }.buttonStyle(.borderedProminent).tint(.mint)
+                Button("Play my game") { previewing = true }.buttonStyle(.bordered).disabled(!passed)
+                Button("Preview design") { previewing = true }.buttonStyle(.bordered)
+                Button("Save source ↓") { UserDefaults.standard.set(code, forKey: draftKey); log += "\nDraft saved on this device." }.buttonStyle(.bordered)
+                if socialAuth.authProvider == .github {
+                    Spacer()
+                    Button {
+                        guard !pushing else { return }
+                        pushing = true
+                        pushResult = ""
+                        let lang = track == .design ? "CSS" : "JavaScript"
+                        let snap = code
+                        Task {
+                            do {
+                                let repoName = socialAuth.connectedRepos.first?.fullName ?? socialAuth.gitHubUser.map { "\($0.login)/stacksprint-practice" } ?? ""
+                                if repoName.isEmpty {
+                                    pushResult = "Connect a repo in Studio to push commits."
+                                } else {
+                                    let msg = try await socialAuth.pushPracticeCommit(to: repoName, language: lang, code: snap)
+                                    pushResult = msg
+                                    log += "\n\(msg)"
+                                }
+                            } catch {
+                                pushResult = "Push failed: \(error.localizedDescription)"
+                                log += "\nGitHub push error: \(error.localizedDescription)"
+                            }
+                            pushing = false
+                        }
+                    } label: {
+                        if pushing {
+                            ProgressView().controlSize(.small).tint(.white)
+                        } else {
+                            Label("Push to GitHub \u{2191}", systemImage: "arrow.up.circle.fill")
+                        }
+                    }
+                    .buttonStyle(.borderedProminent).tint(Color(red: 0.09, green: 0.09, blue: 0.09))
+                    .disabled(pushing)
+                }
+            }.padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Color(red: 0.055, green: 0.09, blue: 0.15))
             VStack(alignment: .leading, spacing: 12) {
                 HStack { Text("TERMINAL").font(.caption.monospaced()); Spacer(); Text("Browser JavaScript & CSS workspace").font(.caption.monospaced()) }.foregroundStyle(.secondary)
                 Text(log).font(.system(.subheadline, design: .monospaced)).foregroundStyle(.mint).frame(maxWidth: .infinity, alignment: .leading)
@@ -1024,7 +1092,12 @@ struct LearnView: View {
     @State private var exportError: String?
     @State private var category = "Web development"
     @State private var selectedID: String?
-    private let categories = ["Web development", "Python", "Cybersecurity"]
+    private var categories: [String] {
+        var seen = Set<String>()
+        return (store.curriculum?.lessons ?? []).compactMap {
+            seen.insert($0.category).inserted ? $0.category : nil
+        }
+    }
     private var lessons: [Lesson] { store.curriculum?.lessons.filter { $0.category == category } ?? [] }
     private var selected: Lesson? { lessons.first { $0.id == selectedID } }
     private var columns: [GridItem] { [GridItem(.adaptive(minimum: sizeClass == .compact ? 150 : 220), spacing: 14)] }
@@ -1058,6 +1131,8 @@ struct LearnView: View {
                 .background(LinearGradient(colors: [Color.indigo.opacity(0.35), Color.mint.opacity(0.12)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 28))
 
                 if let error = store.error { Text(error).foregroundStyle(.red) }
+
+                LearningPathSection()
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
@@ -1286,31 +1361,60 @@ struct StudioWebView: UIViewRepresentable {
 }
 struct TogetherView: View {
     @EnvironmentObject var store: LearningStore
+    @EnvironmentObject var socialAuth: SocialAuthManager
     var body: some View {
-        List {
-            Section {
-                Text("Better with a buddy. 💜").font(.largeTitle.bold())
-                Text("Build a little. Cheer a lot. Invite a friend through an app you already use.")
-                ShareLink(item: "I’ve practiced \(store.completed.count) lessons in StackSprint! Want to learn a coding concept together today?") { Label("Share my progress", systemImage: "square.and.arrow.up") }
-            }
-            Section("Co-op quests") {
-                ShareLink("Practice Python together", item: "Coding buddy quest: practice Python for five minutes, then show each other something you made!")
-                ShareLink("Send encouragement", item: "Small steps count. Proud of you for showing up to code today! 🌱")
-            }
-            Section("Private by default") { Text("We do not upload contacts. Choose the recipient in your device’s share sheet. In-app chat, friend accounts, leaderboards, and cloud studio sync are not included in this release.") }
-        }.navigationTitle("Together")
+        SocialHubView()
     }
 }
 struct AccountView: View {
     @AppStorage("onboarding.finished") private var welcomed = false
     @EnvironmentObject var backend: Backend
     @EnvironmentObject var store: LearningStore
+    @EnvironmentObject var socialAuth: SocialAuthManager
+    @EnvironmentObject var notifications: NotificationManager
     @State private var email = ""
     @State private var password = ""
     @State private var confirmDelete = false
     var body: some View {
         Form {
             Section("Your adventure") { Button("Replay welcome adventure") { welcomed = false } }
+            NotificationSettingsSection(notifications: notifications)
+            if socialAuth.isSignedIn {
+                Section("Connected account") {
+                    HStack(spacing: 12) {
+                        Image(systemName: socialAuth.authProvider.systemImage)
+                            .foregroundStyle(.mint).frame(width: 22)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(socialAuth.displayName)
+                            Text("via \(socialAuth.authProvider.displayName)").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    if socialAuth.authProvider == .github, let user = socialAuth.gitHubUser {
+                        Label("\(user.publicRepos) public repositories", systemImage: "folder.fill")
+                        if !socialAuth.connectedRepos.isEmpty {
+                            Label(
+                                "\(socialAuth.connectedRepos.count) repo\(socialAuth.connectedRepos.count == 1 ? "" : "s") connected to Studio",
+                                systemImage: "checkmark.circle.fill"
+                            ).foregroundStyle(.mint)
+                        }
+                    }
+                    Button("Disconnect account") { socialAuth.signOut() }.foregroundStyle(.red)
+                }
+            } else {
+                Section("Connect an account") {
+                    Text("Sign in with Apple, Google, or GitHub to save your streak across devices.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                    Button {
+                        Task { try? await socialAuth.signInWithApple() }
+                    } label: { Label("Continue with Apple", systemImage: "apple.logo") }
+                    Button {
+                        Task { try? await socialAuth.signInWithGoogle() }
+                    } label: { Label("Continue with Google", systemImage: "g.circle.fill") }
+                    Button {
+                        Task { try? await socialAuth.signInWithGitHub() }
+                    } label: { Label("Continue with GitHub", systemImage: "chevron.left.forwardslash.chevron.right") }
+                }
+            }
             if backend.config == nil { Section("Guest mode") { Text("Learning works without an account. To enable cloud accounts, configure BackendConfig.json and deploy backend/schema.sql using SETUP.md.") } }
             if let session = backend.session {
                 Section("Signed in") {
@@ -1405,6 +1509,7 @@ struct WelcomeAdventure: View {
     @AppStorage("onboarding.goal") private var goal = "Build my first website"
     @AppStorage("onboarding.minutes") private var minutes = 5
     @AppStorage("appearance.mode") private var appearance = "dark"
+    @EnvironmentObject private var socialAuth: SocialAuthManager
     @State private var step = 0
     @State private var correct = false
     @State private var feedback = "No pressure. This is a playground, not an exam."
@@ -1415,8 +1520,8 @@ struct WelcomeAdventure: View {
                 Spacer()
                 Button("Skip welcome") { finished = true }
             }
-            ProgressView(value: Double(step + 1), total: 5).tint(.mint)
-                .accessibilityLabel("Welcome step \(step + 1) of 5")
+            ProgressView(value: Double(step + 1), total: 6).tint(.mint)
+                .accessibilityLabel("Welcome step \(step + 1) of 6")
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     if step == 0 {
@@ -1435,19 +1540,21 @@ struct WelcomeAdventure: View {
                             Text("I’m Bit, your coding buddy. We’ll learn a small idea, type it ourselves, and turn it into something you can play.").multilineTextAlignment(.center).foregroundStyle(.secondary)
                         }.frame(maxWidth: .infinity).padding(.top, 20)
                     } else if step == 1 {
+                        SignInOptionsView(onComplete: { step += 1 })
+                    } else if step == 2 {
                         Text("Choose your learning space").font(.system(.largeTitle, design: .rounded).bold())
                         Text("Pick the home screen that feels easiest on your eyes. You can switch anytime with the button in the top-right corner.").foregroundStyle(.secondary)
                         HStack(alignment: .top, spacing: 14) {
                             themeChoice("dark", title: "Dark mode")
                             themeChoice("light", title: "Light mode")
                         }
-                    } else if step == 2 {
+                    } else if step == 3 {
                         Text("What will you make?").font(.system(.largeTitle, design: .rounded).bold())
                         Text("Choose a starting intention. Every course stays available, and you can change this later.").foregroundStyle(.secondary)
                         ForEach(["Build my first website", "Make games", "Refresh my coding skills"], id: \.self) { choice in
                             choiceButton(choice, selected: goal == choice) { goal = choice }
                         }
-                    } else if step == 3 {
+                    } else if step == 4 {
                         Text("A little time.\nA real habit.").font(.system(.largeTitle, design: .rounded).bold())
                         Text("Choose a daily intention. No timers or penalties — just a little room to explore.").foregroundStyle(.secondary)
                         ForEach([3, 5, 10], id: \.self) { value in
@@ -1469,13 +1576,13 @@ struct WelcomeAdventure: View {
             }
             HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(step == 4 && correct ? "“Look at you, already coding!”" : "“I’m right here with you.”").font(.callout).foregroundStyle(.secondary)
+                    Text(step == 5 && correct ? "\u{201C}Look at you, already coding!\u{201D}" : step == 1 && socialAuth.isSignedIn ? "\u{201C}Welcome! Your streak is safe with me.\u{201D}" : "\u{201C}I'm right here with you.\u{201D}").font(.callout).foregroundStyle(.secondary)
                     HStack {
                         if step > 0 { Button("Back") { step -= 1 }.buttonStyle(.bordered) }
-                        Button(step == 4 ? "Let’s start building" : step == 0 ? "Choose my look →" : "Continue →") {
-                            if step < 4 { step += 1 } else { finished = true }
+                        Button(step == 5 ? "Let’s start building" : step == 0 ? "Get started →" : "Continue →") {
+                            if step < 5 { step += 1 } else { finished = true }
                         }.buttonStyle(.borderedProminent).tint(.mint).foregroundStyle(Color(red: 0.06, green: 0.16, blue: 0.15))
-                            .disabled(step == 4 && !correct)
+                            .disabled(step == 5 && !correct)
                     }
                 }
                 Spacer(minLength: 8)

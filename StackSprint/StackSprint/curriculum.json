@@ -323,6 +323,294 @@
       "clue": "How do you total a collection?",
       "definition": "sum adds numeric items. min and max find extremes; sorted makes a sorted list.",
       "code": "print(sum([2, 4, 6]))"
+    },
+    {
+      "id": "ts-types",
+      "term": "TypeScript",
+      "category": "TypeScript",
+      "clue": "JavaScript with a type system built in.",
+      "definition": "TypeScript adds static types to JavaScript so you catch mistakes before running the code.",
+      "code": "let score: number = 0;"
+    },
+    {
+      "id": "ts-string",
+      "term": "string type",
+      "category": "TypeScript",
+      "clue": "A type that holds text.",
+      "definition": "Declaring a variable as string tells TypeScript it must always hold text, never a number.",
+      "code": "let name: string = 'Bite';"
+    },
+    {
+      "id": "ts-number",
+      "term": "number type",
+      "category": "TypeScript",
+      "clue": "A type for any numeric value.",
+      "definition": "The number type covers integers and decimals. TypeScript will error if you assign text to it.",
+      "code": "let age: number = 25;"
+    },
+    {
+      "id": "ts-boolean",
+      "term": "boolean type",
+      "category": "TypeScript",
+      "clue": "A type that is either true or false.",
+      "definition": "Booleans are perfect for on/off flags. TypeScript enforces you never mix them with strings.",
+      "code": "let active: boolean = true;"
+    },
+    {
+      "id": "ts-array",
+      "term": "array type",
+      "category": "TypeScript",
+      "clue": "A typed list of values.",
+      "definition": "You can type an array as number[] or Array<string> to ensure every item is the same kind.",
+      "code": "let scores: number[] = [10, 20];"
+    },
+    {
+      "id": "ts-interface",
+      "term": "interface",
+      "category": "TypeScript",
+      "clue": "A named shape for an object.",
+      "definition": "An interface describes what properties an object must have and what types they are.",
+      "code": "interface User { name: string; age: number; }"
+    },
+    {
+      "id": "ts-type-alias",
+      "term": "type alias",
+      "category": "TypeScript",
+      "clue": "A custom name for any type.",
+      "definition": "Type aliases let you give a descriptive name to complex types so you can reuse them.",
+      "code": "type ID = string | number;"
+    },
+    {
+      "id": "ts-union",
+      "term": "union type",
+      "category": "TypeScript",
+      "clue": "A value that can be one of several types.",
+      "definition": "Union types use | to say a variable can be a string or a number, but nothing else.",
+      "code": "let id: string | number;"
+    },
+    {
+      "id": "ts-generic",
+      "term": "generic",
+      "category": "TypeScript",
+      "clue": "A reusable type placeholder.",
+      "definition": "Generics let you write functions that work with any type while still being type-safe.",
+      "code": "function wrap<T>(val: T): T[] { return [val]; }"
+    },
+    {
+      "id": "ts-optional",
+      "term": "optional property",
+      "category": "TypeScript",
+      "clue": "A property that may or may not exist.",
+      "definition": "Adding ? to a property name makes it optional. TypeScript will not error if it is missing.",
+      "code": "interface Config { debug?: boolean; }"
+    },
+    {
+      "id": "ts-enum",
+      "term": "enum",
+      "category": "TypeScript",
+      "clue": "A set of named constant values.",
+      "definition": "Enums give readable names to a fixed list of values, like directions or status codes.",
+      "code": "enum Dir { Up, Down, Left, Right }"
+    },
+    {
+      "id": "ts-infer",
+      "term": "type inference",
+      "category": "TypeScript",
+      "clue": "TypeScript guesses the type for you.",
+      "definition": "When you assign a value, TypeScript infers its type automatically so you rarely need to write it.",
+      "code": "let x = 42; // inferred: number"
+    },
+    {
+      "id": "react-component",
+      "term": "component",
+      "category": "React",
+      "clue": "A reusable piece of the UI.",
+      "definition": "A React component is a function that returns JSX — it describes part of what appears on screen.",
+      "code": "function Button() { return <button>Click</button>; }"
+    },
+    {
+      "id": "react-jsx",
+      "term": "JSX",
+      "category": "React",
+      "clue": "HTML-like syntax inside JavaScript.",
+      "definition": "JSX lets you write HTML tags directly in a JavaScript function, which React turns into real DOM.",
+      "code": "const el = <h1>Hello</h1>;"
+    },
+    {
+      "id": "react-props",
+      "term": "props",
+      "category": "React",
+      "clue": "Data passed into a component.",
+      "definition": "Props are arguments you pass to a component, like attributes on an HTML element, to customize it.",
+      "code": "<Greeting name=\"Bite\" />"
+    },
+    {
+      "id": "react-state",
+      "term": "useState",
+      "category": "React",
+      "clue": "Local memory for a component.",
+      "definition": "useState is a hook that gives a component its own piece of state that triggers a re-render when it changes.",
+      "code": "const [count, setCount] = useState(0);"
+    },
+    {
+      "id": "react-effect",
+      "term": "useEffect",
+      "category": "React",
+      "clue": "Run code after the component renders.",
+      "definition": "useEffect lets you fetch data, set up subscriptions, or run side effects after each render.",
+      "code": "useEffect(() => { fetchData(); }, []);"
+    },
+    {
+      "id": "react-event",
+      "term": "event handler",
+      "category": "React",
+      "clue": "A function that runs on user action.",
+      "definition": "You attach event handlers to JSX elements using camelCase props like onClick or onChange.",
+      "code": "<button onClick={() => setCount(c => c + 1)}>+</button>"
+    },
+    {
+      "id": "react-list",
+      "term": "list rendering",
+      "category": "React",
+      "clue": "Turning an array into UI elements.",
+      "definition": "Use .map() inside JSX to render one element per item in an array. Each item needs a unique key.",
+      "code": "items.map(i => <li key={i.id}>{i.name}</li>)"
+    },
+    {
+      "id": "react-conditional",
+      "term": "conditional rendering",
+      "category": "React",
+      "clue": "Show or hide UI based on a condition.",
+      "definition": "You can use && or ternary expressions inside JSX to show different content based on state.",
+      "code": "{isLoggedIn && <Dashboard />}"
+    },
+    {
+      "id": "react-context",
+      "term": "Context",
+      "category": "React",
+      "clue": "Share data without passing props everywhere.",
+      "definition": "React Context lets you broadcast a value to any component in the tree without threading it through props.",
+      "code": "const theme = useContext(ThemeContext);"
+    },
+    {
+      "id": "react-ref",
+      "term": "useRef",
+      "category": "React",
+      "clue": "A value that does not cause a re-render.",
+      "definition": "useRef stores a mutable value between renders. It is also used to directly access a DOM element.",
+      "code": "const inputRef = useRef(null);"
+    },
+    {
+      "id": "react-memo",
+      "term": "React.memo",
+      "category": "React",
+      "clue": "Skip re-rendering unchanged components.",
+      "definition": "Wrapping a component in React.memo tells React to skip re-rendering it when its props have not changed.",
+      "code": "export default React.memo(MyCard);"
+    },
+    {
+      "id": "react-router",
+      "term": "routing",
+      "category": "React",
+      "clue": "Navigate between pages without a reload.",
+      "definition": "React Router maps URL paths to different components so users can navigate without a full page refresh.",
+      "code": "<Route path='/home' element={<Home />} />"
+    },
+    {
+      "id": "swift-var",
+      "term": "var and let",
+      "category": "Swift",
+      "clue": "How you declare variables in Swift.",
+      "definition": "let creates a constant that cannot change. var creates a variable that can be reassigned later.",
+      "code": "let name = \"Bite\"\nvar score = 0"
+    },
+    {
+      "id": "swift-optional",
+      "term": "optional",
+      "category": "Swift",
+      "clue": "A value that might be absent.",
+      "definition": "An optional can hold a value or nil. You must unwrap it before using it to avoid crashes.",
+      "code": "var email: String? = nil"
+    },
+    {
+      "id": "swift-unwrap",
+      "term": "optional binding",
+      "category": "Swift",
+      "clue": "Safely open an optional.",
+      "definition": "if let and guard let unwrap optionals safely. Your code only runs if a value is actually present.",
+      "code": "if let name = user.name { print(name) }"
+    },
+    {
+      "id": "swift-struct",
+      "term": "struct",
+      "category": "Swift",
+      "clue": "A value type that groups related data.",
+      "definition": "Structs bundle properties and methods together. They are copied when assigned, unlike classes.",
+      "code": "struct Point { var x: Double; var y: Double }"
+    },
+    {
+      "id": "swift-class",
+      "term": "class",
+      "category": "Swift",
+      "clue": "A reference type with inheritance.",
+      "definition": "Classes are like structs but are passed by reference and can inherit from other classes.",
+      "code": "class Animal { var name: String = \"\" }"
+    },
+    {
+      "id": "swift-protocol",
+      "term": "protocol",
+      "category": "Swift",
+      "clue": "A contract for what a type can do.",
+      "definition": "Protocols define required properties and methods. Any type that conforms must implement them.",
+      "code": "protocol Flyable { func fly() }"
+    },
+    {
+      "id": "swift-closure",
+      "term": "closure",
+      "category": "Swift",
+      "clue": "A self-contained block of code.",
+      "definition": "Closures are anonymous functions you can pass around and store. They capture values from their scope.",
+      "code": "let greet = { (n: String) in print(\"Hi \\(n)\") }"
+    },
+    {
+      "id": "swift-enum",
+      "term": "enum",
+      "category": "Swift",
+      "clue": "A type with a fixed set of cases.",
+      "definition": "Swift enums are powerful — each case can carry associated values and have methods of their own.",
+      "code": "enum Direction { case north, south, east, west }"
+    },
+    {
+      "id": "swift-generics",
+      "term": "generics",
+      "category": "Swift",
+      "clue": "Write once, work with any type.",
+      "definition": "Generics let you define flexible functions and types that work with any kind of data safely.",
+      "code": "func first<T>(_ array: [T]) -> T? { array.first }"
+    },
+    {
+      "id": "swift-async",
+      "term": "async / await",
+      "category": "Swift",
+      "clue": "Run slow work without blocking.",
+      "definition": "Mark a function async and call it with await to wait for results without freezing the UI.",
+      "code": "let data = try await URLSession.shared.data(from: url)"
+    },
+    {
+      "id": "swift-swiftui",
+      "term": "SwiftUI",
+      "category": "Swift",
+      "clue": "Build iOS UIs in Swift.",
+      "definition": "SwiftUI lets you declare your UI as a function of state. When state changes, the view updates automatically.",
+      "code": "Text(\"Score: \\(score)\").font(.title)"
+    },
+    {
+      "id": "swift-property-wrapper",
+      "term": "property wrapper",
+      "category": "Swift",
+      "clue": "Attach behavior to a property.",
+      "definition": "@State, @Binding, and @Published are property wrappers that add automatic behavior to stored values.",
+      "code": "@State private var count = 0"
     }
   ],
   "questions": [
@@ -925,6 +1213,150 @@
       "answer": 0,
       "explanation": "A safer system confirms identity, checks the role, and grants only the minimum access that role needs.",
       "id": "cyber-24"
+    },
+    {
+      "id": "q-ts-1",
+      "question": "What does TypeScript add on top of JavaScript?",
+      "choices": [
+        "Static types",
+        "Faster execution",
+        "A different syntax",
+        "Server-side rendering"
+      ],
+      "answer": 0,
+      "explanation": "TypeScript adds static type checking so errors are caught before the code runs."
+    },
+    {
+      "id": "q-ts-2",
+      "question": "Which symbol creates a union type in TypeScript?",
+      "choices": [
+        "|",
+        "+",
+        "&",
+        "//"
+      ],
+      "answer": 0,
+      "explanation": "The pipe character | joins two types into a union, meaning the value can be either type."
+    },
+    {
+      "id": "q-ts-3",
+      "question": "What does the ? symbol mean after a property name?",
+      "choices": [
+        "The property is optional",
+        "The property is required",
+        "The property is a number",
+        "The property is private"
+      ],
+      "answer": 0,
+      "explanation": "A question mark marks a property as optional — it may be absent without causing a type error."
+    },
+    {
+      "id": "q-ts-4",
+      "question": "What is a TypeScript generic?",
+      "choices": [
+        "A reusable type placeholder",
+        "A built-in number type",
+        "A CSS class",
+        "An error message"
+      ],
+      "answer": 0,
+      "explanation": "Generics use a placeholder like <T> to write type-safe code that works with any type."
+    },
+    {
+      "id": "q-react-1",
+      "question": "What does useState return?",
+      "choices": [
+        "A value and a setter function",
+        "Only the current value",
+        "A DOM element",
+        "A promise"
+      ],
+      "answer": 0,
+      "explanation": "useState returns an array: the current state value and a function to update it."
+    },
+    {
+      "id": "q-react-2",
+      "question": "What is JSX?",
+      "choices": [
+        "HTML-like syntax inside JavaScript",
+        "A database query language",
+        "A CSS framework",
+        "A server framework"
+      ],
+      "answer": 0,
+      "explanation": "JSX is syntactic sugar that lets you write HTML-like elements inside JavaScript functions."
+    },
+    {
+      "id": "q-react-3",
+      "question": "Why does a list item need a key prop?",
+      "choices": [
+        "So React tracks which items changed",
+        "For styling",
+        "For routing",
+        "To set the text color"
+      ],
+      "answer": 0,
+      "explanation": "Keys help React identify which items in a list have changed, been added, or removed."
+    },
+    {
+      "id": "q-react-4",
+      "question": "What does useEffect do?",
+      "choices": [
+        "Runs code after rendering",
+        "Updates state immediately",
+        "Creates a new component",
+        "Loads a font"
+      ],
+      "answer": 0,
+      "explanation": "useEffect fires after each render and is used for side effects like data fetching."
+    },
+    {
+      "id": "q-swift-1",
+      "question": "What is the difference between let and var in Swift?",
+      "choices": [
+        "let is constant, var is mutable",
+        "let is faster",
+        "var is constant",
+        "There is no difference"
+      ],
+      "answer": 0,
+      "explanation": "let declares a constant that cannot change; var declares a variable that can be reassigned."
+    },
+    {
+      "id": "q-swift-2",
+      "question": "What does an optional represent in Swift?",
+      "choices": [
+        "A value that might be nil",
+        "A required field",
+        "An array element",
+        "A class method"
+      ],
+      "answer": 0,
+      "explanation": "An optional can hold a value or nil. You must unwrap it before you can use the value."
+    },
+    {
+      "id": "q-swift-3",
+      "question": "What does async / await do in Swift?",
+      "choices": [
+        "Runs slow work without blocking the UI",
+        "Saves data to disk",
+        "Creates a new thread manually",
+        "Animates a view"
+      ],
+      "answer": 0,
+      "explanation": "async marks a function as asynchronous. await pauses execution until the async call completes."
+    },
+    {
+      "id": "q-swift-4",
+      "question": "What is a Swift protocol?",
+      "choices": [
+        "A contract of required methods and properties",
+        "A type of variable",
+        "A screen in SwiftUI",
+        "An optional wrapper"
+      ],
+      "answer": 0,
+      "explanation": "Protocols define requirements. Any type that conforms must implement those methods and properties."
     }
   ]
 }

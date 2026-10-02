@@ -43,6 +43,7 @@ struct ProgressRow: Codable {
     @Published var curriculum: Curriculum?
     @Published var error: String?
     private var namespace = "guest"
+    var onPractice: (() -> Void)?
 
     init() {
         do { curriculum = try Curriculum.load() } catch { self.error = "Lesson content could not load: \(error.localizedDescription)" }
@@ -56,7 +57,7 @@ struct ProgressRow: Codable {
         correctRecallAnswers = Set(UserDefaults.standard.stringArray(forKey: "native.dailyRecall.\(namespace)") ?? [])
     }
 
-    func complete(_ id: String) { completed.insert(id); practicedDays.insert(Self.dayKey(Date())); persist() }
+    func complete(_ id: String) { completed.insert(id); practicedDays.insert(Self.dayKey(Date())); persist(); onPractice?() }
 
     func recordDailyRecall(_ questionID: String) {
         correctRecallAnswers.insert("\(Self.dayKey(Date()))|\(questionID)")

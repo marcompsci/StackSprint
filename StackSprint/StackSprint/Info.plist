@@ -2,9 +2,37 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>stacksprint</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>com.example.StackSprint.oauth</string>
+		</dict>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>StackSprint does not use the microphone. This key is required by the App Store for completeness.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>StackSprint does not use the camera. This key is required by the App Store for completeness.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>StackSprint does not track you. We do not share any data with advertisers or analytics providers.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
+		<key>UIImageName</key>
+		<string>LaunchIcon</string>
+		<key>UIImageRespectsSafeAreaInsets</key>
+		<true/>
+	</dict>
 </dict>
 </plist>
