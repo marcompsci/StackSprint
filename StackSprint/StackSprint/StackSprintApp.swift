@@ -584,6 +584,9 @@ struct DailyPracticeView: View {
                 .padding(22)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(SprintPalette.card.opacity(0.75), in: RoundedRectangle(cornerRadius: 26))
+
+                dailyStreakCard
+                firstSparkSection
             }
             .padding(.horizontal, 20).padding(.top, 26).padding(.bottom, 110).frame(maxWidth: 980)
         }
@@ -686,6 +689,148 @@ struct DailyPracticeView: View {
         .padding(20).frame(maxWidth: .infinity, minHeight: sizeClass == .compact ? 260 : 480, alignment: .topLeading)
         .background(Color.indigo.opacity(0.08), in: RoundedRectangle(cornerRadius: 26))
         .overlay(RoundedRectangle(cornerRadius: 26).stroke(Color.indigo.opacity(0.12)))
+    }
+
+    private var dailyStreakCard: some View {
+        VStack(alignment: .leading, spacing: 19) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("MY CODING STREAK").font(.caption.bold()).tracking(1.3).foregroundStyle(.secondary)
+                    Text("\(store.currentStreak) \(store.currentStreak == 1 ? "day" : "days")")
+                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                }
+                Spacer()
+                Image(systemName: "flame.fill").font(.system(size: 30)).foregroundStyle(.orange)
+                    .frame(width: 62, height: 62).background(.orange.opacity(0.14), in: RoundedRectangle(cornerRadius: 18))
+            }
+            Text(store.currentStreak == 0 ? "Your first tiny win starts today. You belong here." : "Every small practice session counts. Keep your spark going tomorrow.")
+                .font(.title3).fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 8) {
+                ForEach(0..<7, id: \.self) { day in
+                    let isActive = day < min(store.currentStreak, 7)
+                    Image(systemName: isActive ? "flame.fill" : "circle.dotted")
+                        .font(.caption.bold()).foregroundStyle(isActive ? Color.white : Color.secondary)
+                        .frame(maxWidth: .infinity).frame(height: 38)
+                        .background(isActive ? Color.orange : SprintPalette.card, in: Circle())
+                        .accessibilityLabel(isActive ? "Streak day \(day + 1) complete" : "Streak day \(day + 1) not yet complete")
+                }
+            }
+            Text("Real learning activity · saved on this device").font(.subheadline).foregroundStyle(.secondary)
+            ShareLink(item: "I’m on a \(store.currentStreak)-day coding streak in StackSprint. Want to learn one small thing with me today?") {
+                Label("Share my streak", systemImage: "square.and.arrow.up")
+                    .font(.headline).padding(.horizontal, 8).padding(.vertical, 5)
+            }.buttonStyle(.bordered)
+        }
+        .padding(sizeClass == .compact ? 20 : 28)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 28))
+        .overlay(RoundedRectangle(cornerRadius: 28).stroke(Color.orange.opacity(0.38), lineWidth: 1.5))
+    }
+
+    private var firstSparkSection: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            HStack {
+                Text("YOUR POCKET CODING ARCADE").font(.caption.bold()).tracking(1.4).foregroundStyle(.secondary)
+                Spacer()
+                Text("✦ \(store.practiceXP + projectsBuilt * 25) sprint XP")
+                    .font(.caption.bold()).foregroundStyle(.orange)
+            }
+            Text("A LITTLE CURIOUS. A LITTLE BRAVER.").font(.caption.bold()).tracking(1.2).foregroundStyle(.secondary)
+
+            if sizeClass == .compact {
+                VStack(alignment: .leading, spacing: 24) { firstSparkIntro; firstSparkBite }
+            } else {
+                HStack(alignment: .center, spacing: 28) {
+                    firstSparkIntro.frame(maxWidth: .infinity, alignment: .leading)
+                    firstSparkBite.frame(maxWidth: 240)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 9) {
+                Text("UNIT 01 · THE FIRST SPARK").font(.caption.bold()).tracking(1.1).foregroundStyle(.white.opacity(0.75))
+                Text("Meet your building blocks").font(.title2.bold())
+                Text("Match it. Arrange it. Predict it.").foregroundStyle(.white.opacity(0.78))
+            }
+            .foregroundStyle(.white)
+            .padding(22).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(red: 0.22, green: 0.27, blue: 0.43), in: RoundedRectangle(cornerRadius: 24))
+
+            if sizeClass == .compact {
+                VStack(spacing: 12) { firstSparkSteps }
+            } else {
+                HStack(alignment: .top, spacing: 14) { firstSparkSteps }
+            }
+
+            HStack(alignment: .top, spacing: 13) {
+                Image(systemName: "sparkle").font(.title2).foregroundStyle(.yellow)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("Your First Spark badge awaits").font(.headline)
+                    Text("Practice all three tiny challenges to make it yours.").font(.subheadline).foregroundStyle(.secondary)
+                }
+            }
+            .padding(17).frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(RoundedRectangle(cornerRadius: 18).stroke(.white.opacity(0.28)))
+            Text("A fresh start is always welcome. Try one round today.").font(.subheadline).foregroundStyle(.secondary)
+        }
+        .padding(sizeClass == .compact ? 20 : 28)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(red: 0.095, green: 0.125, blue: 0.22), in: RoundedRectangle(cornerRadius: 30))
+        .foregroundStyle(.white)
+    }
+
+    private var firstSparkIntro: some View {
+        VStack(alignment: .leading, spacing: 17) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Your next\n“I made this!”")
+                Text("starts here.").foregroundStyle(.mint)
+            }
+            .font(.system(size: sizeClass == .compact ? 34 : 46, weight: .bold, design: .rounded))
+            .minimumScaleFactor(0.8).fixedSize(horizontal: false, vertical: true)
+            Text("Three tiny challenges. One real skill. Let’s turn “what does this do?” into “watch this.”")
+                .font(.title3).foregroundStyle(.white.opacity(0.78))
+            NavigationLink { RapidLearningDeck() } label: {
+                Label("Start a tiny win", systemImage: "arrow.right")
+                    .font(.headline).frame(maxWidth: sizeClass == .compact ? .infinity : 240, minHeight: 54)
+            }.buttonStyle(.borderedProminent).tint(.mint)
+            Text("No hearts to lose. Mistakes are welcome.").font(.subheadline).foregroundStyle(.white.opacity(0.72))
+        }
+    }
+
+    private var firstSparkBite: some View {
+        VStack(spacing: 5) {
+            BiteAvatar().frame(width: 150, height: 180)
+            Text("Hey, I’m Bit.").font(.headline)
+            Text("Let’s figure it out together.").font(.subheadline.bold()).multilineTextAlignment(.center)
+                .foregroundStyle(.white.opacity(0.78))
+        }.frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder private var firstSparkSteps: some View {
+        NavigationLink { RapidLearningDeck() } label: {
+            sparkStep("Connect the concepts", detail: "3-minute practice", icon: "command", color: .mint)
+        }.buttonStyle(.plain)
+        NavigationLink { ProjectPlaygroundView(initialTrack: .build) } label: {
+            sparkStep("Build a little program", detail: "Write, check, and remix", icon: "curlybraces", color: .blue)
+        }.buttonStyle(.plain)
+        NavigationLink { QuizView(questions: store.curriculum?.questions.filter { $0.id.hasPrefix("web-") } ?? []) } label: {
+            sparkStep("Read the future", detail: "Predict what code does", icon: "bolt.fill", color: .purple)
+        }.buttonStyle(.plain)
+    }
+
+    private func sparkStep(_ title: String, detail: String, icon: String, color: Color) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon).font(.title2.bold()).foregroundStyle(color)
+                .frame(width: 58, height: 58).background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.subheadline.bold())
+                Text(detail).font(.caption).foregroundStyle(.white.opacity(0.65))
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "arrow.up.right").font(.caption.bold()).foregroundStyle(.white.opacity(0.65))
+        }
+        .padding(12).frame(maxWidth: .infinity, minHeight: 82, alignment: .leading)
+        .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 18))
+        .accessibilityElement(children: .combine)
     }
 }
 struct LayerChallengeView: View {
