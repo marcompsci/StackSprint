@@ -839,20 +839,26 @@ struct LayerChallengeView: View {
 enum ProjectTrack: String, CaseIterable { case design = "Design Games"; case build = "Building Games" }
 struct ProjectPlaygroundView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
+    private let studioFirst: Bool
     @State private var track: ProjectTrack
     @State private var code: String
     @State private var openStep = 1
     @State private var terminal = ""
+    @State private var terminalCode = ""
     @State private var log = "Ready."
     @State private var passed = false
     @State private var previewing = false
-    init(initialTrack: ProjectTrack) {
+    init(initialTrack: ProjectTrack, studioFirst: Bool = false) {
+        self.studioFirst = studioFirst
         _track = State(initialValue: initialTrack)
         _code = State(initialValue: Self.starter(for: initialTrack))
     }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
+                if studioFirst {
+                    studioLanding
+                } else {
                 HStack(alignment: .bottom, spacing: 16) {
                     VStack(alignment: .leading, spacing: 9) {
                         Text("COURSE 03 · PROJECT PLAYGROUND").font(.caption.bold()).tracking(1.3).foregroundStyle(.blue)
@@ -889,18 +895,76 @@ struct ProjectPlaygroundView: View {
                     codeWorkspace
                     playableResult
                 }.padding(sizeClass == .compact ? 18 : 28).background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 28))
+                }
             }.padding(22).frame(maxWidth: 1000)
-        }.navigationTitle("Project Playground").modifier(SprintTheme())
+        }.navigationTitle(studioFirst ? "Studio" : "Project Playground").modifier(SprintTheme())
         .onAppear { if let saved = UserDefaults.standard.string(forKey: draftKey) { code = saved } }
+        .onChange(of: code) { _, value in
+            UserDefaults.standard.set(value, forKey: draftKey)
+        }
+    }
+    private var studioLanding: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("YOUR LOCAL CODE WORKSPACE").font(.caption.bold()).tracking(1.3).foregroundStyle(.mint)
+                Text("Write it. Check it. Make it yours.").font(.system(.largeTitle, design: .rounded, weight: .bold))
+                Text("Use your keyboard in the editor or terminal practice box. Each check reads the source you wrote.")
+                    .foregroundStyle(.secondary)
+            }
+            HStack(spacing: 10) {
+                ForEach(ProjectTrack.allCases, id: \.self) { item in
+                    Button { switchTrack(item) } label: {
+                        Label(item == .design ? "Design · CSS" : "Build · JavaScript", systemImage: item == .design ? "paintpalette.fill" : "curlybraces")
+                            .font(.subheadline.bold()).frame(maxWidth: .infinity, minHeight: 48)
+                    }
+                    .buttonStyle(.plain)
+                    .background(track == item ? Color.mint.opacity(0.2) : SprintPalette.card, in: RoundedRectangle(cornerRadius: 15))
+                    .overlay(RoundedRectangle(cornerRadius: 15).stroke(track == item ? Color.mint : Color.secondary.opacity(0.2)))
+                }
+            }
+            codeWorkspace
+            playableResult
+            NavigationLink { WebStudioView() } label: {
+                Label("Explore the full 60-project Studio", systemImage: "square.grid.2x2.fill")
+                    .font(.headline).frame(maxWidth: .infinity, minHeight: 52)
+            }.buttonStyle(.bordered)
+            Text("Want the three guided requirements? Open a design or building mission from Course navigation.")
+                .font(.subheadline).foregroundStyle(.secondary)
+        }
     }
     private var codeWorkspace: some View {
         VStack(spacing: 0) {
             HStack { Circle().fill(.mint).frame(width: 10); Text(track == .design ? "styles.css" : "game.js").font(.body.monospaced()); Spacer(); Text(track == .design ? "CSS · local workspace" : "JavaScript · local workspace").font(.caption.monospaced()).foregroundStyle(.secondary) }.padding(16).background(Color(red: 0.10, green: 0.15, blue: 0.25))
-            TextEditor(text: $code).font(.system(.body, design: .monospaced)).scrollContentBackground(.hidden).foregroundStyle(Color(red: 0.82, green: 0.91, blue: 0.94)).padding(14).frame(minHeight: 300).background(Color(red: 0.055, green: 0.09, blue: 0.15)).autocorrectionDisabled().textInputAutocapitalization(.never)
+            TextEditor(text: Binding(get: { code }, set: { code = $0; passed = false }))
+                .font(.system(.body, design: .monospaced)).scrollContentBackground(.hidden)
+                .foregroundStyle(Color(red: 0.82, green: 0.91, blue: 0.94))
+                .padding(14).frame(minHeight: 300)
+                .background(Color(red: 0.055, green: 0.09, blue: 0.15))
+                .autocorrectionDisabled().textInputAutocapitalization(.never)
+                .accessibilityLabel(track == .design ? "CSS source editor" : "JavaScript source editor")
             HStack { Button("▶ Run checks") { runChecks() }.buttonStyle(.borderedProminent).tint(.mint); Button("Play my game") { previewing = true }.buttonStyle(.bordered).disabled(!passed); Button("Preview design") { previewing = true }.buttonStyle(.bordered); Button("Save source ↓") { UserDefaults.standard.set(code, forKey: draftKey); log += "\nDraft saved on this device." }.buttonStyle(.bordered) }.padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Color(red: 0.055, green: 0.09, blue: 0.15))
             VStack(alignment: .leading, spacing: 12) {
                 HStack { Text("TERMINAL").font(.caption.monospaced()); Spacer(); Text("Browser JavaScript & CSS workspace").font(.caption.monospaced()) }.foregroundStyle(.secondary)
                 Text(log).font(.system(.subheadline, design: .monospaced)).foregroundStyle(.mint).frame(maxWidth: .infinity, alignment: .leading)
+                Text("PRACTICE CODE").font(.caption.monospaced()).foregroundStyle(.secondary)
+                ZStack(alignment: .topLeading) {
+                    if terminalCode.isEmpty {
+                        Text(track == .design ? ".arena { background-color: #172554; }" : "target.addEventListener('click', hit);")
+                            .font(.system(.subheadline, design: .monospaced)).foregroundStyle(.white.opacity(0.42))
+                            .padding(.horizontal, 8).padding(.vertical, 13).allowsHitTesting(false)
+                    }
+                    TextEditor(text: $terminalCode)
+                        .font(.system(.body, design: .monospaced)).scrollContentBackground(.hidden)
+                        .foregroundStyle(Color(red: 0.82, green: 0.91, blue: 0.94))
+                        .frame(minHeight: 124).autocorrectionDisabled().textInputAutocapitalization(.never)
+                        .accessibilityLabel("Terminal practice code")
+                }
+                .padding(8)
+                .background(Color(red: 0.055, green: 0.09, blue: 0.15), in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.15)))
+                Button("Apply practice code & run checks", systemImage: "play.fill") { applyTerminalCode() }
+                    .buttonStyle(.borderedProminent).tint(.mint)
+                    .disabled(terminalCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 HStack { Text("sprint $").font(.body.monospaced()).foregroundStyle(.mint); TextField("Type help, test, play, preview", text: $terminal).textFieldStyle(.plain).font(.body.monospaced()).onSubmit { runCommand() }; Button("Run") { runCommand() }.buttonStyle(.bordered) }
             }.padding(16).background(Color(red: 0.035, green: 0.065, blue: 0.11))
         }.clipShape(RoundedRectangle(cornerRadius: 22)).overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.white.opacity(0.16)))
@@ -920,13 +984,37 @@ struct ProjectPlaygroundView: View {
     private var draftKey: String { "project.\(track.rawValue).draft" }
     private var passKey: String { "project.\(track.rawValue).passing" }
     private var previewText: String { track == .design ? "Your palette uses the deep arena, bright target, and readable text you coded." : "Tap Dash is ready: the target responds, the score updates, and your rules control the round." }
-    private func switchTrack(_ newTrack: ProjectTrack) { track = newTrack; code = UserDefaults.standard.string(forKey: "project.\(newTrack.rawValue).draft") ?? Self.starter(for: newTrack); passed = false; previewing = false; log = "Ready." }
-    private static func starter(for track: ProjectTrack) -> String { track == .design ? ".arena {\n  /* TODO: background-color */\n}\n\n.target {\n  /* TODO: background-color */\n}\n\n.arena {\n  /* TODO: color */\n}" : "let score = 0;\n\nconst target = document.querySelector('.target');\n\n// TODO: respond to a tap\n// TODO: update the score\n// TODO: start the game loop" }
+    private func switchTrack(_ newTrack: ProjectTrack) { track = newTrack; code = UserDefaults.standard.string(forKey: "project.\(newTrack.rawValue).draft") ?? Self.starter(for: newTrack); terminalCode = ""; passed = false; previewing = false; log = "Ready." }
+    private static func starter(for track: ProjectTrack) -> String { track == .design ? "/* Design Palette Pop with real CSS. */\n/* Implement each of the three studio requirements below. */\n\n.arena {\n  /* TODO: background-color */\n}\n\n.target {\n  /* TODO: background-color */\n}\n\n.arena {\n  /* TODO: color */\n}" : "// Build Tap Dash with JavaScript.\n// Implement each of the three studio requirements below.\n\nlet score = 0;\n\nconst target = document.querySelector('.target');\n\n// TODO: respond to a tap\n// TODO: update the score\n// TODO: start the game loop" }
     private func stepTitle(_ step: Int) -> String { ["", track == .design ? "Set the visual foundation" : "Wire the first interaction", track == .design ? "Shape the interaction" : "Update the game state", track == .design ? "Polish for the player" : "Polish the game loop"][step] }
     private func stepInstruction(_ step: Int) -> String { track == .design ? ["", "Select .arena and set background-color to #172554. Then run checks to see the change in the design preview.", "Give .target a bright background-color so the player knows where to tap.", "Set a readable color on .arena and preview the complete palette."][step] : ["", "Add an event listener to the target so a device tap triggers your game.", "Increase score inside the interaction and show the new value.", "Use requestAnimationFrame to keep the game loop smooth."][step] }
     private func workedExample(_ step: Int) -> String { track == .design ? ["", ".arena { background-color: #172554; }", ".target { background-color: #5eead4; }", ".arena { color: white; }"][step] : ["", "target.addEventListener('click', hit);", "score += 1;", "requestAnimationFrame(loop);"][step] }
-    private func runChecks() { let lower = code.lowercased(); let foregroundRules = lower.replacingOccurrences(of: "background-color", with: ""); let checks = track == .design ? [lower.contains("#172554"), lower.contains(".target") && lower.contains("background-color"), foregroundRules.contains("color:")] : [lower.contains("addeventlistener"), lower.contains("score") && (lower.contains("+=") || lower.contains("score =")), lower.contains("requestanimationframe")]; let count = checks.filter { $0 }.count; passed = count == 3; log = "StackSprint Studio · \(track.rawValue)\n\(count) / 3 checks passed." + (passed ? "\nAll checks passed. Play unlocked!" : "\nKeep going — compare your code with the three steps."); if passed { UserDefaults.standard.set(code, forKey: passKey) } }
-    private func runCommand() { let command = terminal.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(); terminal = ""; switch command { case "test": runChecks(); case "play", "preview": previewing = true; log += "\nPreview opened."; case "clear": log = "Ready."; case "help": log += "\nCommands: help · test · play · preview · clear"; default: log += "\nUnknown command. Type help." } }
+    private func runChecks() {
+        let source = code.replacingOccurrences(of: "/\\*[\\s\\S]*?\\*/|//[^\\n]*", with: "", options: .regularExpression)
+        func matches(_ pattern: String) -> Bool {
+            source.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil
+        }
+        let checks = track == .design
+            ? [matches("\\.arena\\s*\\{[^}]*background-color\\s*:\\s*#172554\\s*;?"),
+               matches("\\.target\\s*\\{[^}]*background-color\\s*:\\s*[^;}\\s]+"),
+               matches("\\.arena\\s*\\{[^}]*?(?<!background-)color\\s*:\\s*[^;}\\s]+")]
+            : [matches("\\.addEventListener\\s*\\("),
+               matches("\\bscore\\s*(?:\\+=|\\+\\+|=\\s*score\\s*\\+)"),
+               matches("\\brequestAnimationFrame\\s*\\(")]
+        let count = checks.filter { $0 }.count
+        passed = count == 3
+        log = "StackSprint Studio · \(track.rawValue)\n\(count) / 3 checks passed." + (passed ? "\nAll checks passed. Preview unlocked!" : "\nKeep going — compare your code with the three steps.")
+        if passed { UserDefaults.standard.set(code, forKey: passKey) }
+    }
+    private func applyTerminalCode() {
+        let snippet = terminalCode.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !snippet.isEmpty else { return }
+        code += "\n\n" + snippet
+        terminalCode = ""
+        passed = false
+        runChecks()
+    }
+    private func runCommand() { let command = terminal.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(); terminal = ""; switch command { case "test": runChecks(); case "apply": applyTerminalCode(); case "play": if passed { previewing = true; log += "\nProject preview opened." } else { log += "\nPass all three checks to unlock play." }; case "preview": previewing = true; log += "\nDesign preview opened."; case "hint": log += "\n" + stepInstruction(openStep == 0 ? 1 : openStep); case "clear": log = "Ready."; case "help": log += "\nCommands: help · test · apply · play · preview · hint · clear"; default: log += "\nUnknown command. Type help." } }
 }
 struct LearnView: View {
     @EnvironmentObject var store: LearningStore
@@ -1175,11 +1263,14 @@ struct QuizView: View {
     }
 }
 struct StudioView: View {
+    var body: some View { ProjectPlaygroundView(initialTrack: .design, studioFirst: true) }
+}
+struct WebStudioView: View {
     var body: some View {
         VStack(spacing: 0) {
             Text("Hands-on web workspace · saves locally. Python needs internet; native account sync does not include studio saves.").font(.caption).padding(10)
             StudioWebView()
-        }.navigationTitle("Build & play").navigationBarTitleDisplayMode(.inline)
+        }.navigationTitle("Full Studio").navigationBarTitleDisplayMode(.inline)
     }
 }
 struct StudioWebView: UIViewRepresentable {
