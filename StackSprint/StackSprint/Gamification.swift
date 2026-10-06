@@ -3,7 +3,8 @@ import SwiftUI
 
 // MARK: - XP Level
 
-struct XPLevel: Equatable {
+struct XPLevel: Equatable, Identifiable {
+    var id: Int { number }
     let number: Int
     let name: String
     let icon: String

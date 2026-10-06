@@ -13,6 +13,8 @@ import AVFoundation
     @StateObject private var socialAuth = SocialAuthManager()
     @StateObject private var notifications = NotificationManager()
     @StateObject private var projectStore = ProjectStore()
+    @StateObject private var bookmarks = BookmarkStore()
+    @StateObject private var celebrations = CelebrationManager()
     @AppStorage("appearance.mode") private var appearance = "dark"
     var body: some Scene {
         WindowGroup {
@@ -22,12 +24,14 @@ import AVFoundation
                 .environmentObject(socialAuth)
                 .environmentObject(notifications)
                 .environmentObject(projectStore)
+                .environmentObject(bookmarks)
+                .environmentObject(celebrations)
                 .tint(.mint)
                 .preferredColorScheme(appearance == "light" ? .light : .dark)
                 .modifier(SprintTheme())
                 .onAppear {
                     store.switchUser(backend.session?.user.id)
-                    store.onPractice = { [weak notifications, weak store, weak backend] in
+                    store.onPractice = { [weak notifications, weak store, weak backend, weak celebrations] in
                         notifications?.refreshAfterPractice()
                         if let total = store?.curriculum?.lessons.count, total > 0,
                            let done = store?.completed.count {
@@ -35,12 +39,12 @@ import AVFoundation
                             for milestone in [25, 50, 75, 100] where pct >= milestone {
                                 notifications?.fireMilestone(pct: milestone)
                             }
-                            // Write widget data
                             UserDefaults.standard.set(done, forKey: "native.lessons.widget")
                         }
                         if let streak = store?.currentStreak {
                             UserDefaults.standard.set(streak, forKey: "native.streak.widget")
                         }
+                        if let s = store { celebrations?.check(store: s) }
                         if backend?.session != nil {
                             Task { try? await backend?.sync(store!) }
                         }
@@ -54,6 +58,7 @@ import AVFoundation
     }
 }
 struct RootView: View {
+    @EnvironmentObject var celebrations: CelebrationManager
     @State private var showingBite = false
     @State private var showingMenu = false
     @AppStorage("onboarding.finished") private var welcomed = false
@@ -63,7 +68,19 @@ struct RootView: View {
             NavigationStack { LearnView().modifier(SprintTheme()) }.tabItem { Label("Learn", systemImage: "sparkles") }
             NavigationStack { StudioView().modifier(SprintTheme()) }.tabItem { Label("Studio", systemImage: "curlybraces") }
             NavigationStack { TogetherView().modifier(SprintTheme()) }.tabItem { Label("Together", systemImage: "heart.fill") }
+            NavigationStack { AnalyticsDashboardView() }.tabItem { Label("Stats", systemImage: "chart.bar.fill") }
             NavigationStack { AccountView().modifier(SprintTheme()) }.tabItem { Label("Account", systemImage: "person.crop.circle") }
+        }
+        .sheet(item: $celebrations.levelUpSheet) { level in
+            LevelUpSheet(newLevel: level) { celebrations.levelUpSheet = nil }
+        }
+        .sheet(isPresented: Binding(get: { celebrations.trackCompleteCategory != nil },
+                                    set: { if !$0 { celebrations.trackCompleteCategory = nil } })) {
+            if let cat = celebrations.trackCompleteCategory {
+                TrackCompleteSheet(category: cat, completedCount: celebrations.trackCompleteCount) {
+                    celebrations.trackCompleteCategory = nil
+                }
+            }
         }
         .overlay(alignment: .bottomTrailing) {
             if welcomed {
@@ -1124,6 +1141,9 @@ struct ProjectPlaygroundView: View {
 struct LearnView: View {
     @EnvironmentObject var store: LearningStore
     @EnvironmentObject var socialAuth: SocialAuthManager
+    @EnvironmentObject var bookmarks: BookmarkStore
+    @EnvironmentObject var celebrations: CelebrationManager
+    @AppStorage("goal.startingTrack") private var startingTrack = "Web development"
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var exporting = false
@@ -1131,6 +1151,7 @@ struct LearnView: View {
     @State private var category = "Web development"
     @State private var selectedID: String?
     @State private var showingChallenge = false
+    @State private var showingBookmarks = false
     private var categories: [String] {
         var seen = Set<String>()
         return (store.curriculum?.lessons ?? []).compactMap {
@@ -1144,178 +1165,247 @@ struct LearnView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                VStack(alignment: .leading, spacing: 18) {
-                    Text("YOUR POCKET CODING ARCADE").font(.caption.bold()).tracking(1.5).foregroundStyle(.mint)
-                    HStack(alignment: .center, spacing: 18) {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("Little lessons.\nReal superpowers.").font(.system(.largeTitle, design: .rounded, weight: .bold))
-                            Text("Learn a little. Build something yours.").font(.title3).foregroundStyle(.secondary)
-                            Text("No hearts to lose. Mistakes are welcome.").font(.subheadline).foregroundStyle(.secondary)
-                        }
-                        Spacer(minLength: 4)
-                        VStack(spacing: 2) {
-                            BiteAvatar().frame(width: 74, height: 100)
-                            Text("I’ve got you.").font(.caption.bold()).foregroundStyle(.mint)
-                        }
-                    }
-                    Text("Tap a card, make a prediction, then try the idea yourself.").font(.subheadline).foregroundStyle(.secondary)
-                    HStack(spacing: 12) {
-                        ProgressView(value: Double(store.completed.count), total: Double(total)).tint(.mint)
-                        Text("\(store.completed.count) / \(total)").font(.system(.caption, design: .monospaced).bold())
-                    }
-                    Text(store.completed.isEmpty ? "Your first tiny win is waiting." : "Nice streak—every completed card powers up Bit.")
-                        .font(.caption.bold()).foregroundStyle(.mint)
-                }
-                .padding(22)
-                .background(LinearGradient(colors: [Color.indigo.opacity(0.35), Color.mint.opacity(0.12)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 28))
-
+                heroCard
                 if let error = store.error { Text(error).foregroundStyle(.red) }
-
+                GoalProgressBanner()
+                if celebrations.showStreakRecord {
+                    StreakRecordBanner(currentStreak: celebrations.streakRecordCount,
+                                      previousRecord: celebrations.streakRecordCount - 1)
+                        .onTapGesture { celebrations.showStreakRecord = false }
+                }
+                ReviewQueueSection()
                 GamificationHeader()
-
                 LearningPathSection()
-
-                // Challenge mode button
-                Button { showingChallenge = true } label: {
-                    HStack {
-                        Image(systemName: "bolt.fill").foregroundStyle(.yellow)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Challenge Mode").font(.headline)
-                            Text("Adaptive quiz — targets your weak spots").font(.caption).foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Image(systemName: "chevron.right").foregroundStyle(.secondary)
-                    }
-                    .padding(14)
-                    .background(Color.yellow.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.yellow.opacity(0.2)))
-                }
-                .buttonStyle(.plain)
-                .sheet(isPresented: $showingChallenge) {
-                    AdaptiveQuizView()
-                }
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
-                        ForEach(categories, id: \.self) { name in
-                            Button {
-                                withAnimation(.easeOut(duration: 0.2)) { category = name; selectedID = nil }
-                            } label: {
-                                Label(shortName(name), systemImage: categoryIcon(name))
-                                    .font(.subheadline.bold()).padding(.horizontal, 15).padding(.vertical, 11)
-                            }
-                            .buttonStyle(.plain)
-                            .foregroundStyle(category == name ? Color(red: 0.05, green: 0.12, blue: 0.22) : .primary)
-                            .background(category == name ? lessonColor(forCategory: name) : SprintPalette.card, in: Capsule())
-                            .overlay(Capsule().stroke(category == name ? lessonColor(forCategory: name) : Color.secondary.opacity(0.18), lineWidth: 1.5))
-                        }
-                    }
-                }
-
-                HStack(alignment: .bottom) {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(category.uppercased()).font(.caption.bold()).tracking(1.2).foregroundStyle(lessonColor(forCategory: category))
-                        Text("Choose your next challenge").font(.title2.bold())
-                    }
-                    Spacer()
-                    Text("\(lessons.count) cards").font(.system(.caption, design: .monospaced).bold()).foregroundStyle(.secondary)
-                }
-
-                if let selected {
-                    VStack(alignment: .leading, spacing: 14) {
-                        HStack {
-                            Label("READY TO LEARN", systemImage: "sparkles").font(.caption.bold()).foregroundStyle(lessonColor(selected))
-                            Spacer()
-                            Button { withAnimation { selectedID = nil } } label: { Image(systemName: "xmark.circle.fill").font(.title2) }.buttonStyle(.plain).accessibilityLabel("Close lesson preview")
-                        }
-                        Text(selected.term).font(.system(.largeTitle, design: .rounded, weight: .bold))
-                        Text(selected.definition).font(.title3)
-                        Text("Prediction: \(selected.clue)").font(.subheadline).foregroundStyle(.secondary)
-                        NavigationLink { LessonView(lesson: selected) } label: {
-                            Label(store.completed.contains(selected.id) ? "Practice again" : "Start this tiny win", systemImage: "play.fill")
-                                .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 14)
-                        }.buttonStyle(.borderedProminent).tint(lessonColor(selected))
-                    }
-                    .padding(20)
-                    .background(lessonColor(selected).opacity(0.13), in: RoundedRectangle(cornerRadius: 24))
-                    .overlay(RoundedRectangle(cornerRadius: 24).stroke(lessonColor(selected).opacity(0.75), lineWidth: 2))
-                    .transition(.scale(scale: 0.96).combined(with: .opacity))
-                }
+                challengeButton
+                categoryTabBar
+                trackHeader
+                if let selected { selectedLessonCard(selected) }
 
                 LazyVGrid(columns: columns, spacing: 14) {
                     ForEach(Array(lessons.enumerated()), id: \.element.id) { number, lesson in
-                        Button {
-                            withAnimation(reduceMotion ? .easeOut(duration: 0.12) : .spring(response: 0.32, dampingFraction: 0.82)) { selectedID = lesson.id }
-                        } label: {
-                            VStack(alignment: .leading, spacing: 10) {
-                                HStack {
-                                    Circle().fill(lessonColor(lesson)).frame(width: 11, height: 11)
-                                    Text(String(format: "%02d", number + 1)).font(.system(.caption, design: .monospaced).bold()).foregroundStyle(.secondary)
-                                    Spacer()
-                                    Image(systemName: store.completed.contains(lesson.id) ? "checkmark.seal.fill" : "arrow.up.right")
-                                        .foregroundStyle(store.completed.contains(lesson.id) ? .green : lessonColor(lesson))
-                                }
-                                Spacer(minLength: 8)
-                                Text(lesson.term).font(.headline).foregroundStyle(.primary).multilineTextAlignment(.leading)
-                                Text(cardLabel(lesson)).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.leading)
-                                Text(store.completed.contains(lesson.id) ? "Mastered · tap to replay" : "Tap to power up →")
-                                    .font(.caption.bold()).foregroundStyle(lessonColor(lesson))
-                            }
-                            .padding(16).frame(maxWidth: .infinity, minHeight: 160, alignment: .leading)
-                            .background(selectedID == lesson.id ? lessonColor(lesson).opacity(0.16) : SprintPalette.card.opacity(0.82), in: RoundedRectangle(cornerRadius: 22))
-                            .overlay(RoundedRectangle(cornerRadius: 22).stroke(selectedID == lesson.id ? lessonColor(lesson) : Color.secondary.opacity(0.18), lineWidth: selectedID == lesson.id ? 2 : 1.2))
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("\(lesson.term), \(cardLabel(lesson)). \(store.completed.contains(lesson.id) ? "Completed" : "Not completed")")
-                        .accessibilityHint("Shows a preview and start button")
+                        lessonGridCard(lesson: lesson, number: number)
                     }
                 }
 
-                VStack(alignment: .leading, spacing: 18) {
-                    HStack(alignment: .top) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("MY CODING STREAK").font(.caption.bold()).tracking(1.3).foregroundStyle(.secondary)
-                            Text("\(store.currentStreak) \(store.currentStreak == 1 ? "day" : "days")").font(.system(size: 46, weight: .bold, design: .rounded))
-                        }
-                        Spacer()
-                        Image(systemName: "flame.fill").font(.system(size: 34)).foregroundStyle(.orange)
-                            .frame(width: 64, height: 64).background(.orange.opacity(0.14), in: RoundedRectangle(cornerRadius: 20))
-                    }
-                    Text(store.currentStreak == 0 ? "Your first tiny win starts today. You belong here." : "You showed up today. Keep the spark going with one small lesson tomorrow.")
-                        .font(.title3)
-                    HStack(spacing: 9) {
-                        ForEach(0..<7, id: \.self) { day in
-                            ZStack {
-                                Circle().fill(day < min(store.currentStreak, 7) ? Color.orange : SprintPalette.card)
-                                Image(systemName: day < min(store.currentStreak, 7) ? "flame.fill" : "circle.dotted")
-                                    .font(.caption).foregroundStyle(day < min(store.currentStreak, 7) ? .white : .secondary)
-                            }.frame(width: 38, height: 38)
-                        }
-                    }
-                    Text("Real learning activity · saved on this device").font(.caption).foregroundStyle(.secondary)
-                    ShareLink(item: "I’m on a \(store.currentStreak)-day coding streak in StackSprint! Want to build one tiny win with me?") {
-                        Label("Share my streak", systemImage: "square.and.arrow.up").font(.headline).padding(.vertical, 4)
-                    }.buttonStyle(.bordered)
-                }
-                .padding(20)
-                .background(Color.orange.opacity(0.11), in: RoundedRectangle(cornerRadius: 26))
-                .overlay(RoundedRectangle(cornerRadius: 26).stroke(Color.orange.opacity(0.35), lineWidth: 1.5))
-
-                VStack(alignment: .leading, spacing: 14) {
-                    Text("RECALL ARCADE").font(.caption.bold()).tracking(1.3).foregroundStyle(.orange)
-                    Text("Ready for a boss round?").font(.title2.bold())
-                    NavigationLink { QuizView(questions: store.curriculum?.questions.filter { $0.id.hasPrefix("web-") } ?? []) } label: { Label("Web quiz · 25 questions", systemImage: "gamecontroller.fill").frame(maxWidth: .infinity, alignment: .leading).padding(14) }.buttonStyle(.bordered)
-                    NavigationLink { QuizView(questions: store.curriculum?.questions.filter { $0.id.hasPrefix("cyber-") } ?? []) } label: { Label("Cybersecurity quiz · 25 questions", systemImage: "shield.checkered").frame(maxWidth: .infinity, alignment: .leading).padding(14) }.buttonStyle(.bordered)
-                    Button("Export flashcards (CSV)", systemImage: "square.and.arrow.up") { exporting = true }.buttonStyle(.bordered)
-                    if let exportError { Text(exportError).foregroundStyle(.red) }
-                }.padding(20).background(Color.orange.opacity(0.09), in: RoundedRectangle(cornerRadius: 24))
+                streakSection
+                recallArcadeSection
             }
             .padding(.horizontal, 18).padding(.top, 72).padding(.bottom, 110).frame(maxWidth: 980)
         }.navigationTitle("StackSprint").navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { showingBookmarks = true } label: {
+                    Image(systemName: bookmarks.bookmarks.isEmpty ? "bookmark" : "bookmark.fill")
+                        .foregroundStyle(bookmarks.bookmarks.isEmpty ? Color.secondary : Color.yellow)
+                }
+                .accessibilityLabel("My bookmarks")
+            }
+        }
+        .sheet(isPresented: $showingBookmarks) { BookmarksSheet() }
         .fileExporter(isPresented: $exporting, document: FlashcardDocument(lessons: store.curriculum?.lessons ?? []), contentType: .commaSeparatedText, defaultFilename: "StackSprint-flashcards") { result in
             if case .failure(let error) = result { exportError = error.localizedDescription }
         }
+        .onAppear {
+            // Apply starting track from goal-setting onboarding step
+            if categories.contains(startingTrack) { category = startingTrack }
+        }
     }
+    @ViewBuilder
+    private func lessonGridCard(lesson: Lesson, number: Int) -> some View {
+        let color = lessonColor(lesson)
+        let done  = store.completed.contains(lesson.id)
+        Button {
+            withAnimation(reduceMotion ? .easeOut(duration: 0.12) : .spring(response: 0.32, dampingFraction: 0.82)) { selectedID = lesson.id }
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Circle().fill(color).frame(width: 11, height: 11)
+                    Text(String(format: "%02d", number + 1)).font(.system(.caption, design: .monospaced).bold()).foregroundStyle(.secondary)
+                    Spacer()
+                    Image(systemName: done ? "checkmark.seal.fill" : "arrow.up.right").foregroundStyle(done ? .green : color)
+                }
+                Spacer(minLength: 8)
+                Text(lesson.term).font(.headline).foregroundStyle(.primary).multilineTextAlignment(.leading)
+                Text(cardLabel(lesson)).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                Text(done ? "Mastered \u{B7} tap to replay" : "Tap to power up \u{2192}").font(.caption.bold()).foregroundStyle(color)
+            }
+            .padding(16).frame(maxWidth: .infinity, minHeight: 160, alignment: .leading)
+            .background(selectedID == lesson.id ? color.opacity(0.16) : SprintPalette.card.opacity(0.82),
+                        in: RoundedRectangle(cornerRadius: 22))
+            .overlay(RoundedRectangle(cornerRadius: 22)
+                .stroke(selectedID == lesson.id ? color : Color.secondary.opacity(0.18),
+                        lineWidth: selectedID == lesson.id ? 2 : 1.2))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(lesson.term), \(cardLabel(lesson)). \(done ? "Completed" : "Not completed")")
+        .accessibilityHint("Shows a preview and start button")
+    }
+
+    private var heroCard: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("YOUR POCKET CODING ARCADE").font(.caption.bold()).tracking(1.5).foregroundStyle(.mint)
+            HStack(alignment: .center, spacing: 18) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Little lessons.\nReal superpowers.").font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    Text("Learn a little. Build something yours.").font(.title3).foregroundStyle(.secondary)
+                    Text("No hearts to lose. Mistakes are welcome.").font(.subheadline).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 4)
+                VStack(spacing: 2) {
+                    BiteAvatar().frame(width: 74, height: 100)
+                    Text("I've got you.").font(.caption.bold()).foregroundStyle(.mint)
+                }
+            }
+            Text("Tap a card, make a prediction, then try the idea yourself.").font(.subheadline).foregroundStyle(.secondary)
+            HStack(spacing: 12) {
+                ProgressView(value: Double(store.completed.count), total: Double(total)).tint(.mint)
+                Text("\(store.completed.count) / \(total)").font(.system(.caption, design: .monospaced).bold())
+            }
+            Text(store.completed.isEmpty ? "Your first tiny win is waiting." : "Nice streak\u{2014}every completed card powers up Bit.")
+                .font(.caption.bold()).foregroundStyle(.mint)
+        }
+        .padding(22)
+        .background(LinearGradient(colors: [Color.indigo.opacity(0.35), Color.mint.opacity(0.12)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing),
+                    in: RoundedRectangle(cornerRadius: 28))
+    }
+
+    private var challengeButton: some View {
+        Button { showingChallenge = true } label: {
+            HStack {
+                Image(systemName: "bolt.fill").foregroundStyle(.yellow)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Challenge Mode").font(.headline)
+                    Text("Adaptive quiz \u{2014} targets your weak spots").font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+            }
+            .padding(14)
+            .background(Color.yellow.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.yellow.opacity(0.2)))
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showingChallenge) { AdaptiveQuizView() }
+    }
+
+    private var categoryTabBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(categories, id: \.self) { name in
+                    Button {
+                        withAnimation(.easeOut(duration: 0.2)) { category = name; selectedID = nil }
+                    } label: {
+                        Label(shortName(name), systemImage: categoryIcon(name))
+                            .font(.subheadline.bold()).padding(.horizontal, 15).padding(.vertical, 11)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(category == name ? Color(red: 0.05, green: 0.12, blue: 0.22) : .primary)
+                    .background(category == name ? lessonColor(forCategory: name) : SprintPalette.card, in: Capsule())
+                    .overlay(Capsule().stroke(category == name ? lessonColor(forCategory: name) : Color.secondary.opacity(0.18), lineWidth: 1.5))
+                }
+            }
+        }
+    }
+
+    private var trackHeader: some View {
+        HStack(alignment: .bottom) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text(category.uppercased()).font(.caption.bold()).tracking(1.2).foregroundStyle(lessonColor(forCategory: category))
+                Text("Choose your next challenge").font(.title2.bold())
+            }
+            Spacer()
+            Text("\(lessons.count) cards").font(.system(.caption, design: .monospaced).bold()).foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    private func selectedLessonCard(_ selected: Lesson) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Label("READY TO LEARN", systemImage: "sparkles").font(.caption.bold()).foregroundStyle(lessonColor(selected))
+                Spacer()
+                Button { withAnimation { selectedID = nil } } label: {
+                    Image(systemName: "xmark.circle.fill").font(.title2)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Close lesson preview")
+            }
+            Text(selected.term).font(.system(.largeTitle, design: .rounded, weight: .bold))
+            Text(selected.definition).font(.title3)
+            Text("Prediction: \(selected.clue)").font(.subheadline).foregroundStyle(.secondary)
+            NavigationLink { LessonView(lesson: selected) } label: {
+                Label(store.completed.contains(selected.id) ? "Practice again" : "Start this tiny win", systemImage: "play.fill")
+                    .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 14)
+            }.buttonStyle(.borderedProminent).tint(lessonColor(selected))
+        }
+        .padding(20)
+        .background(lessonColor(selected).opacity(0.13), in: RoundedRectangle(cornerRadius: 24))
+        .overlay(RoundedRectangle(cornerRadius: 24).stroke(lessonColor(selected).opacity(0.75), lineWidth: 2))
+        .transition(.scale(scale: 0.96).combined(with: .opacity))
+    }
+
+    private var streakSection: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("MY CODING STREAK").font(.caption.bold()).tracking(1.3).foregroundStyle(.secondary)
+                    Text("\(store.currentStreak) \(store.currentStreak == 1 ? "day" : "days")")
+                        .font(.system(size: 46, weight: .bold, design: .rounded))
+                }
+                Spacer()
+                Image(systemName: "flame.fill").font(.system(size: 34)).foregroundStyle(.orange)
+                    .frame(width: 64, height: 64)
+                    .background(.orange.opacity(0.14), in: RoundedRectangle(cornerRadius: 20))
+            }
+            Text(store.currentStreak == 0
+                 ? "Your first tiny win starts today. You belong here."
+                 : "You showed up today. Keep the spark going with one small lesson tomorrow.")
+                .font(.title3)
+            HStack(spacing: 9) {
+                ForEach(0..<7, id: \.self) { day in
+                    ZStack {
+                        Circle().fill(day < min(store.currentStreak, 7) ? Color.orange : SprintPalette.card)
+                        Image(systemName: day < min(store.currentStreak, 7) ? "flame.fill" : "circle.dotted")
+                            .font(.caption)
+                            .foregroundStyle(day < min(store.currentStreak, 7) ? .white : .secondary)
+                    }.frame(width: 38, height: 38)
+                }
+            }
+            Text("Real learning activity \u{B7} saved on this device").font(.caption).foregroundStyle(.secondary)
+            ShareLink(item: "I'm on a \(store.currentStreak)-day coding streak in StackSprint! Want to build one tiny win with me?") {
+                Label("Share my streak", systemImage: "square.and.arrow.up").font(.headline).padding(.vertical, 4)
+            }.buttonStyle(.bordered)
+        }
+        .padding(20)
+        .background(Color.orange.opacity(0.11), in: RoundedRectangle(cornerRadius: 26))
+        .overlay(RoundedRectangle(cornerRadius: 26).stroke(Color.orange.opacity(0.35), lineWidth: 1.5))
+    }
+
+    private var recallArcadeSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("RECALL ARCADE").font(.caption.bold()).tracking(1.3).foregroundStyle(.orange)
+            Text("Ready for a boss round?").font(.title2.bold())
+            NavigationLink {
+                QuizView(questions: store.curriculum?.questions.filter { $0.id.hasPrefix("web-") } ?? [])
+            } label: {
+                Label("Web quiz \u{B7} 25 questions", systemImage: "gamecontroller.fill")
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(14)
+            }.buttonStyle(.bordered)
+            NavigationLink {
+                QuizView(questions: store.curriculum?.questions.filter { $0.id.hasPrefix("cyber-") } ?? [])
+            } label: {
+                Label("Cybersecurity quiz \u{B7} 25 questions", systemImage: "shield.checkered")
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(14)
+            }.buttonStyle(.bordered)
+            Button("Export flashcards (CSV)", systemImage: "square.and.arrow.up") { exporting = true }
+                .buttonStyle(.bordered)
+            if let exportError { Text(exportError).foregroundStyle(.red) }
+        }
+        .padding(20)
+        .background(Color.orange.opacity(0.09), in: RoundedRectangle(cornerRadius: 24))
+    }
+
     private func shortName(_ value: String) -> String { value == "Web development" ? "Web" : value }
     private func categoryIcon(_ value: String) -> String { value == "Web development" ? "globe" : value == "Python" ? "chevron.left.forwardslash.chevron.right" : "shield.fill" }
     private func lessonColor(forCategory value: String) -> Color { value == "Python" ? .orange : value == "Cybersecurity" ? .purple : .blue }
@@ -1447,6 +1537,7 @@ struct AccountView: View {
                 Text("XP breakdown")
             }
             BadgeGridSection()
+            GoalSettingsSection()
             NotificationSettingsSection(notifications: notifications)
             if socialAuth.isSignedIn {
                 Section("Connected account") {
