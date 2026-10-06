@@ -16,6 +16,7 @@ struct AnalyticsDashboardView: View {
                 categoryProgressSection
                 xpBreakdownChart
                 leaderboardLink
+                weeklyInsightsLink
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
@@ -171,6 +172,23 @@ struct AnalyticsDashboardView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Leaderboard").font(.headline)
                     Text("See how your XP ranks globally").font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+            }
+            .padding(16)
+            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var weeklyInsightsLink: some View {
+        NavigationLink { WeeklyInsightsView() } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "chart.xyaxis.line").font(.title2).foregroundStyle(.purple)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Weekly Insights").font(.headline)
+                    Text("Heatmap, velocity, weak spots & recommendations").font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Image(systemName: "chevron.right").foregroundStyle(.secondary)

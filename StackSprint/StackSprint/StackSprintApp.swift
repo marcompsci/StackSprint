@@ -1,11 +1,13 @@
+import AppIntents
+import AVFoundation
+import Combine
+import CoreML
+import FoundationModels
 import SwiftUI
 import UIKit
-import Combine
-import WebKit
 import UniformTypeIdentifiers
-import FoundationModels
-import CoreML
-import AVFoundation
+import WidgetKit
+import WebKit
 
 @main struct StackSprintApp: App {
     @StateObject private var store = LearningStore()
@@ -35,6 +37,10 @@ import AVFoundation
                 .modifier(SprintTheme())
                 .onAppear {
                     store.switchUser(backend.session?.user.id)
+                    // Index all lessons in Spotlight on first launch
+                    if let lessons = store.curriculum?.lessons { indexLessonsInSpotlight(lessons) }
+                    // Donate Siri Shortcuts
+                    StackSprintShortcuts.updateAppShortcutParameters()
                     store.onPractice = { [weak notifications, weak store, weak backend, weak celebrations] in
                         notifications?.refreshAfterPractice()
                         if let total = store?.curriculum?.lessons.count, total > 0,
@@ -43,16 +49,15 @@ import AVFoundation
                             for milestone in [25, 50, 75, 100] where pct >= milestone {
                                 notifications?.fireMilestone(pct: milestone)
                             }
-                            UserDefaults.standard.set(done, forKey: "native.lessons.widget")
                         }
-                        if let streak = store?.currentStreak {
-                            UserDefaults.standard.set(streak, forKey: "native.streak.widget")
-                        }
+                        if let s = store { writeWidgetData(store: s) }
                         if let s = store { celebrations?.check(store: s) }
                         if backend?.session != nil {
                             Task { try? await backend?.sync(store!) }
                         }
                     }
+                    // Write initial widget data
+                    writeWidgetData(store: store)
                 }
                 .onChange(of: backend.session?.user.id) { _, id in
                     store.switchUser(id)
@@ -1631,6 +1636,7 @@ struct AccountView: View {
             GoalSettingsSection()
             NotificationSettingsSection(notifications: notifications)
             VoiceSpeedSection()
+            CloudSyncSection()
             Section {
                 if premiumStore.isPro {
                     HStack(spacing: 10) {

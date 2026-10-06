@@ -55,11 +55,14 @@ import SwiftUI
     }
 
     private func inferCategory(_ questionID: String, curriculum: [Lesson]) -> String {
-        if questionID.hasPrefix("q-ts")     { return "TypeScript" }
-        if questionID.hasPrefix("q-react")  { return "React" }
-        if questionID.hasPrefix("q-swift")  { return "Swift" }
-        if questionID.hasPrefix("q-cyber")  { return "Cybersecurity" }
-        if questionID.hasPrefix("q-py")     { return "Python" }
+        if questionID.hasPrefix("q-ts")        { return "TypeScript" }
+        if questionID.hasPrefix("q-react")     { return "React" }
+        if questionID.hasPrefix("q-swift")     { return "Swift" }
+        if questionID.hasPrefix("q-cyber")     { return "Cybersecurity" }
+        if questionID.hasPrefix("q-py")        { return "Python" }
+        if questionID.hasPrefix("q-go")        { return "Go" }
+        if questionID.hasPrefix("q-rust")      { return "Rust" }
+        if questionID.hasPrefix("q-interview") { return "Interview Prep" }
         return "Web development"
     }
 

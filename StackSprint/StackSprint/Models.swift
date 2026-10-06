@@ -74,6 +74,13 @@ struct ProgressRow: Codable {
 
     func merge(_ rows: [ProgressRow]) { completed.formUnion(rows.map(\.lesson_id)); persist() }
 
+    func mergeFromCloud(completed: Set<String>, practicedDays: Set<String>, recallAnswers: Set<String>) {
+        self.completed.formUnion(completed)
+        self.practicedDays.formUnion(practicedDays)
+        self.correctRecallAnswers.formUnion(recallAnswers)
+        persist()
+    }
+
     private func persist() {
         UserDefaults.standard.set(Array(completed), forKey: "native.completed.\(namespace)")
         UserDefaults.standard.set(Array(practicedDays), forKey: "native.practiceDays.\(namespace)")
