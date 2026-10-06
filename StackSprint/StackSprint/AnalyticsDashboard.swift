@@ -15,6 +15,7 @@ struct AnalyticsDashboardView: View {
                 heatmapSection
                 categoryProgressSection
                 xpBreakdownChart
+                leaderboardLink
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
@@ -159,6 +160,25 @@ struct AnalyticsDashboardView: View {
         }
         .padding(16)
         .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+    }
+
+    // MARK: – Leaderboard link
+
+    private var leaderboardLink: some View {
+        NavigationLink { LeaderboardView() } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "trophy.fill").font(.title2).foregroundStyle(.yellow)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Leaderboard").font(.headline)
+                    Text("See how your XP ranks globally").font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+            }
+            .padding(16)
+            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: – Helpers

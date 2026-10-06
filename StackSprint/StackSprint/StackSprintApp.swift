@@ -15,6 +15,7 @@ import AVFoundation
     @StateObject private var projectStore = ProjectStore()
     @StateObject private var bookmarks = BookmarkStore()
     @StateObject private var celebrations = CelebrationManager()
+    @StateObject private var challenges = ChallengeStore()
     @AppStorage("appearance.mode") private var appearance = "dark"
     var body: some Scene {
         WindowGroup {
@@ -26,6 +27,7 @@ import AVFoundation
                 .environmentObject(projectStore)
                 .environmentObject(bookmarks)
                 .environmentObject(celebrations)
+                .environmentObject(challenges)
                 .tint(.mint)
                 .preferredColorScheme(appearance == "light" ? .light : .dark)
                 .modifier(SprintTheme())
@@ -1143,6 +1145,7 @@ struct LearnView: View {
     @EnvironmentObject var socialAuth: SocialAuthManager
     @EnvironmentObject var bookmarks: BookmarkStore
     @EnvironmentObject var celebrations: CelebrationManager
+    @EnvironmentObject var challenges: ChallengeStore
     @AppStorage("goal.startingTrack") private var startingTrack = "Web development"
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -1152,13 +1155,19 @@ struct LearnView: View {
     @State private var selectedID: String?
     @State private var showingChallenge = false
     @State private var showingBookmarks = false
+    @State private var showingTutor = false
+    @State private var difficultyFilter: String? = nil
     private var categories: [String] {
         var seen = Set<String>()
         return (store.curriculum?.lessons ?? []).compactMap {
             seen.insert($0.category).inserted ? $0.category : nil
         }
     }
-    private var lessons: [Lesson] { store.curriculum?.lessons.filter { $0.category == category } ?? [] }
+    private var lessons: [Lesson] {
+        let byCategory = store.curriculum?.lessons.filter { $0.category == category } ?? []
+        guard let filter = difficultyFilter else { return byCategory }
+        return byCategory.filter { $0.difficulty == filter }
+    }
     private var selected: Lesson? { lessons.first { $0.id == selectedID } }
     private var columns: [GridItem] { [GridItem(.adaptive(minimum: sizeClass == .compact ? 150 : 220), spacing: 14)] }
     private var total: Int { max(store.curriculum?.lessons.count ?? 1, 1) }
@@ -1173,11 +1182,13 @@ struct LearnView: View {
                                       previousRecord: celebrations.streakRecordCount - 1)
                         .onTapGesture { celebrations.showStreakRecord = false }
                 }
+                ChallengeBanner()
                 ReviewQueueSection()
                 GamificationHeader()
                 LearningPathSection()
                 challengeButton
                 categoryTabBar
+                difficultyFilterBar
                 trackHeader
                 if let selected { selectedLessonCard(selected) }
 
@@ -1193,7 +1204,12 @@ struct LearnView: View {
             .padding(.horizontal, 18).padding(.top, 72).padding(.bottom, 110).frame(maxWidth: 980)
         }.navigationTitle("StackSprint").navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button { showingTutor = true } label: {
+                    Image(systemName: "sparkles")
+                        .foregroundStyle(.mint)
+                }
+                .accessibilityLabel("Ask Bit AI Tutor")
                 Button { showingBookmarks = true } label: {
                     Image(systemName: bookmarks.bookmarks.isEmpty ? "bookmark" : "bookmark.fill")
                         .foregroundStyle(bookmarks.bookmarks.isEmpty ? Color.secondary : Color.yellow)
@@ -1201,6 +1217,7 @@ struct LearnView: View {
                 .accessibilityLabel("My bookmarks")
             }
         }
+        .sheet(isPresented: $showingTutor) { AITutorView() }
         .sheet(isPresented: $showingBookmarks) { BookmarksSheet() }
         .fileExporter(isPresented: $exporting, document: FlashcardDocument(lessons: store.curriculum?.lessons ?? []), contentType: .commaSeparatedText, defaultFilename: "StackSprint-flashcards") { result in
             if case .failure(let error) = result { exportError = error.localizedDescription }
@@ -1289,12 +1306,39 @@ struct LearnView: View {
         .sheet(isPresented: $showingChallenge) { AdaptiveQuizView() }
     }
 
+    @ViewBuilder
+    private var difficultyFilterBar: some View {
+        let hasDifficulties = !lessons.isEmpty && lessons.contains(where: { $0.difficulty != nil })
+        if hasDifficulties || difficultyFilter != nil {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(["All", "beginner", "intermediate", "advanced"], id: \.self) { level in
+                        let selected = level == "All" ? difficultyFilter == nil : difficultyFilter == level
+                        Button {
+                            withAnimation(.easeOut(duration: 0.15)) {
+                                difficultyFilter = level == "All" ? nil : level
+                            }
+                        } label: {
+                            Text(level == "All" ? "All" : level.capitalized)
+                                .font(.caption.bold())
+                                .padding(.horizontal, 12).padding(.vertical, 6)
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(selected ? Color(red: 0.05, green: 0.12, blue: 0.22) : .primary)
+                        .background(selected ? Color.mint : SprintPalette.card, in: Capsule())
+                        .overlay(Capsule().stroke(selected ? Color.mint : Color.secondary.opacity(0.2)))
+                    }
+                }
+            }
+        }
+    }
+
     private var categoryTabBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
                 ForEach(categories, id: \.self) { name in
                     Button {
-                        withAnimation(.easeOut(duration: 0.2)) { category = name; selectedID = nil }
+                        withAnimation(.easeOut(duration: 0.2)) { category = name; selectedID = nil; difficultyFilter = nil }
                     } label: {
                         Label(shortName(name), systemImage: categoryIcon(name))
                             .font(.subheadline.bold()).padding(.horizontal, 15).padding(.vertical, 11)

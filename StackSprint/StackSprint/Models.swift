@@ -9,6 +9,7 @@ struct Lesson: Codable, Identifiable {
     let clue: String
     let definition: String
     let code: String
+    let difficulty: String?
 }
 
 struct Question: Codable, Identifiable {

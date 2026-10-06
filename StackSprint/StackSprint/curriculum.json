@@ -611,6 +611,226 @@
       "clue": "Attach behavior to a property.",
       "definition": "@State, @Binding, and @Published are property wrappers that add automatic behavior to stored values.",
       "code": "@State private var count = 0"
+    },
+    {
+      "id": "go-intro",
+      "term": "Go",
+      "category": "Go",
+      "categoryLabel": "Language foundation",
+      "difficulty": "beginner",
+      "clue": "Google's fast, simple, compiled language.",
+      "definition": "Go is a statically typed compiled language built for simplicity and speed. It compiles in seconds and runs close to C performance.",
+      "example": "Go powers Docker, Kubernetes, and many cloud tools.",
+      "code": "fmt.Println(\"Hello, Go!\")"
+    },
+    {
+      "id": "go-goroutine",
+      "term": "Goroutine",
+      "category": "Go",
+      "categoryLabel": "Concurrency",
+      "difficulty": "intermediate",
+      "clue": "A super-lightweight thread managed by Go.",
+      "definition": "A goroutine is a function that runs concurrently with other goroutines. You launch one with the `go` keyword.",
+      "example": "Running a background job without blocking is done with a <b>goroutine</b>.",
+      "code": "go fetchData()"
+    },
+    {
+      "id": "go-channel",
+      "term": "Channel",
+      "category": "Go",
+      "categoryLabel": "Concurrency",
+      "difficulty": "intermediate",
+      "clue": "A typed pipe between goroutines.",
+      "definition": "Channels let goroutines send and receive values safely. They synchronize communication without shared memory.",
+      "example": "Passing results from a background task uses a <b>channel</b>.",
+      "code": "ch := make(chan int)\nch <- 42"
+    },
+    {
+      "id": "go-interface",
+      "term": "Interface",
+      "category": "Go",
+      "categoryLabel": "Types",
+      "difficulty": "intermediate",
+      "clue": "A set of method signatures any type can satisfy.",
+      "definition": "A Go interface defines behavior. Any type with matching methods automatically implements it — no explicit declaration needed.",
+      "example": "A `Stringer` interface requires a `String() string` method.",
+      "code": "type Stringer interface {\n  String() string\n}"
+    },
+    {
+      "id": "go-struct",
+      "term": "Struct",
+      "category": "Go",
+      "categoryLabel": "Types",
+      "difficulty": "beginner",
+      "clue": "A named collection of fields.",
+      "definition": "Structs group related data. They're the closest thing Go has to a class, but without inheritance.",
+      "example": "A `User` with Name and Email is a <b>struct</b>.",
+      "code": "type User struct {\n  Name  string\n  Email string\n}"
+    },
+    {
+      "id": "go-error",
+      "term": "Error handling",
+      "category": "Go",
+      "categoryLabel": "Language foundation",
+      "difficulty": "beginner",
+      "clue": "Go returns errors as values, not exceptions.",
+      "definition": "Functions return an `error` as the last return value. Callers check it explicitly with `if err != nil`.",
+      "example": "Every file operation in Go returns an <b>error</b> you must check.",
+      "code": "result, err := os.Open(\"file.txt\")\nif err != nil { ... }"
+    },
+    {
+      "id": "go-slice",
+      "term": "Slice",
+      "category": "Go",
+      "categoryLabel": "Data structures",
+      "difficulty": "beginner",
+      "clue": "A flexible, dynamic view into an array.",
+      "definition": "Slices are Go's main list type. Unlike arrays they grow dynamically and can be sliced.",
+      "example": "A list of names stored in memory is a <b>slice</b>.",
+      "code": "names := []string{\"Alice\", \"Bob\"}"
+    },
+    {
+      "id": "go-map",
+      "term": "Map",
+      "category": "Go",
+      "categoryLabel": "Data structures",
+      "difficulty": "beginner",
+      "clue": "Key-value storage built into the language.",
+      "definition": "Maps store key-value pairs. They're reference types and must be initialized with `make` before use.",
+      "example": "Storing user scores by name uses a <b>map</b>.",
+      "code": "scores := make(map[string]int)\nscores[\"Alice\"] = 99"
+    },
+    {
+      "id": "go-defer",
+      "term": "defer",
+      "category": "Go",
+      "categoryLabel": "Language foundation",
+      "difficulty": "intermediate",
+      "clue": "Delays a call until the function returns.",
+      "definition": "defer schedules a function to run when the surrounding function exits. Used for cleanup like closing files.",
+      "example": "Closing a file after reading always uses <b>defer</b>.",
+      "code": "defer file.Close()"
+    },
+    {
+      "id": "go-module",
+      "term": "Go Module",
+      "category": "Go",
+      "categoryLabel": "Tooling",
+      "difficulty": "beginner",
+      "clue": "Go's built-in dependency management.",
+      "definition": "A module is a collection of Go packages with a `go.mod` file defining the module path and dependencies.",
+      "example": "Every Go project starts with `go mod init`.",
+      "code": "go mod init myapp\ngo get github.com/some/pkg"
+    },
+    {
+      "id": "rust-intro",
+      "term": "Rust",
+      "category": "Rust",
+      "categoryLabel": "Language foundation",
+      "difficulty": "beginner",
+      "clue": "Memory-safe systems programming without a garbage collector.",
+      "definition": "Rust gives you C-like performance and control while eliminating memory bugs at compile time through its ownership system.",
+      "example": "Mozilla, Discord, and Linux now use <b>Rust</b> for performance-critical code.",
+      "code": "fn main() {\n    println!(\"Hello, Rust!\");\n}"
+    },
+    {
+      "id": "rust-ownership",
+      "term": "Ownership",
+      "category": "Rust",
+      "categoryLabel": "Memory model",
+      "difficulty": "intermediate",
+      "clue": "Each value has exactly one owner at a time.",
+      "definition": "Ownership is Rust's core rule: every value has one owner. When the owner goes out of scope the value is freed — no GC needed.",
+      "example": "When you move a `String` into a function, the caller can't use it anymore.",
+      "code": "let s1 = String::from(\"hi\");\nlet s2 = s1; // s1 moved, s2 owns it"
+    },
+    {
+      "id": "rust-borrow",
+      "term": "Borrowing",
+      "category": "Rust",
+      "categoryLabel": "Memory model",
+      "difficulty": "intermediate",
+      "clue": "Use a value without taking ownership.",
+      "definition": "You can borrow a reference to a value with `&`. The compiler ensures borrowed references are always valid.",
+      "example": "Passing a `&String` to a function is <b>borrowing</b> it.",
+      "code": "fn greet(s: &String) {\n    println!(\"{}\", s);\n}"
+    },
+    {
+      "id": "rust-lifetime",
+      "term": "Lifetime",
+      "category": "Rust",
+      "categoryLabel": "Memory model",
+      "difficulty": "advanced",
+      "clue": "How long a reference is valid.",
+      "definition": "Lifetimes tell the compiler how long references live. They prevent dangling references without runtime cost.",
+      "example": "A function returning a reference needs lifetime annotations.",
+      "code": "fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {\n    if x.len() > y.len() { x } else { y }\n}"
+    },
+    {
+      "id": "rust-enum",
+      "term": "Enum",
+      "category": "Rust",
+      "categoryLabel": "Types",
+      "difficulty": "beginner",
+      "clue": "A type that can be one of several variants.",
+      "definition": "Rust enums can carry data in each variant. Combined with `match`, they replace null checks and exception handling cleanly.",
+      "example": "A network response is either `Ok(data)` or `Err(msg)` — a Rust <b>enum</b>.",
+      "code": "enum Shape {\n    Circle(f64),\n    Rectangle(f64, f64),\n}"
+    },
+    {
+      "id": "rust-struct",
+      "term": "Struct",
+      "category": "Rust",
+      "categoryLabel": "Types",
+      "difficulty": "beginner",
+      "clue": "A named data type with fields.",
+      "definition": "Structs group data. You add behavior with `impl` blocks. Rust has no class keyword — structs + impl is the pattern.",
+      "example": "A `Point` with x and y coordinates is a <b>struct</b>.",
+      "code": "struct Point { x: f64, y: f64 }\nimpl Point {\n    fn distance(&self) -> f64 { ... }\n}"
+    },
+    {
+      "id": "rust-trait",
+      "term": "Trait",
+      "category": "Rust",
+      "categoryLabel": "Types",
+      "difficulty": "intermediate",
+      "clue": "Shared behavior across types.",
+      "definition": "A trait defines a set of methods. Types implement traits to gain that behavior. They're like interfaces but more powerful.",
+      "example": "Implementing `Display` lets you print a type with `{}`.",
+      "code": "trait Greet {\n    fn hello(&self) -> String;\n}"
+    },
+    {
+      "id": "rust-result",
+      "term": "Result<T, E>",
+      "category": "Rust",
+      "categoryLabel": "Error handling",
+      "difficulty": "intermediate",
+      "clue": "Either a success value or an error.",
+      "definition": "Result is Rust's error type. Functions that can fail return `Ok(value)` or `Err(error)`. You handle it with `match` or `?`.",
+      "example": "Opening a file returns `Result<File, Error>` — you must handle both cases.",
+      "code": "let f = File::open(\"data.txt\")?; // ? propagates errors"
+    },
+    {
+      "id": "rust-option",
+      "term": "Option<T>",
+      "category": "Rust",
+      "categoryLabel": "Types",
+      "difficulty": "beginner",
+      "clue": "A value that might not exist.",
+      "definition": "Option replaces null. It's either `Some(value)` or `None`. The compiler forces you to handle both cases.",
+      "example": "Looking up a key in a HashMap returns `Option<&V>`.",
+      "code": "let x: Option<i32> = Some(42);\nif let Some(n) = x { println!(\"{n}\"); }"
+    },
+    {
+      "id": "rust-cargo",
+      "term": "Cargo",
+      "category": "Rust",
+      "categoryLabel": "Tooling",
+      "difficulty": "beginner",
+      "clue": "Rust's build system and package manager.",
+      "definition": "Cargo handles building, testing, and managing dependencies (called crates). Every Rust project starts with `cargo new`.",
+      "example": "Adding `serde` for JSON parsing is a one-line change in <b>Cargo.toml</b>.",
+      "code": "cargo new myapp\ncargo add serde"
     }
   ],
   "questions": [
@@ -1357,6 +1577,97 @@
       ],
       "answer": 0,
       "explanation": "Protocols define requirements. Any type that conforms must implement those methods and properties."
+    },
+    {
+      "id": "q-go-1",
+      "question": "What keyword launches a goroutine in Go?",
+      "choices": ["go", "async", "spawn", "thread"],
+      "answer": 0,
+      "explanation": "Prefixing a function call with `go` launches it as a goroutine — a lightweight concurrent function."
+    },
+    {
+      "id": "q-go-2",
+      "question": "What is a Go channel used for?",
+      "choices": [
+        "Sending values between goroutines",
+        "Storing key-value pairs",
+        "Defining interfaces",
+        "Importing packages"
+      ],
+      "answer": 0,
+      "explanation": "Channels are typed pipes — goroutines send and receive values through them safely."
+    },
+    {
+      "id": "q-go-3",
+      "question": "How does Go handle errors?",
+      "choices": [
+        "Functions return an error value that callers check",
+        "Using try/catch blocks",
+        "With exception classes",
+        "Errors are ignored by default"
+      ],
+      "answer": 0,
+      "explanation": "Go returns errors as a last return value. Callers check with `if err != nil` — there are no exceptions."
+    },
+    {
+      "id": "q-go-4",
+      "question": "What does `defer` do in Go?",
+      "choices": [
+        "Delays a function call until the surrounding function returns",
+        "Runs a function in a goroutine",
+        "Marks a function as asynchronous",
+        "Imports a package lazily"
+      ],
+      "answer": 0,
+      "explanation": "defer schedules cleanup code to run when the current function exits — perfect for closing files or unlocking."
+    },
+    {
+      "id": "q-rust-1",
+      "question": "What is Rust's ownership rule?",
+      "choices": [
+        "Each value has exactly one owner at a time",
+        "Values can have multiple owners simultaneously",
+        "Ownership is managed by a garbage collector",
+        "Ownership is optional"
+      ],
+      "answer": 0,
+      "explanation": "Rust's ownership rule: one owner per value. When the owner goes out of scope the value is freed automatically."
+    },
+    {
+      "id": "q-rust-2",
+      "question": "What does `Option<T>` represent in Rust?",
+      "choices": [
+        "A value that might or might not exist",
+        "A number type",
+        "An error type",
+        "A mutable reference"
+      ],
+      "answer": 0,
+      "explanation": "Option<T> replaces null — it's either Some(value) or None. The compiler forces you to handle both cases."
+    },
+    {
+      "id": "q-rust-3",
+      "question": "What is a Rust trait?",
+      "choices": [
+        "A shared interface that types can implement",
+        "A type of variable",
+        "A memory allocator",
+        "A build configuration"
+      ],
+      "answer": 0,
+      "explanation": "Traits define shared behavior. Any type that implements a trait gains those methods — like interfaces."
+    },
+    {
+      "id": "q-rust-4",
+      "question": "What does the `?` operator do in Rust?",
+      "choices": [
+        "Propagates an error if Result is Err",
+        "Marks a field as optional",
+        "Checks if a value is None",
+        "Declares a generic type"
+      ],
+      "answer": 0,
+      "explanation": "The ? operator short-circuits: if Result is Err, it returns that error from the current function automatically."
     }
   ]
 }
