@@ -16,6 +16,7 @@ import AVFoundation
     @StateObject private var bookmarks = BookmarkStore()
     @StateObject private var celebrations = CelebrationManager()
     @StateObject private var challenges = ChallengeStore()
+    @StateObject private var premiumStore = PremiumStore()
     @AppStorage("appearance.mode") private var appearance = "dark"
     var body: some Scene {
         WindowGroup {
@@ -28,6 +29,7 @@ import AVFoundation
                 .environmentObject(bookmarks)
                 .environmentObject(celebrations)
                 .environmentObject(challenges)
+                .environmentObject(premiumStore)
                 .tint(.mint)
                 .preferredColorScheme(appearance == "light" ? .light : .dark)
                 .modifier(SprintTheme())
@@ -1146,6 +1148,7 @@ struct LearnView: View {
     @EnvironmentObject var bookmarks: BookmarkStore
     @EnvironmentObject var celebrations: CelebrationManager
     @EnvironmentObject var challenges: ChallengeStore
+    @EnvironmentObject var premiumStore: PremiumStore
     @AppStorage("goal.startingTrack") private var startingTrack = "Web development"
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -1156,6 +1159,7 @@ struct LearnView: View {
     @State private var showingChallenge = false
     @State private var showingBookmarks = false
     @State private var showingTutor = false
+    @State private var showingPaywall = false
     @State private var difficultyFilter: String? = nil
     private var categories: [String] {
         var seen = Set<String>()
@@ -1176,6 +1180,7 @@ struct LearnView: View {
             VStack(alignment: .leading, spacing: 24) {
                 heroCard
                 if let error = store.error { Text(error).foregroundStyle(.red) }
+                if premiumStore.isPro { ProBadge().frame(maxWidth: .infinity, alignment: .trailing) }
                 GoalProgressBanner()
                 if celebrations.showStreakRecord {
                     StreakRecordBanner(currentStreak: celebrations.streakRecordCount,
@@ -1218,7 +1223,9 @@ struct LearnView: View {
             }
         }
         .sheet(isPresented: $showingTutor) { AITutorView() }
+        .sheet(isPresented: $showingPaywall) { ProPaywallView() }
         .sheet(isPresented: $showingBookmarks) { BookmarksSheet() }
+        .safeAreaInset(edge: .top) { OfflineBanner() }
         .fileExporter(isPresented: $exporting, document: FlashcardDocument(lessons: store.curriculum?.lessons ?? []), contentType: .commaSeparatedText, defaultFilename: "StackSprint-flashcards") { result in
             if case .failure(let error) = result { exportError = error.localizedDescription }
         }
@@ -1232,6 +1239,7 @@ struct LearnView: View {
         let color = lessonColor(lesson)
         let done  = store.completed.contains(lesson.id)
         Button {
+            HapticManager.shared.selection()
             withAnimation(reduceMotion ? .easeOut(duration: 0.12) : .spring(response: 0.32, dampingFraction: 0.82)) { selectedID = lesson.id }
         } label: {
             VStack(alignment: .leading, spacing: 10) {
@@ -1337,16 +1345,25 @@ struct LearnView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
                 ForEach(categories, id: \.self) { name in
-                    Button {
-                        withAnimation(.easeOut(duration: 0.2)) { category = name; selectedID = nil; difficultyFilter = nil }
-                    } label: {
-                        Label(shortName(name), systemImage: categoryIcon(name))
-                            .font(.subheadline.bold()).padding(.horizontal, 15).padding(.vertical, 11)
+                    let locked = PremiumStore.proTracks.contains(name) && !premiumStore.isPro
+                    if locked {
+                        ProLockedCategoryChip(name: shortName(name), icon: categoryIcon(name)) {
+                            HapticManager.shared.selection()
+                            showingPaywall = true
+                        }
+                    } else {
+                        Button {
+                            HapticManager.shared.selection()
+                            withAnimation(.easeOut(duration: 0.2)) { category = name; selectedID = nil; difficultyFilter = nil }
+                        } label: {
+                            Label(shortName(name), systemImage: categoryIcon(name))
+                                .font(.subheadline.bold()).padding(.horizontal, 15).padding(.vertical, 11)
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(category == name ? Color(red: 0.05, green: 0.12, blue: 0.22) : .primary)
+                        .background(category == name ? lessonColor(forCategory: name) : SprintPalette.card, in: Capsule())
+                        .overlay(Capsule().stroke(category == name ? lessonColor(forCategory: name) : Color.secondary.opacity(0.18), lineWidth: 1.5))
                     }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(category == name ? Color(red: 0.05, green: 0.12, blue: 0.22) : .primary)
-                    .background(category == name ? lessonColor(forCategory: name) : SprintPalette.card, in: Capsule())
-                    .overlay(Capsule().stroke(category == name ? lessonColor(forCategory: name) : Color.secondary.opacity(0.18), lineWidth: 1.5))
                 }
             }
         }
@@ -1378,6 +1395,7 @@ struct LearnView: View {
             Text(selected.term).font(.system(.largeTitle, design: .rounded, weight: .bold))
             Text(selected.definition).font(.title3)
             Text("Prediction: \(selected.clue)").font(.subheadline).foregroundStyle(.secondary)
+            ReadAloudButton(text: "\(selected.term). \(selected.definition)")
             NavigationLink { LessonView(lesson: selected) } label: {
                 Label(store.completed.contains(selected.id) ? "Practice again" : "Start this tiny win", systemImage: "play.fill")
                     .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 14)
@@ -1450,12 +1468,39 @@ struct LearnView: View {
         .background(Color.orange.opacity(0.09), in: RoundedRectangle(cornerRadius: 24))
     }
 
-    private func shortName(_ value: String) -> String { value == "Web development" ? "Web" : value }
-    private func categoryIcon(_ value: String) -> String { value == "Web development" ? "globe" : value == "Python" ? "chevron.left.forwardslash.chevron.right" : "shield.fill" }
-    private func lessonColor(forCategory value: String) -> Color { value == "Python" ? .orange : value == "Cybersecurity" ? .purple : .blue }
+    private func shortName(_ value: String) -> String {
+        switch value {
+        case "Web development": return "Web"
+        case "Interview Prep": return "Interview"
+        default: return value
+        }
+    }
+    private func categoryIcon(_ value: String) -> String {
+        switch value {
+        case "Web development": return "globe"
+        case "Python": return "chevron.left.forwardslash.chevron.right"
+        case "Go": return "hare.fill"
+        case "Rust": return "gearshape.2.fill"
+        case "Interview Prep": return "briefcase.fill"
+        default: return "shield.fill"
+        }
+    }
+    private func lessonColor(forCategory value: String) -> Color {
+        switch value {
+        case "Python": return .orange
+        case "Cybersecurity": return .purple
+        case "Go": return .mint
+        case "Rust": return Color(red: 0.8, green: 0.35, blue: 0.1)
+        case "Interview Prep": return .blue
+        default: return .blue
+        }
+    }
     private func lessonColor(_ lesson: Lesson) -> Color {
         if lesson.category == "Python" { return .orange }
         if lesson.category == "Cybersecurity" { return .purple }
+        if lesson.category == "Go" { return .mint }
+        if lesson.category == "Rust" { return Color(red: 0.8, green: 0.35, blue: 0.1) }
+        if lesson.category == "Interview Prep" { return .blue }
         if lesson.id == "web-fullstack" || lesson.id == "web-request-response" { return .purple }
         if ["web-server", "web-database", "web-api", "web-authentication", "web-backend"].contains(lesson.id) { return .mint }
         return .blue
@@ -1567,6 +1612,8 @@ struct AccountView: View {
     @EnvironmentObject var store: LearningStore
     @EnvironmentObject var socialAuth: SocialAuthManager
     @EnvironmentObject var notifications: NotificationManager
+    @EnvironmentObject var premiumStore: PremiumStore
+    @State private var showingPaywall = false
     @State private var email = ""
     @State private var password = ""
     @State private var confirmDelete = false
@@ -1583,6 +1630,34 @@ struct AccountView: View {
             BadgeGridSection()
             GoalSettingsSection()
             NotificationSettingsSection(notifications: notifications)
+            VoiceSpeedSection()
+            Section {
+                if premiumStore.isPro {
+                    HStack(spacing: 10) {
+                        ProBadge()
+                        Text("You're on StackSprint Pro").font(.subheadline.bold())
+                        Spacer()
+                    }
+                    Text("Enjoy all Pro tracks, unlimited AI Tutor, and leaderboard perks.")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: "crown.fill").foregroundStyle(.yellow)
+                            Text("Upgrade to Pro").font(.headline)
+                            Spacer()
+                        }
+                        Text("Unlock Go, Rust, Interview Prep, and more.").font(.caption).foregroundStyle(.secondary)
+                    }
+                    Button("View Pro plans") { showingPaywall = true }
+                        .foregroundStyle(.mint)
+                }
+            } header: {
+                Label("StackSprint Pro", systemImage: "crown.fill")
+            }
+            .sheet(isPresented: $showingPaywall) {
+                ProPaywallView().environmentObject(premiumStore)
+            }
             if socialAuth.isSignedIn {
                 Section("Connected account") {
                     HStack(spacing: 12) {

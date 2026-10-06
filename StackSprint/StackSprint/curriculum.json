@@ -831,6 +831,138 @@
       "definition": "Cargo handles building, testing, and managing dependencies (called crates). Every Rust project starts with `cargo new`.",
       "example": "Adding `serde` for JSON parsing is a one-line change in <b>Cargo.toml</b>.",
       "code": "cargo new myapp\ncargo add serde"
+    },
+    {
+      "id": "interview-bigo",
+      "term": "Big-O Notation",
+      "category": "Interview Prep",
+      "categoryLabel": "Complexity",
+      "difficulty": "beginner",
+      "clue": "How an algorithm's cost grows as input grows.",
+      "definition": "Big-O describes the worst-case time or space cost of an algorithm relative to input size n. O(1) is constant, O(n) is linear, O(n²) is quadratic.",
+      "example": "A single loop over an array is <b>O(n)</b>. A nested loop is O(n²).",
+      "code": "// O(n) — one pass through the array\nfor item in array { process(item) }"
+    },
+    {
+      "id": "interview-array",
+      "term": "Array",
+      "category": "Interview Prep",
+      "categoryLabel": "Data structures",
+      "difficulty": "beginner",
+      "clue": "Fixed-size, index-based, O(1) random access.",
+      "definition": "An array stores elements contiguously in memory. Random access is O(1), but inserting/removing in the middle is O(n) because elements shift.",
+      "example": "Looking up element at index 4 is O(1); inserting at index 0 shifts everything.",
+      "code": "arr[4] // O(1) read\narr.insert(x, at: 0) // O(n) shift"
+    },
+    {
+      "id": "interview-hashmap",
+      "term": "Hash Map",
+      "category": "Interview Prep",
+      "categoryLabel": "Data structures",
+      "difficulty": "beginner",
+      "clue": "O(1) average lookup, insert, and delete.",
+      "definition": "A hash map (dictionary) stores key-value pairs using a hash function. Average O(1) for get/set/delete, making it the go-to for frequency counting and caching.",
+      "example": "Counting character frequencies in a string uses a <b>hash map</b>.",
+      "code": "var freq: [Character: Int] = [:]\nfor c in s { freq[c, default: 0] += 1 }"
+    },
+    {
+      "id": "interview-stack",
+      "term": "Stack",
+      "category": "Interview Prep",
+      "categoryLabel": "Data structures",
+      "difficulty": "beginner",
+      "clue": "Last in, first out (LIFO).",
+      "definition": "A stack adds and removes only from the top. Push is O(1), pop is O(1). Use stacks for undo, bracket matching, and depth-first search.",
+      "example": "Validating balanced parentheses push opens and pop when you see a close.",
+      "code": "var stack: [Int] = []\nstack.append(1)   // push\nlet top = stack.removeLast() // pop"
+    },
+    {
+      "id": "interview-queue",
+      "term": "Queue",
+      "category": "Interview Prep",
+      "categoryLabel": "Data structures",
+      "difficulty": "beginner",
+      "clue": "First in, first out (FIFO).",
+      "definition": "A queue adds at the back and removes from the front. Used in breadth-first search, task scheduling, and rate limiting.",
+      "example": "Processing requests in order uses a <b>queue</b>.",
+      "code": "var queue: [Int] = []\nqueue.append(1)          // enqueue\nlet front = queue.removeFirst() // dequeue"
+    },
+    {
+      "id": "interview-linkedlist",
+      "term": "Linked List",
+      "category": "Interview Prep",
+      "categoryLabel": "Data structures",
+      "difficulty": "intermediate",
+      "clue": "Nodes pointing to the next node — O(1) insert at head.",
+      "definition": "A linked list stores elements in nodes where each node points to the next. O(1) insert/delete at head, O(n) access by index. No contiguous memory needed.",
+      "example": "Reversing a linked list is a classic interview problem.",
+      "code": "class Node { var val: Int; var next: Node? }\n// Traverse: while node != nil { node = node?.next }"
+    },
+    {
+      "id": "interview-binarysearch",
+      "term": "Binary Search",
+      "category": "Interview Prep",
+      "categoryLabel": "Algorithms",
+      "difficulty": "intermediate",
+      "clue": "Cut the search space in half each step — O(log n).",
+      "definition": "Binary search finds a target in a sorted array by repeatedly halving the search range. O(log n) time vs O(n) for linear search.",
+      "example": "Finding a word in a sorted dictionary is <b>binary search</b>.",
+      "code": "var lo = 0, hi = arr.count - 1\nwhile lo <= hi {\n    let mid = (lo + hi) / 2\n    if arr[mid] == target { return mid }\n    else if arr[mid] < target { lo = mid + 1 } else { hi = mid - 1 }\n}"
+    },
+    {
+      "id": "interview-recursion",
+      "term": "Recursion",
+      "category": "Interview Prep",
+      "categoryLabel": "Algorithms",
+      "difficulty": "intermediate",
+      "clue": "A function that calls itself with a smaller problem.",
+      "definition": "Recursion solves problems by breaking them into smaller instances of the same problem. Every recursive solution needs a base case to stop.",
+      "example": "Calculating factorial or traversing a tree is done with <b>recursion</b>.",
+      "code": "func factorial(_ n: Int) -> Int {\n    if n <= 1 { return 1 }     // base case\n    return n * factorial(n - 1) // recursive case\n}"
+    },
+    {
+      "id": "interview-sorting",
+      "term": "Sorting",
+      "category": "Interview Prep",
+      "categoryLabel": "Algorithms",
+      "difficulty": "intermediate",
+      "clue": "Merge sort and quicksort are O(n log n).",
+      "definition": "Comparison-based sorts are at best O(n log n). Merge sort is stable and predictable. Quicksort is fast in practice. Knowing tradeoffs is key for interviews.",
+      "example": "Sorting an array of names alphabetically uses <b>merge sort</b> internally.",
+      "code": "// Swift built-in — O(n log n)\nlet sorted = array.sorted()"
+    },
+    {
+      "id": "interview-tree",
+      "term": "Binary Tree",
+      "category": "Interview Prep",
+      "categoryLabel": "Data structures",
+      "difficulty": "intermediate",
+      "clue": "Each node has at most two children.",
+      "definition": "A binary tree organizes data hierarchically. Binary Search Trees maintain sorted order (left < root < right) for O(log n) search when balanced.",
+      "example": "A file system hierarchy is tree-shaped. BFS and DFS are common traversals.",
+      "code": "class TreeNode { var val: Int; var left: TreeNode?; var right: TreeNode? }"
+    },
+    {
+      "id": "interview-dp",
+      "term": "Dynamic Programming",
+      "category": "Interview Prep",
+      "categoryLabel": "Algorithms",
+      "difficulty": "advanced",
+      "clue": "Cache subproblem results to avoid recomputation.",
+      "definition": "DP solves problems by breaking them into overlapping subproblems and storing results (memoization or tabulation). Turns exponential into polynomial time.",
+      "example": "Fibonacci in O(n) instead of O(2ⁿ) uses <b>dynamic programming</b>.",
+      "code": "var memo: [Int: Int] = [:]\nfunc fib(_ n: Int) -> Int {\n    if n <= 1 { return n }\n    if let cached = memo[n] { return cached }\n    memo[n] = fib(n-1) + fib(n-2); return memo[n]!\n}"
+    },
+    {
+      "id": "interview-systemdesign",
+      "term": "System Design",
+      "category": "Interview Prep",
+      "categoryLabel": "Senior concepts",
+      "difficulty": "advanced",
+      "clue": "How do you build a system that serves millions?",
+      "definition": "System design interviews test your ability to architect scalable systems. Key concepts: load balancing, caching, databases (SQL vs NoSQL), CDNs, and horizontal scaling.",
+      "example": "Designing Twitter requires a feed service, user service, CDN, and message queue.",
+      "code": "// Key terms:\n// Load balancer → distributes traffic\n// Cache (Redis) → fast reads\n// CDN → static assets near users\n// Message queue → async processing"
     }
   ],
   "questions": [
@@ -1668,6 +1800,51 @@
       ],
       "answer": 0,
       "explanation": "The ? operator short-circuits: if Result is Err, it returns that error from the current function automatically."
+    },
+    {
+      "id": "q-interview-1",
+      "question": "What is the time complexity of looking up an element by index in an array?",
+      "choices": ["O(1)", "O(n)", "O(log n)", "O(n²)"],
+      "answer": 0,
+      "explanation": "Arrays store elements contiguously in memory, so index lookup is O(1) — direct memory address calculation."
+    },
+    {
+      "id": "q-interview-2",
+      "question": "Which data structure gives O(1) average-case insert and lookup?",
+      "choices": ["Hash map", "Linked list", "Binary tree", "Array"],
+      "answer": 0,
+      "explanation": "Hash maps use a hash function to find buckets directly, giving O(1) average for get/set/delete."
+    },
+    {
+      "id": "q-interview-3",
+      "question": "What order does a stack process items?",
+      "choices": [
+        "Last in, first out (LIFO)",
+        "First in, first out (FIFO)",
+        "Sorted order",
+        "Random order"
+      ],
+      "answer": 0,
+      "explanation": "A stack is LIFO — the most recently added item is always the first to be removed."
+    },
+    {
+      "id": "q-interview-4",
+      "question": "What is the time complexity of binary search?",
+      "choices": ["O(log n)", "O(n)", "O(1)", "O(n log n)"],
+      "answer": 0,
+      "explanation": "Binary search halves the search space each step, giving O(log n) time on a sorted array."
+    },
+    {
+      "id": "q-interview-5",
+      "question": "What technique does dynamic programming use to speed up computation?",
+      "choices": [
+        "Storing results of subproblems to avoid recomputation",
+        "Using multiple threads",
+        "Sorting the input first",
+        "Reducing memory usage"
+      ],
+      "answer": 0,
+      "explanation": "DP caches (memoizes) subproblem results, converting exponential recursion into polynomial time."
     }
   ]
 }
