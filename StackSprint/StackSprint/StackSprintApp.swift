@@ -1547,6 +1547,7 @@ struct LessonView: View {
         }.modifier(SprintTheme()).navigationTitle(lesson.term)
         .onAppear { code = UserDefaults.standard.string(forKey: "draft.\(lesson.id)") ?? "" }
         .onChange(of: code) { _, value in UserDefaults.standard.set(value, forKey: "draft.\(lesson.id)") }
+        .trackedWithLiveActivity(lesson: lesson)
     }
 }
 struct QuizView: View {

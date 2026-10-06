@@ -1,0 +1,2567 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    ".arena { background-color: #172554; }" : {
+
+    },
+    "·" : {
+
+    },
+    "“I'm right here with you.”" : {
+
+    },
+    "“Look at you, already coding!”" : {
+
+    },
+    "“Welcome! Your streak is safe with me.”" : {
+
+    },
+    "@%@" : {
+
+    },
+    "@%@ · %lld repositories" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "@%1$@ · %2$lld repositories"
+          }
+        }
+      }
+    },
+    "/month" : {
+
+    },
+    "/year" : {
+
+    },
+    "#%lld" : {
+
+    },
+    "%@ / %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ / %2$@"
+          }
+        }
+      }
+    },
+    "%@ complete!" : {
+
+    },
+    "%@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%@, %@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@. %3$@"
+          }
+        }
+      }
+    },
+    "%@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@. %2$@"
+          }
+        }
+      }
+    },
+    "%lld" : {
+
+    },
+    "%lld / %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "%lld / %lld correct" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld / %2$lld correct"
+          }
+        }
+      }
+    },
+    "%lld / %lld correct. Every attempt is practice." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld / %2$lld correct. Every attempt is practice."
+          }
+        }
+      }
+    },
+    "%lld / %lld days" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld / %2$lld days"
+          }
+        }
+      }
+    },
+    "%lld %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld %2$@"
+          }
+        }
+      }
+    },
+    "%lld active %@ · progress saved on this device" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld active %2$@ · progress saved on this device"
+          }
+        }
+      }
+    },
+    "%lld active days · %lld lessons done" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld active days · %2$lld lessons done"
+          }
+        }
+      }
+    },
+    "%lld cards" : {
+
+    },
+    "%lld days — your previous best was %lld." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld days — your previous best was %2$lld."
+          }
+        }
+      }
+    },
+    "%lld lessons · %lld day streak" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld lessons · %2$lld day streak"
+          }
+        }
+      }
+    },
+    "%lld public repositories" : {
+
+    },
+    "%lld repo%@ connected to Studio" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld repo%2$@ connected to Studio"
+          }
+        }
+      }
+    },
+    "%lld repos · %lld followers" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld repos · %2$lld followers"
+          }
+        }
+      }
+    },
+    "%lld snapshot%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld snapshot%2$@"
+          }
+        }
+      }
+    },
+    "%lld terms\n%lld-question finish" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld terms\n%2$lld-question finish"
+          }
+        }
+      }
+    },
+    "%lld wrong attempt%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld wrong attempt%2$@"
+          }
+        }
+      }
+    },
+    "%lld XP" : {
+
+    },
+    "%lld XP to go" : {
+
+    },
+    "%lld/%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "%lld/%lld done · resets in %lldd" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld done · resets in %3$lldd"
+          }
+        }
+      }
+    },
+    "%lld/12 web concepts · %lld/12 safety terms · %lld/%lld recall reps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/12 web concepts · %2$lld/12 safety terms · %3$lld/%4$lld recall reps"
+          }
+        }
+      }
+    },
+    "%lld%%" : {
+
+    },
+    "%lld%% accuracy" : {
+
+    },
+    "%lldx" : {
+
+    },
+    "+%lld XP" : {
+
+    },
+    "▶ Run checks" : {
+
+    },
+    "✦ %lld sprint XP" : {
+
+    },
+    "🎨 Palette Pop" : {
+
+    },
+    "🎯" : {
+
+    },
+    "🕹️ Tap Dash" : {
+
+    },
+    "🚀" : {
+
+    },
+    "1 / %lld" : {
+
+    },
+    "1 / 30" : {
+
+    },
+    "2× boost!" : {
+
+    },
+    "3 QUICK RECALL REPS · %lld/%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "3 QUICK RECALL REPS · %1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "5-day target" : {
+
+    },
+    "7-day challenge" : {
+
+    },
+    "12 weeks ago" : {
+
+    },
+    "30 missions" : {
+
+    },
+    "30-Day Activity" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30-Day Activity"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actividad de 30 días"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activité sur 30 jours"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30日間のアクティビティ"
+          }
+        }
+      }
+    },
+    "30-day challenge" : {
+
+    },
+    "60 projects\n30 design · 30 build" : {
+
+    },
+    "A" : {
+
+    },
+    "A daily reminder at your chosen time, plus a nudge if you miss 2 or more days." : {
+
+    },
+    "A fresh start is always welcome. Try one round today." : {
+
+    },
+    "A LITTLE CURIOUS. A LITTLE BRAVER." : {
+
+    },
+    "A little practice.\nSomething real." : {
+
+    },
+    "A little time.\nA real habit." : {
+
+    },
+    "A quick vocabulary pass makes the checkpoint feel much easier." : {
+
+    },
+    "A tiny arcade café needs a three-color look that feels fizzy and friendly. Build a color mission that makes one bright choice without losing readability." : {
+
+    },
+    "A useful mistake — here’s why." : {
+
+    },
+    "About your progress" : {
+
+    },
+    "Account" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Account"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuenta"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compte"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アカウント"
+          }
+        }
+      }
+    },
+    "Adaptive Quiz" : {
+
+    },
+    "Adaptive quiz — targets your weak spots" : {
+
+    },
+    "Add a note…" : {
+
+    },
+    "All %lld lessons complete" : {
+
+    },
+    "All Set!" : {
+
+    },
+    "All XP rewards doubled this weekend!" : {
+
+    },
+    "ALMOST THERE" : {
+
+    },
+    "Analytics" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analytics"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analítica"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analytique"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分析"
+          }
+        }
+      }
+    },
+    "Answer: %@" : {
+
+    },
+    "Apply practice code & run checks" : {
+
+    },
+    "Ask anything about code…" : {
+
+    },
+    "Ask Bit AI Tutor" : {
+
+    },
+    "Ask Bite" : {
+
+    },
+    "Ask Bite about your code…" : {
+
+    },
+    "Ask Bite, your coding assistant" : {
+
+    },
+    "Ask me anything about code — concepts, syntax, errors, or what to learn next." : {
+
+    },
+    "B" : {
+
+    },
+    "Back" : {
+
+    },
+    "Back to Studio" : {
+
+    },
+    "Badges" : {
+
+    },
+    "BEST VALUE" : {
+
+    },
+    "BETTER WITH A BUDDY" : {
+
+    },
+    "Bit AI Tutor" : {
+
+    },
+    "Bite" : {
+
+    },
+    "Bite is personalising your path…" : {
+
+    },
+    "Bite is thinking…" : {
+
+    },
+    "Board" : {
+
+    },
+    "Bookmark lesson" : {
+
+    },
+    "Bookmarks" : {
+
+    },
+    "Browser JavaScript & CSS workspace" : {
+
+    },
+    "Build · JavaScript" : {
+
+    },
+    "Build a little.\nCheer loud." : {
+
+    },
+    "Build a one-button reflex game. Tap the target, update the score, and make each successful hit feel quick and satisfying." : {
+
+    },
+    "Build calm, practical safety instincts — from suspicious messages to safer sign-ins." : {
+
+    },
+    "Build it. Then bring it to life." : {
+
+    },
+    "BUILD STUDIO · JAVASCRIPT" : {
+
+    },
+    "C" : {
+
+    },
+    "Can you spot the safer move?" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Cancel anytime" : {
+
+    },
+    "Card %lld / %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Card %1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "Card term: %@. Tap to reveal" : {
+
+    },
+    "Category" : {
+
+    },
+    "Challenge a friend" : {
+
+    },
+    "Challenge Mode" : {
+
+    },
+    "CHALLENGE MODE" : {
+
+    },
+    "Challenges reset every Monday · %lld days left" : {
+
+    },
+    "Check my example" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check my example"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verificar mi ejemplo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vérifier mon exemple"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "確認する"
+          }
+        }
+      }
+    },
+    "Choose a daily intention. No timers or penalties — just a little room to explore." : {
+
+    },
+    "CHOOSE A FOCUS" : {
+
+    },
+    "Choose a Repository" : {
+
+    },
+    "Choose a repository. Connected repos will receive a commit each time you save practice code in Studio." : {
+
+    },
+    "Choose a starting intention. Every course stays available, and you can change this later." : {
+
+    },
+    "Choose the answer that keeps people and information safer." : {
+
+    },
+    "Choose the best answer to keep today’s practice moving." : {
+
+    },
+    "Choose your learning space" : {
+
+    },
+    "Choose your next challenge" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose your next challenge"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige tu próximo desafío"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisissez votre prochain défi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "次の課題を選ぼう"
+          }
+        }
+      }
+    },
+    "Claim reward" : {
+
+    },
+    "Claimed" : {
+
+    },
+    "Close" : {
+
+    },
+    "Close lesson preview" : {
+
+    },
+    "Close selected glossary card" : {
+
+    },
+    "Cloud account" : {
+
+    },
+    "CO-OP QUESTS" : {
+
+    },
+    "Come back tomorrow for a new mix, or keep building now." : {
+
+    },
+    "Complete a mission, play it, then change a color or a rule. Make the result yours." : {
+
+    },
+    "Complete both checkpoints: recreate the example, then build your own variation from memory." : {
+
+    },
+    "Complete lessons and build streaks to earn badges." : {
+
+    },
+    "Complete more lessons to get personalized recommendations." : {
+
+    },
+    "Complete these together. Pick one, send the message, and compare notes after." : {
+
+    },
+    "Completed (%lld)" : {
+
+    },
+    "Connect" : {
+
+    },
+    "Connect →" : {
+
+    },
+    "Connect a repository" : {
+
+    },
+    "Connect an account" : {
+
+    },
+    "Connect another repository" : {
+
+    },
+    "Connect GitHub" : {
+
+    },
+    "Connect once and your Studio practice sessions can push commits directly to your repositories — showing real activity on your GitHub profile." : {
+
+    },
+    "Connected" : {
+
+    },
+    "Connected account" : {
+
+    },
+    "Connecting…" : {
+
+    },
+    "Continue" : {
+
+    },
+    "Continue →" : {
+
+    },
+    "Continue as guest →" : {
+
+    },
+    "Continue to Repositories →" : {
+
+    },
+    "Continue with Apple" : {
+
+    },
+    "Continue with GitHub" : {
+
+    },
+    "Continue with Google" : {
+
+    },
+    "Correct!" : {
+
+    },
+    "COURSE 02 · SAFETY ESSENTIALS" : {
+
+    },
+    "COURSE 03 · PROJECT PLAYGROUND" : {
+
+    },
+    "Course navigation" : {
+
+    },
+    "Create account" : {
+
+    },
+    "CSS · local workspace" : {
+
+    },
+    "CSS source editor" : {
+
+    },
+    "CURRENT COURSE" : {
+
+    },
+    "Cybersecurity" : {
+
+    },
+    "Cybersecurity\nMini Course" : {
+
+    },
+    "Cybersecurity quiz · 25 questions" : {
+
+    },
+    "D" : {
+
+    },
+    "Daily practice" : {
+
+    },
+    "Daily practice reminder" : {
+
+    },
+    "Daily Sprint" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daily Sprint"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprint diario"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprint quotidien"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デイリースプリント"
+          }
+        }
+      }
+    },
+    "days" : {
+
+    },
+    "Days" : {
+
+    },
+    "Days practiced each week over the last 4 weeks" : {
+
+    },
+    "Days you practiced in the last 30 days" : {
+
+    },
+    "Deck mode" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete account" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete account"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar cuenta"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer le compte"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アカウントを削除"
+          }
+        }
+      }
+    },
+    "Delete permanently" : {
+
+    },
+    "Delete your account and all cloud progress? This cannot be undone." : {
+
+    },
+    "Design · CSS" : {
+
+    },
+    "Design preview" : {
+
+    },
+    "DESIGN STUDIO · CSS" : {
+
+    },
+    "Disconnect account" : {
+
+    },
+    "Done" : {
+
+    },
+    "Email" : {
+
+    },
+    "Enable notifications" : {
+
+    },
+    "Enjoy all Pro tracks, unlimited AI Tutor, and leaderboard perks." : {
+
+    },
+    "Every lesson in this track is done. You know this material." : {
+
+    },
+    "Every small practice session counts. Keep your spark going tomorrow." : {
+
+    },
+    "Explore the 60-project route" : {
+
+    },
+    "Explore the full 60-project Studio" : {
+
+    },
+    "Export flashcards (CSV)" : {
+
+    },
+    "Export game.html ↓" : {
+
+    },
+    "FINAL CHECKPOINT" : {
+
+    },
+    "Flash cards" : {
+
+    },
+    "Flip the card to start its two-step checkpoint." : {
+
+    },
+    "FOCUS THESE NEXT" : {
+
+    },
+    "Friends" : {
+
+    },
+    "Full quiz" : {
+
+    },
+    "Full Studio" : {
+
+    },
+    "Game Project Lab" : {
+
+    },
+    "game.js" : {
+
+    },
+    "Get a personalised suggestion" : {
+
+    },
+    "Get started →" : {
+
+    },
+    "GitHub connected" : {
+
+    },
+    "Give this project a name." : {
+
+    },
+    "Global" : {
+
+    },
+    "Go deeper with Pro tracks, remove all limits, and climb the leaderboard." : {
+
+    },
+    "Good try. %@" : {
+
+    },
+    "Guest and account lesson progress are separate. Sync uploads completed native lessons and merges cloud completions. Shared-device code drafts and the web studio remain local, independent of your account. Clear app data before handing the device to someone else." : {
+
+    },
+    "Guest mode" : {
+
+    },
+    "Hands-on web workspace · saves locally. Python needs internet; native account sync does not include studio saves." : {
+
+    },
+    "Heatmap, velocity, weak spots & recommendations" : {
+
+    },
+    "Hello, I’m Bit! **Let’s figure it out together.**" : {
+
+    },
+    "Hey, I’m Bit." : {
+
+    },
+    "Hi! I’m Bit." : {
+
+    },
+    "Hide answer" : {
+
+    },
+    "Hide explanation" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide explanation"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ocultar explicación"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masquer l'explication"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解説を隠す"
+          }
+        }
+      }
+    },
+    "Hide locked badges" : {
+
+    },
+    "Hide safety move ↑" : {
+
+    },
+    "Hides the safety move" : {
+
+    },
+    "How did that feel?" : {
+
+    },
+    "How do you rank?" : {
+
+    },
+    "HOW OFTEN?" : {
+
+    },
+    "How you practice" : {
+
+    },
+    "I reviewed this concept" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I reviewed this concept"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revisé este concepto"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "J'ai revu ce concept"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このコンセプトを復習した"
+          }
+        }
+      }
+    },
+    "I’m Bit, your coding buddy. We’ll learn a small idea, type it ourselves, and turn it into something you can play." : {
+
+    },
+    "I've got you." : {
+
+    },
+    "iCloud Sync" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud Sync"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronización iCloud"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronisation iCloud"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud同期"
+          }
+        }
+      }
+    },
+    "INVITE A FRIEND" : {
+
+    },
+    "Issue a 7-day streak challenge. Both parties check in every day. First to miss a day buys the coffee." : {
+
+    },
+    "JavaScript · local workspace" : {
+
+    },
+    "JavaScript source editor" : {
+
+    },
+    "KEEP THESE CLOSE" : {
+
+    },
+    "Last synced %@" : {
+
+    },
+    "Layer challenge" : {
+
+    },
+    "Leaderboard" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leaderboard"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clasificación"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Classement"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リーダーボード"
+          }
+        }
+      }
+    },
+    "LEADERBOARD" : {
+
+    },
+    "Learn" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Learn"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aprender"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apprendre"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学ぶ"
+          }
+        }
+      }
+    },
+    "Learn → recreate → create → run. %lld/%lld cards practiced." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Learn → recreate → create → run. %1$lld/%2$lld cards practiced."
+          }
+        }
+      }
+    },
+    "Learn a little. Build something yours." : {
+
+    },
+    "Learning" : {
+
+    },
+    "Learning Velocity" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Learning Velocity"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velocidad de aprendizaje"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vitesse d'apprentissage"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学習速度"
+          }
+        }
+      }
+    },
+    "Learning with someone makes both of you more consistent. One friend doubles completion rates." : {
+
+    },
+    "Learning works without an account. To enable cloud accounts, configure BackendConfig.json and deploy backend/schema.sql using SETUP.md." : {
+
+    },
+    "Lesson sources & Python 3 notes" : {
+
+    },
+    "Let’s figure it out together." : {
+
+    },
+    "Let’s go →" : {
+
+    },
+    "Let’s keep going →" : {
+
+    },
+    "Let’s start building" : {
+
+    },
+    "LEVEL UP!" : {
+
+    },
+    "Link your GitHub account" : {
+
+    },
+    "Little lessons.\nReal superpowers." : {
+
+    },
+    "Loading offers…" : {
+
+    },
+    "Lv %lld" : {
+
+    },
+    "Lv %lld · %lld XP" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Lv %1$lld · %2$lld XP"
+          }
+        }
+      }
+    },
+    "Mark done" : {
+
+    },
+    "Mastered · tap to replay" : {
+
+    },
+    "Match it. Arrange it. Predict it." : {
+
+    },
+    "MAX" : {
+
+    },
+    "Meet your building blocks" : {
+
+    },
+    "My bookmarks" : {
+
+    },
+    "MY CODING STREAK" : {
+
+    },
+    "MY NOTE" : {
+
+    },
+    "My project" : {
+
+    },
+    "My Projects" : {
+
+    },
+    "Needs Practice" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Needs Practice"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Necesita práctica"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Besoin de pratique"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "練習が必要"
+          }
+        }
+      }
+    },
+    "NEEDS WORK" : {
+
+    },
+    "New streak record!" : {
+
+    },
+    "Next" : {
+
+    },
+    "Next mission →" : {
+
+    },
+    "Next question" : {
+
+    },
+    "Next recall →" : {
+
+    },
+    "Next: %@" : {
+
+    },
+    "Nice streak—every completed card powers up Bit." : {
+
+    },
+    "No activity" : {
+
+    },
+    "No bookmarks yet" : {
+
+    },
+    "No hearts to lose. Mistakes are welcome." : {
+
+    },
+    "No in-app friend accounts yet — share through something you already use." : {
+
+    },
+    "No internet · your progress is saved on-device" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No internet · your progress is saved on-device"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin internet · tu progreso está guardado en el dispositivo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas d'internet · votre progression est sauvegardée localement"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "インターネットなし・進捗はデバイスに保存済み"
+          }
+        }
+      }
+    },
+    "No questions available" : {
+
+    },
+    "No repositories found." : {
+
+    },
+    "No saved projects yet. Save your current code to start." : {
+
+    },
+    "No weak spots detected — keep quizzing to track accuracy!" : {
+
+    },
+    "Not now" : {
+
+    },
+    "Not quite." : {
+
+    },
+    "Notifications" : {
+
+    },
+    "on-device AI · private" : {
+
+    },
+    "One recalled idea and one remix can become something you can share." : {
+
+    },
+    "Open course navigation" : {
+
+    },
+    "Open hands-on studio →" : {
+
+    },
+    "Open StackSprint and begin today's coding sprint." : {
+
+    },
+    "Password" : {
+
+    },
+    "Pick a pace that fits your life, then choose where to start." : {
+
+    },
+    "Pick a Repository" : {
+
+    },
+    "Pick the home screen that feels easiest on your eyes. You can switch anytime with the button in the top-right corner." : {
+
+    },
+    "Place the layers" : {
+
+    },
+    "Play again" : {
+
+    },
+    "Play my game" : {
+
+    },
+    "Practice again" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Practice again"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Practicar de nuevo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pratiquer à nouveau"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "もう一度練習"
+          }
+        }
+      }
+    },
+    "Practice all three tiny challenges to make it yours." : {
+
+    },
+    "PRACTICE CODE" : {
+
+    },
+    "Practice covers variables, assignment, built-in functions, types, casting, collections, unpacking, and number tools. Run experiments in StackSprint Studio using Python 3 behavior." : {
+
+    },
+    "Practice from memory" : {
+
+    },
+    "PRACTICE HEATMAP · 12 WEEKS" : {
+
+    },
+    "Practice this term →" : {
+
+    },
+    "Practiced" : {
+
+    },
+    "Prediction: %@" : {
+
+    },
+    "Preview design" : {
+
+    },
+    "Previous" : {
+
+    },
+    "print(2 + 3)" : {
+
+    },
+    "private" : {
+
+    },
+    "Private by default" : {
+
+    },
+    "PRO" : {
+
+    },
+    "PROGRESS BY TRACK" : {
+
+    },
+    "Progress, streaks, and bookmarks are merged across your devices — your best score always wins." : {
+
+    },
+    "Project name" : {
+
+    },
+    "Project Playground" : {
+
+    },
+    "Push practice commits to your repos" : {
+
+    },
+    "Push to GitHub ↑" : {
+
+    },
+    "Python can do math! What will this code print?" : {
+
+    },
+    "Python essentials" : {
+
+    },
+    "PYTHON ESSENTIALS · DAY 2 PRACTICE" : {
+
+    },
+    "Q %lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Q %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Question %lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Question %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Questions adapt to your weak spots. Get one wrong and it comes back sooner." : {
+
+    },
+    "Questions stay on this device. AI can make mistakes; test suggestions in Studio. Bite cannot complete checkpoints for you." : {
+
+    },
+    "Questions will appear when the course loads." : {
+
+    },
+    "Quick glossary" : {
+
+    },
+    "Quiz" : {
+
+    },
+    "RAPID LEARNING DECK" : {
+
+    },
+    "Read aloud" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read aloud"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leer en voz alta"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lire à voix haute"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "読み上げ"
+          }
+        }
+      }
+    },
+    "Read lesson aloud" : {
+
+    },
+    "Reading speed" : {
+
+    },
+    "Ready for a boss round?" : {
+
+    },
+    "READY TO LEARN" : {
+
+    },
+    "Real learning activity · saved on this device" : {
+
+    },
+    "REBUILD & REMIX" : {
+
+    },
+    "Recall a concept, rebuild a skill, then make one small thing your own." : {
+
+    },
+    "Recall arcade" : {
+
+    },
+    "RECALL ARCADE" : {
+
+    },
+    "Recommended Next" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recommended Next"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recomendado a continuación"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recommandé ensuite"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "次のおすすめ"
+          }
+        }
+      }
+    },
+    "Recreate it, then make it yours" : {
+
+    },
+    "Recreate this example" : {
+
+    },
+    "Refresh suggestion" : {
+
+    },
+    "Remaining" : {
+
+    },
+    "Reminder time" : {
+
+    },
+    "Remix your project" : {
+
+    },
+    "Remove bookmark" : {
+
+    },
+    "Replay welcome adventure" : {
+
+    },
+    "Repository connected!" : {
+
+    },
+    "Restore" : {
+
+    },
+    "Restore last passing code" : {
+
+    },
+    "Restore purchases" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore purchases"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restaurar compras"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restaurer les achats"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "購入を復元"
+          }
+        }
+      }
+    },
+    "Reveal & practice" : {
+
+    },
+    "Reveal answer" : {
+
+    },
+    "Reveal explanation" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reveal explanation"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar explicación"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Révéler l'explication"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解説を表示"
+          }
+        }
+      }
+    },
+    "Reveals the recommended safety move" : {
+
+    },
+    "Review flashcards" : {
+
+    },
+    "REVIEW QUEUE · %lld" : {
+
+    },
+    "Round complete! 🎉" : {
+
+    },
+    "Run" : {
+
+    },
+    "Save" : {
+
+    },
+    "Save ~33% vs monthly" : {
+
+    },
+    "Save current code as new project" : {
+
+    },
+    "Save source ↓" : {
+
+    },
+    "Save your streak." : {
+
+    },
+    "Saved %@ projects" : {
+
+    },
+    "Search HTML, API, full-stack…" : {
+
+    },
+    "See how your XP ranks globally" : {
+
+    },
+    "See results" : {
+
+    },
+    "Send quest" : {
+
+    },
+    "Set reminder time" : {
+
+    },
+    "Set your goal" : {
+
+    },
+    "Share achievement" : {
+
+    },
+    "Share GitHub activity" : {
+
+    },
+    "Share my progress" : {
+
+    },
+    "Share my streak" : {
+
+    },
+    "Share StackSprint" : {
+
+    },
+    "Short prototypes, real code. The app supplies the display and controls; you implement the rules or visual design." : {
+
+    },
+    "Show %lld locked badges" : {
+
+    },
+    "Show a worked example" : {
+
+    },
+    "Shows a preview and start button" : {
+
+    },
+    "Shows this term's flash card at the top" : {
+
+    },
+    "Sign in" : {
+
+    },
+    "Sign in once and your progress syncs to all your devices. Or tap below to continue as a guest — you can connect an account later." : {
+
+    },
+    "Sign in with Apple, Google, or GitHub to save your streak across devices." : {
+
+    },
+    "Sign out" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign out"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerrar sesión"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se déconnecter"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サインアウト"
+          }
+        }
+      }
+    },
+    "Signed in" : {
+
+    },
+    "Signed in with %@" : {
+
+    },
+    "Skip" : {
+
+    },
+    "Skip welcome" : {
+
+    },
+    "Small concepts.\nBig possibilities." : {
+
+    },
+    "sprint $" : {
+
+    },
+    "StackSprint" : {
+
+    },
+    "StackSprint Pro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "StackSprint Pro"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "StackSprint Pro"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "StackSprint Pro"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "StackSprint Pro"
+          }
+        }
+      }
+    },
+    "Start 10-question session" : {
+
+    },
+    "Start 25-question checkpoint →" : {
+
+    },
+    "Start a build mission" : {
+
+    },
+    "Start a tiny win" : {
+
+    },
+    "Start Daily Sprint" : {
+
+    },
+    "Start this tiny win" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start this tiny win"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comenzar este pequeño logro"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Commencer cette petite victoire"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この小さな勝利を始める"
+          }
+        }
+      }
+    },
+    "starts here." : {
+
+    },
+    "Stats" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stats"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estadísticas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Statistiques"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "統計"
+          }
+        }
+      }
+    },
+    "Stop" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detener"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrêter"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "停止"
+          }
+        }
+      }
+    },
+    "Stop reading" : {
+
+    },
+    "Streak" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streak"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Racha"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Série"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "連続記録"
+          }
+        }
+      }
+    },
+    "STREAK CHALLENGE" : {
+
+    },
+    "Streak day %lld complete" : {
+
+    },
+    "Streak day %lld not yet complete" : {
+
+    },
+    "Studio" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Studio"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estudio"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Studio"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "スタジオ"
+          }
+        }
+      }
+    },
+    "Study" : {
+
+    },
+    "Study now →" : {
+
+    },
+    "styles.css" : {
+
+    },
+    "Subscription auto-renews unless cancelled at least 24 hours before renewal. Manage in Settings." : {
+
+    },
+    "Sync native lesson progress" : {
+
+    },
+    "Sync now" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync now"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizar ahora"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchroniser maintenant"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今すぐ同期"
+          }
+        }
+      }
+    },
+    "Take a card.\nTake a guess." : {
+
+    },
+    "Tap “Read aloud” on any lesson to hear it spoken aloud using your device’s voice." : {
+
+    },
+    "Tap a card, make a prediction, then try the idea yourself." : {
+
+    },
+    "Tap a concept to jump to its card." : {
+
+    },
+    "Tap a term to bring its flash card back to the top." : {
+
+    },
+    "Tap a term. See the safety move." : {
+
+    },
+    "Tap the bookmark icon on any lesson card to add it to your review queue." : {
+
+    },
+    "Tap to flip" : {
+
+    },
+    "Tap to power up →" : {
+
+    },
+    "Tap to reveal →" : {
+
+    },
+    "Tap to see term" : {
+
+    },
+    "target" : {
+
+    },
+    "target.addEventListener('click', hit);" : {
+
+    },
+    "TERMINAL" : {
+
+    },
+    "Terminal practice code" : {
+
+    },
+    "That’s it! %@" : {
+
+    },
+    "This native checkpoint checks transcription, not execution. Open Studio to run and remix code." : {
+
+    },
+    "Three tiny challenges. One real skill. Let’s turn “what does this do?” into “watch this.”" : {
+
+    },
+    "To review (%lld)" : {
+
+    },
+    "Today" : {
+
+    },
+    "Today’s recall is complete!" : {
+
+    },
+    "Together" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Together"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Juntos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ensemble"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "つながり"
+          }
+        }
+      }
+    },
+    "Total" : {
+
+    },
+    "Track" : {
+
+    },
+    "Tracks how many days per week you practice — not lesson count. A practice day counts when you complete at least one lesson or recall card." : {
+
+    },
+    "Try a design mission" : {
+
+    },
+    "Try again" : {
+
+    },
+    "Turn on dark mode" : {
+
+    },
+    "Turn on light mode" : {
+
+    },
+    "Type help, test, play, preview" : {
+
+    },
+    "Type the lesson code" : {
+
+    },
+    "UNIT 01 · THE FIRST SPARK" : {
+
+    },
+    "Unlock everything" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock everything"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desbloquear todo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tout débloquer"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてアンロック"
+          }
+        }
+      }
+    },
+    "Unlock Go, Rust, Interview Prep, and more." : {
+
+    },
+    "Upgrade to Pro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upgrade to Pro"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actualizar a Pro"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passer à Pro"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proにアップグレード"
+          }
+        }
+      }
+    },
+    "Use your keyboard in the editor or terminal practice box. Each check reads the source you wrote." : {
+
+    },
+    "via %@" : {
+
+    },
+    "View Pro plans" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View Pro plans"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ver planes Pro"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voir les offres Pro"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proプランを見る"
+          }
+        }
+      }
+    },
+    "VOCABULARY WARM-UP" : {
+
+    },
+    "Voice & Accessibility" : {
+
+    },
+    "Want the three guided requirements? Open a design or building mission from Course navigation." : {
+
+    },
+    "We do not upload contacts. All sharing goes through your device's share sheet. In-app friend accounts, live chat, and leaderboards are not included in this version." : {
+
+    },
+    "Web Development 101" : {
+
+    },
+    "Web quiz · 25 questions" : {
+
+    },
+    "week" : {
+
+    },
+    "Week of" : {
+
+    },
+    "Weekly Challenges" : {
+
+    },
+    "WEEKLY CHALLENGES" : {
+
+    },
+    "Weekly goal" : {
+
+    },
+    "Weekly goal met!" : {
+
+    },
+    "Weekly Insights" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weekly Insights"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Perspectivas semanales"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aperçus hebdomadaires"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "週間インサイト"
+          }
+        }
+      }
+    },
+    "Weekly learning goal" : {
+
+    },
+    "Welcome step %lld of 6" : {
+
+    },
+    "What happens next" : {
+
+    },
+    "WHAT TO DO NEXT" : {
+
+    },
+    "What will you make?" : {
+
+    },
+    "WHERE TO START?" : {
+
+    },
+    "Working…" : {
+
+    },
+    "Write it. Check it. Make it yours." : {
+
+    },
+    "Write real code, test your ideas, and play what you build. 30 design missions and 30 game builds take you from your first edit to a pocket portfolio." : {
+
+    },
+    "XP" : {
+
+    },
+    "XP breakdown" : {
+
+    },
+    "XP BREAKDOWN" : {
+
+    },
+    "You" : {
+
+    },
+    "You got it!" : {
+
+    },
+    "You reached level %lld. Keep building." : {
+
+    },
+    "You showed up today. Keep the spark going with one small lesson tomorrow." : {
+
+    },
+    "You’ll get a daily practice reminder at this time." : {
+
+    },
+    "You’re #%lld with %lld XP" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You’re #%1$lld with %2$lld XP"
+          }
+        }
+      }
+    },
+    "You're in!" : {
+
+    },
+    "You're on StackSprint Pro" : {
+
+    },
+    "Your adventure" : {
+
+    },
+    "YOUR DAILY SHIPPING HABIT" : {
+
+    },
+    "YOUR FIRST SPARK" : {
+
+    },
+    "Your First Spark badge awaits" : {
+
+    },
+    "Your first tiny win is waiting." : {
+
+    },
+    "Your first tiny win starts today. You belong here." : {
+
+    },
+    "Your first tiny win." : {
+
+    },
+    "YOUR LEARNING STATS" : {
+
+    },
+    "Your little coding co-pilot" : {
+
+    },
+    "YOUR LOCAL CODE WORKSPACE" : {
+
+    },
+    "Your next\n“I made this!”" : {
+
+    },
+    "Your next tiny build" : {
+
+    },
+    "Your path to shipping" : {
+
+    },
+    "Your playable result" : {
+
+    },
+    "YOUR POCKET CODING ARCADE" : {
+
+    },
+    "Your pocket glossary" : {
+
+    },
+    "Your practice sessions in Studio will now push commits to your connected repositories." : {
+
+    },
+    "Your project is playable!" : {
+
+    },
+    "YOUR PYTHON TOOLBOX" : {
+
+    },
+    "Your rank" : {
+
+    },
+    "YOUR STREAK" : {
+
+    }
+  },
+  "version" : "1.0"
+}
