@@ -12,6 +12,7 @@ import AVFoundation
     @StateObject private var backend = Backend()
     @StateObject private var socialAuth = SocialAuthManager()
     @StateObject private var notifications = NotificationManager()
+    @StateObject private var projectStore = ProjectStore()
     @AppStorage("appearance.mode") private var appearance = "dark"
     var body: some Scene {
         WindowGroup {
@@ -20,6 +21,7 @@ import AVFoundation
                 .environmentObject(backend)
                 .environmentObject(socialAuth)
                 .environmentObject(notifications)
+                .environmentObject(projectStore)
                 .tint(.mint)
                 .preferredColorScheme(appearance == "light" ? .light : .dark)
                 .modifier(SprintTheme())
@@ -33,6 +35,11 @@ import AVFoundation
                             for milestone in [25, 50, 75, 100] where pct >= milestone {
                                 notifications?.fireMilestone(pct: milestone)
                             }
+                            // Write widget data
+                            UserDefaults.standard.set(done, forKey: "native.lessons.widget")
+                        }
+                        if let streak = store?.currentStreak {
+                            UserDefaults.standard.set(streak, forKey: "native.streak.widget")
                         }
                         if backend?.session != nil {
                             Task { try? await backend?.sync(store!) }
@@ -864,6 +871,7 @@ struct LayerChallengeView: View {
 enum ProjectTrack: String, CaseIterable { case design = "Design Games"; case build = "Building Games" }
 struct ProjectPlaygroundView: View {
     @EnvironmentObject var socialAuth: SocialAuthManager
+    @EnvironmentObject var projectStore: ProjectStore
     @Environment(\.horizontalSizeClass) private var sizeClass
     private let studioFirst: Bool
     @State private var track: ProjectTrack
@@ -876,6 +884,9 @@ struct ProjectPlaygroundView: View {
     @State private var previewing = false
     @State private var pushing = false
     @State private var pushResult = ""
+    @State private var showingProjects = false
+    @State private var exportFile: CodeFile?
+    @State private var activeProjectID: String = UUID().uuidString
     init(initialTrack: ProjectTrack, studioFirst: Bool = false) {
         self.studioFirst = studioFirst
         _track = State(initialValue: initialTrack)
@@ -930,6 +941,21 @@ struct ProjectPlaygroundView: View {
         .onChange(of: code) { _, value in
             UserDefaults.standard.set(value, forKey: draftKey)
         }
+        .sheet(isPresented: $showingProjects) {
+            ProjectPickerSheet(track: track == .design ? "design" : "build", currentCode: code) { project in
+                code = project.code
+                activeProjectID = project.id
+                log = "Loaded \"\(project.name)\"."
+            } onNew: { name in
+                projectStore.upsert(id: activeProjectID, name: name,
+                                    track: track == .design ? "design" : "build", code: code)
+                log = "Saved as \"\(name)\"."
+            }
+        }
+        .fileExporter(isPresented: Binding(get: { exportFile != nil }, set: { if !$0 { exportFile = nil } }),
+                      document: exportFile,
+                      contentType: .plainText,
+                      defaultFilename: track == .design ? "styles.css" : "game.js") { _ in exportFile = nil }
     }
     private var studioLanding: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -975,7 +1001,18 @@ struct ProjectPlaygroundView: View {
                 Button("▶ Run checks") { runChecks() }.buttonStyle(.borderedProminent).tint(.mint)
                 Button("Play my game") { previewing = true }.buttonStyle(.bordered).disabled(!passed)
                 Button("Preview design") { previewing = true }.buttonStyle(.bordered)
-                Button("Save source ↓") { UserDefaults.standard.set(code, forKey: draftKey); log += "\nDraft saved on this device." }.buttonStyle(.bordered)
+                Button("Save source ↓") {
+                    UserDefaults.standard.set(code, forKey: draftKey)
+                    projectStore.upsert(id: activeProjectID, name: "Draft (\(track == .design ? "CSS" : "JS"))",
+                                        track: track.rawValue.lowercased(), code: code)
+                    log += "\nSaved to My Projects."
+                }.buttonStyle(.bordered)
+                Button { showingProjects = true } label: {
+                    Image(systemName: "folder.fill")
+                }.buttonStyle(.bordered)
+                Button { exportFile = CodeFile(code: code) } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }.buttonStyle(.bordered)
                 if socialAuth.authProvider == .github {
                     Spacer()
                     Button {
@@ -1086,12 +1123,14 @@ struct ProjectPlaygroundView: View {
 }
 struct LearnView: View {
     @EnvironmentObject var store: LearningStore
+    @EnvironmentObject var socialAuth: SocialAuthManager
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var exporting = false
     @State private var exportError: String?
     @State private var category = "Web development"
     @State private var selectedID: String?
+    @State private var showingChallenge = false
     private var categories: [String] {
         var seen = Set<String>()
         return (store.curriculum?.lessons ?? []).compactMap {
@@ -1132,7 +1171,29 @@ struct LearnView: View {
 
                 if let error = store.error { Text(error).foregroundStyle(.red) }
 
+                GamificationHeader()
+
                 LearningPathSection()
+
+                // Challenge mode button
+                Button { showingChallenge = true } label: {
+                    HStack {
+                        Image(systemName: "bolt.fill").foregroundStyle(.yellow)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Challenge Mode").font(.headline)
+                            Text("Adaptive quiz — targets your weak spots").font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right").foregroundStyle(.secondary)
+                    }
+                    .padding(14)
+                    .background(Color.yellow.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.yellow.opacity(0.2)))
+                }
+                .buttonStyle(.plain)
+                .sheet(isPresented: $showingChallenge) {
+                    AdaptiveQuizView()
+                }
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
@@ -1378,6 +1439,14 @@ struct AccountView: View {
     var body: some View {
         Form {
             Section("Your adventure") { Button("Replay welcome adventure") { welcomed = false } }
+            Section {
+                XPBreakdownRow()
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    .listRowBackground(Color.clear)
+            } header: {
+                Text("XP breakdown")
+            }
+            BadgeGridSection()
             NotificationSettingsSection(notifications: notifications)
             if socialAuth.isSignedIn {
                 Section("Connected account") {
