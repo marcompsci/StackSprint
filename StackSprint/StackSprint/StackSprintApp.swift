@@ -253,7 +253,12 @@ struct RapidLearningDeck: View {
                     }
                     Text(revealed ? "How did that feel?" : "Flip the card to start its two-step checkpoint.").font(.subheadline).foregroundStyle(.secondary).frame(maxWidth: .infinity)
                     HStack { ForEach(["Teach me again", "Almost there", "I knew it"], id: \.self) { label in
-                        Button(label) { store.complete(lesson.id); if index < filtered.count - 1 { move(1) } }.buttonStyle(.bordered).disabled(!revealed)
+                        Button(label) {
+                            let quality: Int = label == "I knew it" ? 5 : label == "Almost there" ? 3 : 1
+                            SM2Engine.shared.recordReview(lessonID: lesson.id, quality: quality)
+                            store.complete(lesson.id)
+                            if index < filtered.count - 1 { move(1) }
+                        }.buttonStyle(.bordered).disabled(!revealed)
                     }}
                 }
             }.padding(24).frame(maxWidth: 760)
@@ -1197,6 +1202,7 @@ struct LearnView: View {
                 GamificationHeader()
                 LearningPathSection()
                 challengeButton
+                DueTodaySectionView()
                 categoryTabBar
                 difficultyFilterBar
                 trackHeader
@@ -1532,13 +1538,20 @@ struct LessonView: View {
                         Text("Recreate this example").font(.headline)
                         Text(lesson.code).font(.system(.body, design: .monospaced)).textSelection(.enabled).padding().frame(maxWidth: .infinity, alignment: .leading).background(.indigo.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
                         TextEditor(text: $code).font(.system(.body, design: .monospaced)).autocorrectionDisabled().textInputAutocapitalization(.never).frame(minHeight: 170).padding(8).overlay(RoundedRectangle(cornerRadius: 12).stroke(.secondary.opacity(0.3))).accessibilityLabel("Type the lesson code")
-                        Text("This native checkpoint checks transcription, not execution. Open Studio to run and remix code.").font(.caption).foregroundStyle(.secondary)
+                        CodeRunnerView(code: $code, language: codeLanguage(lesson))
+                        Text("Check your transcription or tap Run ▶ to execute it.").font(.caption).foregroundStyle(.secondary)
                         Button("Check my example") {
-                            if code.trimmingCharacters(in: .whitespacesAndNewlines) == lesson.code { store.complete(lesson.id); feedback = "Nicely done! Make your own version in Studio next." }
+                            let correct = code.trimmingCharacters(in: .whitespacesAndNewlines) == lesson.code
+                            SM2Engine.shared.recordReview(lessonID: lesson.id, quality: correct ? 5 : 1)
+                            if correct { store.complete(lesson.id); feedback = "Nicely done! Make your own version in Studio next." }
                             else { feedback = "Check spelling, quotes, spacing, and line breaks against the example." }
                         }.buttonStyle(.borderedProminent)
                     } else {
-                        Button("I reviewed this concept") { store.complete(lesson.id); feedback = "Reviewed! Test your recall in the course quiz." }.buttonStyle(.borderedProminent)
+                        Button("I reviewed this concept") {
+                            SM2Engine.shared.recordReview(lessonID: lesson.id, quality: 4)
+                            store.complete(lesson.id)
+                            feedback = "Reviewed! Test your recall in the course quiz."
+                        }.buttonStyle(.borderedProminent)
                     }
                     Text(feedback).foregroundStyle(.indigo).accessibilityAddTraits(.updatesFrequently)
                     NavigationLink("Open hands-on studio →") { StudioView() }
@@ -1548,6 +1561,15 @@ struct LessonView: View {
         .onAppear { code = UserDefaults.standard.string(forKey: "draft.\(lesson.id)") ?? "" }
         .onChange(of: code) { _, value in UserDefaults.standard.set(value, forKey: "draft.\(lesson.id)") }
         .trackedWithLiveActivity(lesson: lesson)
+    }
+
+    private func codeLanguage(_ lesson: Lesson) -> String {
+        switch lesson.category {
+        case "Swift":              return "swift"
+        case "Python":             return "python"
+        case "TypeScript", "React":return "javascript"
+        default:                   return "javascript"
+        }
     }
 }
 struct QuizView: View {
