@@ -6,6 +6,8 @@ import SwiftUI
 
 struct AnalyticsDashboardView: View {
     @EnvironmentObject var store: LearningStore
+    @EnvironmentObject var seasonStore: SeasonStore
+    @EnvironmentObject var premiumStore: PremiumStore
 
     var body: some View {
         ScrollView {
@@ -17,6 +19,8 @@ struct AnalyticsDashboardView: View {
                 xpBreakdownChart
                 leaderboardLink
                 weeklyInsightsLink
+                seasonLink
+                portfolioLink
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
@@ -189,6 +193,49 @@ struct AnalyticsDashboardView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Weekly Insights").font(.headline)
                     Text("Heatmap, velocity, weak spots & recommendations").font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+            }
+            .padding(16)
+            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var seasonLink: some View {
+        NavigationLink {
+            SeasonView().environmentObject(seasonStore).environmentObject(premiumStore)
+        } label: {
+            HStack(spacing: 14) {
+                Text("🏆").font(.title2)
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text("Season \(seasonStore.season.number)").font(.headline)
+                        Text("Tier \(seasonStore.tier)").font(.caption.bold())
+                            .padding(.horizontal, 8).padding(.vertical, 3)
+                            .background(Color.orange.opacity(0.15), in: Capsule())
+                            .foregroundStyle(.orange)
+                    }
+                    Text("\(seasonStore.season.daysRemaining) days remaining · \(seasonStore.tierXP)/\(Season.xpPerTier) XP to next tier")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+            }
+            .padding(16)
+            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var portfolioLink: some View {
+        NavigationLink { PortfolioView().environmentObject(store) } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "doc.badge.gearshape.fill").font(.title2).foregroundStyle(.purple)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Developer Portfolio").font(.headline)
+                    Text("Export your completed lessons as HTML or PDF").font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Image(systemName: "chevron.right").foregroundStyle(.secondary)

@@ -19,6 +19,8 @@ import WebKit
     @StateObject private var celebrations = CelebrationManager()
     @StateObject private var challenges = ChallengeStore()
     @StateObject private var premiumStore = PremiumStore()
+    @StateObject private var customLessons = CustomLessonsStore()
+    @StateObject private var seasonStore = SeasonStore()
     @AppStorage("appearance.mode") private var appearance = "dark"
     var body: some Scene {
         WindowGroup {
@@ -32,6 +34,8 @@ import WebKit
                 .environmentObject(celebrations)
                 .environmentObject(challenges)
                 .environmentObject(premiumStore)
+                .environmentObject(customLessons)
+                .environmentObject(seasonStore)
                 .tint(.mint)
                 .preferredColorScheme(appearance == "light" ? .light : .dark)
                 .modifier(SprintTheme())
@@ -41,7 +45,7 @@ import WebKit
                     if let lessons = store.curriculum?.lessons { indexLessonsInSpotlight(lessons) }
                     // Donate Siri Shortcuts
                     StackSprintShortcuts.updateAppShortcutParameters()
-                    store.onPractice = { [weak notifications, weak store, weak backend, weak celebrations] in
+                    store.onPractice = { [weak notifications, weak store, weak backend, weak celebrations, weak seasonStore] in
                         notifications?.refreshAfterPractice()
                         if let total = store?.curriculum?.lessons.count, total > 0,
                            let done = store?.completed.count {
@@ -52,6 +56,8 @@ import WebKit
                         }
                         if let s = store { writeWidgetData(store: s) }
                         if let s = store { celebrations?.check(store: s) }
+                        // Award season XP (10 XP per lesson practice)
+                        seasonStore?.recordXP(10)
                         if backend?.session != nil {
                             Task { try? await backend?.sync(store!) }
                         }
@@ -1159,6 +1165,7 @@ struct LearnView: View {
     @EnvironmentObject var celebrations: CelebrationManager
     @EnvironmentObject var challenges: ChallengeStore
     @EnvironmentObject var premiumStore: PremiumStore
+    @EnvironmentObject var customLessons: CustomLessonsStore
     @AppStorage("goal.startingTrack") private var startingTrack = "Web development"
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -1170,14 +1177,19 @@ struct LearnView: View {
     @State private var showingBookmarks = false
     @State private var showingTutor = false
     @State private var showingPaywall = false
+    @State private var showingGenerator = false
     @State private var difficultyFilter: String? = nil
+    private let myLessonsCategory = "My Lessons"
     private var categories: [String] {
         var seen = Set<String>()
-        return (store.curriculum?.lessons ?? []).compactMap {
+        var result = (store.curriculum?.lessons ?? []).compactMap {
             seen.insert($0.category).inserted ? $0.category : nil
         }
+        if !customLessons.lessons.isEmpty { result.append(myLessonsCategory) }
+        return result
     }
     private var lessons: [Lesson] {
+        if category == myLessonsCategory { return customLessons.lessons }
         let byCategory = store.curriculum?.lessons.filter { $0.category == category } ?? []
         guard let filter = difficultyFilter else { return byCategory }
         return byCategory.filter { $0.difficulty == filter }
@@ -1221,6 +1233,11 @@ struct LearnView: View {
         }.navigationTitle("StackSprint").navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
+                Button { showingGenerator = true } label: {
+                    Image(systemName: "wand.and.sparkles")
+                        .foregroundStyle(.purple)
+                }
+                .accessibilityLabel("Generate a lesson with Bit AI")
                 Button { showingTutor = true } label: {
                     Image(systemName: "sparkles")
                         .foregroundStyle(.mint)
@@ -1233,6 +1250,7 @@ struct LearnView: View {
                 .accessibilityLabel("My bookmarks")
             }
         }
+        .sheet(isPresented: $showingGenerator) { GenerateLessonView().environmentObject(customLessons) }
         .sheet(isPresented: $showingTutor) { AITutorView() }
         .sheet(isPresented: $showingPaywall) { ProPaywallView() }
         .sheet(isPresented: $showingBookmarks) { BookmarksSheet() }
@@ -1630,8 +1648,25 @@ struct StudioWebView: UIViewRepresentable {
 struct TogetherView: View {
     @EnvironmentObject var store: LearningStore
     @EnvironmentObject var socialAuth: SocialAuthManager
+    @State private var showingRoom = false
     var body: some View {
         SocialHubView()
+            .safeAreaInset(edge: .bottom) {
+                Button {
+                    HapticManager.shared.impact()
+                    showingRoom = true
+                } label: {
+                    Label("Study Room", systemImage: "person.2.wave.2.fill")
+                        .font(.subheadline.bold())
+                        .frame(maxWidth: .infinity).padding(.vertical, 14)
+                }
+                .buttonStyle(.borderedProminent).tint(.blue)
+                .padding(.horizontal, 24).padding(.bottom, 12)
+                .accessibilityIdentifier("study-room-button")
+            }
+            .sheet(isPresented: $showingRoom) {
+                StudyRoomView().environmentObject(store)
+            }
     }
 }
 struct AccountView: View {
