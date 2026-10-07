@@ -9,23 +9,30 @@ struct AnalyticsDashboardView: View {
     @EnvironmentObject var seasonStore: SeasonStore
     @EnvironmentObject var premiumStore: PremiumStore
 
+    @State private var refreshID = UUID()
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 header
-                streakStatsCard
-                heatmapSection
-                categoryProgressSection
-                xpBreakdownChart
+                if store.practicedDays.isEmpty { EmptyStatsState() }
+                else {
+                    streakStatsCard
+                    heatmapSection
+                    categoryProgressSection
+                    xpBreakdownChart
+                }
                 leaderboardLink
                 weeklyInsightsLink
                 seasonLink
                 portfolioLink
             }
+            .id(refreshID)
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
             .frame(maxWidth: 680)
         }
+        .refreshable { refreshID = UUID() }
         .navigationTitle("Analytics")
         .modifier(SprintTheme())
     }

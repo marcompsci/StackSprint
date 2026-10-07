@@ -21,6 +21,7 @@ import WebKit
     @StateObject private var premiumStore = PremiumStore()
     @StateObject private var customLessons = CustomLessonsStore()
     @StateObject private var seasonStore = SeasonStore()
+    @ObservedObject private var themeStore = ThemeStore.shared
     @AppStorage("appearance.mode") private var appearance = "dark"
     var body: some Scene {
         WindowGroup {
@@ -36,7 +37,8 @@ import WebKit
                 .environmentObject(premiumStore)
                 .environmentObject(customLessons)
                 .environmentObject(seasonStore)
-                .tint(.mint)
+                .tint(themeStore.preset.accent)
+                .onOpenURL { url in FriendChallengeStore.shared.parseURL(url) }
                 .preferredColorScheme(appearance == "light" ? .light : .dark)
                 .modifier(SprintTheme())
                 .onAppear {
@@ -55,8 +57,9 @@ import WebKit
                             }
                         }
                         if let s = store { writeWidgetData(store: s) }
+                        if let s = store { writeWatchData(store: s) }
                         if let s = store { celebrations?.check(store: s) }
-                        // Award season XP (10 XP per lesson practice)
+                        if let s = store { ReviewManager.shared.checkAndRequest(store: s) }
                         seasonStore?.recordXP(10)
                         if backend?.session != nil {
                             Task { try? await backend?.sync(store!) }
@@ -74,8 +77,12 @@ import WebKit
 }
 struct RootView: View {
     @EnvironmentObject var celebrations: CelebrationManager
+    @EnvironmentObject var store: LearningStore
+    @ObservedObject private var themeStore = ThemeStore.shared
+    @ObservedObject private var challengeStore = FriendChallengeStore.shared
     @State private var showingBite = false
     @State private var showingMenu = false
+    @State private var showingChallenge = false
     @AppStorage("onboarding.finished") private var welcomed = false
     @AppStorage("appearance.mode") private var appearance = "dark"
     var body: some View {
@@ -126,7 +133,15 @@ struct RootView: View {
         }
         .sheet(isPresented: $showingBite) { BiteAssistantView() }
         .sheet(isPresented: $showingMenu) { CourseMenuView() }
+        .sheet(isPresented: $showingChallenge, onDismiss: { challengeStore.reset() }) {
+            if let challenge = challengeStore.incomingChallenge ?? challengeStore.activeChallenge {
+                AcceptChallengeSheet(challenge: challenge).environmentObject(store)
+            }
+        }
         .fullScreenCover(isPresented: Binding(get: { !welcomed }, set: { if !$0 { welcomed = true } })) { WelcomeAdventure() }
+        .onChange(of: challengeStore.incomingChallenge != nil) { _, hasChallenge in
+            if hasChallenge { showingChallenge = true }
+        }
     }
 }
 
@@ -1178,6 +1193,7 @@ struct LearnView: View {
     @State private var showingTutor = false
     @State private var showingPaywall = false
     @State private var showingGenerator = false
+    @ObservedObject private var challengeStore = FriendChallengeStore.shared
     @State private var difficultyFilter: String? = nil
     private let myLessonsCategory = "My Lessons"
     private var categories: [String] {
@@ -1201,6 +1217,13 @@ struct LearnView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 heroCard
+                if let challenge = challengeStore.incomingChallenge {
+                    IncomingChallengeBanner(challenge: challenge) {
+                        showingChallenge = true
+                    } onDecline: {
+                        challengeStore.reset()
+                    }
+                }
                 if let error = store.error { Text(error).foregroundStyle(.red) }
                 if premiumStore.isPro { ProBadge().frame(maxWidth: .infinity, alignment: .trailing) }
                 GoalProgressBanner()
@@ -1251,6 +1274,11 @@ struct LearnView: View {
             }
         }
         .sheet(isPresented: $showingGenerator) { GenerateLessonView().environmentObject(customLessons) }
+        .sheet(isPresented: $showingChallenge, onDismiss: { challengeStore.reset() }) {
+            if let ch = challengeStore.incomingChallenge ?? challengeStore.activeChallenge {
+                AcceptChallengeSheet(challenge: ch).environmentObject(store)
+            }
+        }
         .sheet(isPresented: $showingTutor) { AITutorView() }
         .sheet(isPresented: $showingPaywall) { ProPaywallView() }
         .sheet(isPresented: $showingBookmarks) { BookmarksSheet() }
@@ -1649,24 +1677,37 @@ struct TogetherView: View {
     @EnvironmentObject var store: LearningStore
     @EnvironmentObject var socialAuth: SocialAuthManager
     @State private var showingRoom = false
+    @State private var showingCreateChallenge = false
     var body: some View {
         SocialHubView()
             .safeAreaInset(edge: .bottom) {
-                Button {
-                    HapticManager.shared.impact()
-                    showingRoom = true
-                } label: {
-                    Label("Study Room", systemImage: "person.2.wave.2.fill")
-                        .font(.subheadline.bold())
-                        .frame(maxWidth: .infinity).padding(.vertical, 14)
+                HStack(spacing: 12) {
+                    Button {
+                        HapticManager.shared.impact()
+                        showingCreateChallenge = true
+                    } label: {
+                        Label("Challenge", systemImage: "flame.fill")
+                            .font(.subheadline.bold())
+                            .frame(maxWidth: .infinity).padding(.vertical, 14)
+                    }
+                    .buttonStyle(.borderedProminent).tint(.orange)
+                    .accessibilityIdentifier("create-challenge-button")
+
+                    Button {
+                        HapticManager.shared.impact()
+                        showingRoom = true
+                    } label: {
+                        Label("Study Room", systemImage: "person.2.wave.2.fill")
+                            .font(.subheadline.bold())
+                            .frame(maxWidth: .infinity).padding(.vertical, 14)
+                    }
+                    .buttonStyle(.borderedProminent).tint(.blue)
+                    .accessibilityIdentifier("study-room-button")
                 }
-                .buttonStyle(.borderedProminent).tint(.blue)
                 .padding(.horizontal, 24).padding(.bottom, 12)
-                .accessibilityIdentifier("study-room-button")
             }
-            .sheet(isPresented: $showingRoom) {
-                StudyRoomView().environmentObject(store)
-            }
+            .sheet(isPresented: $showingRoom) { StudyRoomView().environmentObject(store) }
+            .sheet(isPresented: $showingCreateChallenge) { CreateChallengeView().environmentObject(store) }
     }
 }
 struct AccountView: View {
@@ -1683,6 +1724,7 @@ struct AccountView: View {
     var body: some View {
         Form {
             Section("Your adventure") { Button("Replay welcome adventure") { welcomed = false } }
+            ThemePickerSection()
             Section {
                 XPBreakdownRow()
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
@@ -1836,14 +1878,15 @@ struct BiteAvatar: View {
 }
 
 enum SprintPalette {
-    static let navy = Color(uiColor: UIColor { traits in traits.userInterfaceStyle == .dark ? UIColor(red: 0.094, green: 0.125, blue: 0.22, alpha: 1) : UIColor(red: 0.955, green: 0.968, blue: 0.992, alpha: 1) })
-    static let card = Color(uiColor: UIColor { traits in traits.userInterfaceStyle == .dark ? UIColor(red: 0.21, green: 0.26, blue: 0.40, alpha: 1) : UIColor.white })
+    static var navy: Color { ThemeStore.shared.preset.navy }
+    static var card: Color { ThemeStore.shared.preset.card }
 }
 struct SprintTheme: ViewModifier {
+    @ObservedObject private var theme = ThemeStore.shared
     func body(content: Content) -> some View {
         content.scrollContentBackground(.hidden)
-            .background(SprintPalette.navy.ignoresSafeArea())
-            .toolbarBackground(SprintPalette.navy, for: .navigationBar, .tabBar)
+            .background(theme.preset.navy.ignoresSafeArea())
+            .toolbarBackground(theme.preset.navy, for: .navigationBar, .tabBar)
             .toolbarBackground(.visible, for: .navigationBar, .tabBar)
     }
 }
