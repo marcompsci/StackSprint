@@ -23,6 +23,8 @@ struct AnalyticsDashboardView: View {
                     xpBreakdownChart
                 }
                 leaderboardLink
+                weeklyLeaderboardLink
+                trophyRoomLink
                 weeklyInsightsLink
                 seasonLink
                 portfolioLink
@@ -175,6 +177,42 @@ struct AnalyticsDashboardView: View {
     }
 
     // MARK: – Leaderboard link
+
+    private var weeklyLeaderboardLink: some View {
+        NavigationLink { WeeklyLeaderboardView().environmentObject(store) } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "calendar.badge.clock").font(.title2).foregroundStyle(.yellow)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Weekly Rankings").font(.headline)
+                    Text("\(WeeklyXPStore.shared.weeklyXP) XP this week · resets in \(WeeklyXPStore.shared.daysUntilReset)d")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+            }
+            .padding(16)
+            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var trophyRoomLink: some View {
+        NavigationLink { TrophyRoomView() } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "trophy.fill").font(.title2).foregroundStyle(.yellow)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Trophy Room").font(.headline)
+                    Text("\(AchievementStore.shared.unlocked.count)/\(AchievementStore.shared.achievements.count) achievements unlocked")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+            }
+            .padding(16)
+            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        }
+        .buttonStyle(.plain)
+    }
 
     private var leaderboardLink: some View {
         NavigationLink { LeaderboardView() } label: {

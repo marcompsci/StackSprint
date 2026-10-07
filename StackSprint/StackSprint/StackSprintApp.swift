@@ -22,6 +22,7 @@ import WebKit
     @StateObject private var customLessons = CustomLessonsStore()
     @StateObject private var seasonStore = SeasonStore()
     @ObservedObject private var themeStore = ThemeStore.shared
+    @ObservedObject private var weeklyXP = WeeklyXPStore.shared
     @AppStorage("appearance.mode") private var appearance = "dark"
     var body: some Scene {
         WindowGroup {
@@ -61,6 +62,22 @@ import WebKit
                         if let s = store { celebrations?.check(store: s) }
                         if let s = store { ReviewManager.shared.checkAndRequest(store: s) }
                         seasonStore?.recordXP(10)
+                        // Achievement + weekly XP
+                        WeeklyXPStore.shared.recordXP(10)
+                        if let s = store {
+                            let hour = Calendar.current.component(.hour, from: Date())
+                            let ctx = AchievementContext(
+                                completedLessons: s.completed.count,
+                                streak: s.currentStreak,
+                                correctRecalls: s.correctRecallAnswers.count,
+                                practiceXP: s.practiceXP,
+                                seasonTier: seasonStore?.tier ?? 0,
+                                customLessonsCount: UserDefaults.standard.data(forKey: "ss.customLessons").flatMap { try? JSONDecoder().decode([Lesson].self, from: $0) }?.count ?? 0,
+                                curriculum: s.curriculum,
+                                hourOfDay: hour
+                            )
+                            AchievementStore.shared.check(context: ctx)
+                        }
                         if backend?.session != nil {
                             Task { try? await backend?.sync(store!) }
                         }
@@ -80,9 +97,11 @@ struct RootView: View {
     @EnvironmentObject var store: LearningStore
     @ObservedObject private var themeStore = ThemeStore.shared
     @ObservedObject private var challengeStore = FriendChallengeStore.shared
+    @ObservedObject private var achievementStore = AchievementStore.shared
     @State private var showingBite = false
     @State private var showingMenu = false
     @State private var showingChallenge = false
+    @State private var showingPractice = false
     @AppStorage("onboarding.finished") private var welcomed = false
     @AppStorage("appearance.mode") private var appearance = "dark"
     var body: some View {
@@ -133,6 +152,7 @@ struct RootView: View {
         }
         .sheet(isPresented: $showingBite) { BiteAssistantView() }
         .sheet(isPresented: $showingMenu) { CourseMenuView() }
+        .sheet(isPresented: $showingPractice) { BitPracticeView() }
         .sheet(isPresented: $showingChallenge, onDismiss: { challengeStore.reset() }) {
             if let challenge = challengeStore.incomingChallenge ?? challengeStore.activeChallenge {
                 AcceptChallengeSheet(challenge: challenge).environmentObject(store)
@@ -141,6 +161,15 @@ struct RootView: View {
         .fullScreenCover(isPresented: Binding(get: { !welcomed }, set: { if !$0 { welcomed = true } })) { WelcomeAdventure() }
         .onChange(of: challengeStore.incomingChallenge != nil) { _, hasChallenge in
             if hasChallenge { showingChallenge = true }
+        }
+        .overlay {
+            if let achievement = achievementStore.latestUnlock {
+                AchievementUnlockOverlay(achievement: achievement) {
+                    achievementStore.latestUnlock = nil
+                }
+                .transition(.opacity)
+                .animation(.easeInOut, value: achievementStore.latestUnlock != nil)
+            }
         }
     }
 }
@@ -1717,6 +1746,7 @@ struct AccountView: View {
     @EnvironmentObject var socialAuth: SocialAuthManager
     @EnvironmentObject var notifications: NotificationManager
     @EnvironmentObject var premiumStore: PremiumStore
+    @EnvironmentObject var seasonStore: SeasonStore
     @State private var showingPaywall = false
     @State private var email = ""
     @State private var password = ""
@@ -1725,6 +1755,19 @@ struct AccountView: View {
         Form {
             Section("Your adventure") { Button("Replay welcome adventure") { welcomed = false } }
             ThemePickerSection()
+            AppIconPickerSection()
+                .environmentObject(premiumStore)
+                .environmentObject(seasonStore)
+            Section {
+                NavigationLink { TrophyRoomView() } label: {
+                    Label("Trophy Room", systemImage: "trophy.fill")
+                }
+                NavigationLink { BitPracticeView() } label: {
+                    Label("Practice with Bit", systemImage: "brain.head.profile")
+                }
+            } header: {
+                Text("Features")
+            }
             Section {
                 XPBreakdownRow()
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
