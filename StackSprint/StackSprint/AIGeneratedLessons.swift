@@ -135,10 +135,30 @@ struct GenerateLessonView: View {
     @StateObject private var vm = LessonGeneratorViewModel()
     @Environment(\.dismiss) private var dismiss
 
+    private var aiAvailable: Bool {
+        if case .available = SystemLanguageModel.default.availability { return true }
+        return false
+    }
+
+    private var unavailableBanner: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("On-device AI unavailable").font(.subheadline.bold())
+                Text("Requires iOS 26 on a device with Apple Intelligence.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(14)
+        .background(Color.orange.opacity(0.10), in: RoundedRectangle(cornerRadius: 14))
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 22) {
+                    if !aiAvailable { unavailableBanner }
                     promptSection
                     if vm.isGenerating { generatingIndicator }
                     if let preview = vm.preview { previewSection(preview) }

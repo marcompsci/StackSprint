@@ -101,6 +101,8 @@ struct LeaderboardView: View {
             if rank > 0 {
                 Text("You\u{2019}re #\(rank) with \(xp) XP").font(.subheadline).foregroundStyle(.secondary)
             }
+            Label("Rankings are estimated based on your XP", systemImage: "info.circle")
+                .font(.caption).foregroundStyle(.tertiary)
         }
     }
 

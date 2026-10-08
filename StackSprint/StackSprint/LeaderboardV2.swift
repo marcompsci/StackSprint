@@ -189,6 +189,8 @@ struct WeeklyLeaderboardView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
+            Label("Rankings are estimated based on your XP", systemImage: "info.circle")
+                .font(.caption2).foregroundStyle(.tertiary)
         }
         .padding(18)
         .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))

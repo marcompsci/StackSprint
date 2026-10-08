@@ -32,6 +32,39 @@ struct Curriculum: Codable {
     }
 }
 
+// MARK: - Remote Curriculum Loader
+
+enum CurriculumLoader {
+    private static let cacheKey = "ss.curriculum.cache"
+
+    /// Returns a previously-fetched remote curriculum if one is cached.
+    static func cachedCurriculum() -> Curriculum? {
+        guard let data = UserDefaults.standard.data(forKey: cacheKey),
+              let curriculum = try? JSONDecoder().decode(Curriculum.self, from: data),
+              !curriculum.lessons.isEmpty
+        else { return nil }
+        return curriculum
+    }
+
+    /// Fetches a remote curriculum from the configured URL and caches it on success.
+    static func fetchRemote(urlString: String) async -> Curriculum? {
+        guard !urlString.isEmpty,
+              let url = URL(string: urlString),
+              url.scheme == "https"
+        else { return nil }
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return nil }
+            let curriculum = try JSONDecoder().decode(Curriculum.self, from: data)
+            guard !curriculum.lessons.isEmpty else { return nil }
+            UserDefaults.standard.set(data, forKey: cacheKey)
+            return curriculum
+        } catch {
+            return nil
+        }
+    }
+}
+
 struct ProgressRow: Codable {
     let user_id: String
     let lesson_id: String
@@ -47,8 +80,20 @@ struct ProgressRow: Codable {
     var onPractice: (() -> Void)?
 
     init() {
+        // Bundled JSON is always the safety net
         do { curriculum = try Curriculum.load() } catch { self.error = "Lesson content could not load: \(error.localizedDescription)" }
+        // Override with a cached remote version if one exists (it's more up to date)
+        if let cached = CurriculumLoader.cachedCurriculum() { curriculum = cached }
         switchUser(nil)
+    }
+
+    /// Fetches a fresh curriculum from the remote URL configured in BackendConfig.json.
+    /// Call once on app launch from a Task so it doesn't block startup.
+    func refreshCurriculumIfNeeded() async {
+        guard let urlString = BackendConfig.remoteCurriculumURL else { return }
+        if let remote = await CurriculumLoader.fetchRemote(urlString: urlString) {
+            curriculum = remote
+        }
     }
 
     func switchUser(_ id: String?) {
@@ -58,7 +103,13 @@ struct ProgressRow: Codable {
         correctRecallAnswers = Set(UserDefaults.standard.stringArray(forKey: "native.dailyRecall.\(namespace)") ?? [])
     }
 
-    func complete(_ id: String) { completed.insert(id); practicedDays.insert(Self.dayKey(Date())); persist(); onPractice?() }
+    func complete(_ id: String) {
+        guard !completed.contains(id) else { return }
+        completed.insert(id)
+        practicedDays.insert(Self.dayKey(Date()))
+        persist()
+        onPractice?()
+    }
 
     func recordDailyRecall(_ questionID: String) {
         correctRecallAnswers.insert("\(Self.dayKey(Date()))|\(questionID)")

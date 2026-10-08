@@ -5,6 +5,18 @@ import Security
 struct BackendConfig: Decodable {
     let url: String
     let publishableKey: String
+    let curriculumURL: String?
+
+    // Returns the curriculum URL independently of whether the full backend is configured.
+    static var remoteCurriculumURL: String? {
+        guard let file = Bundle.main.url(forResource: "BackendConfig", withExtension: "json"),
+              let data = try? Data(contentsOf: file),
+              let config = try? JSONDecoder().decode(Self.self, from: data),
+              let url = config.curriculumURL,
+              !url.isEmpty
+        else { return nil }
+        return url
+    }
 
     static var current: BackendConfig? {
         guard let file = Bundle.main.url(forResource: "BackendConfig", withExtension: "json"),

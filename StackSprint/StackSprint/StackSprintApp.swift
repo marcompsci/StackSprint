@@ -82,6 +82,8 @@ import WebKit
                             Task { try? await backend?.sync(store!) }
                         }
                     }
+                    // Fetch remote curriculum update without blocking startup
+                    Task { await store.refreshCurriculumIfNeeded() }
                     // Write initial widget data
                     writeWidgetData(store: store)
                 }
@@ -101,14 +103,13 @@ struct RootView: View {
     @State private var showingBite = false
     @State private var showingMenu = false
     @State private var showingChallenge = false
-    @State private var showingPractice = false
     @AppStorage("onboarding.finished") private var welcomed = false
     @AppStorage("appearance.mode") private var appearance = "dark"
     var body: some View {
         TabView {
             NavigationStack { LearnView().modifier(SprintTheme()) }.tabItem { Label("Learn", systemImage: "sparkles") }
             NavigationStack { StudioView().modifier(SprintTheme()) }.tabItem { Label("Studio", systemImage: "curlybraces") }
-            NavigationStack { TogetherView().modifier(SprintTheme()) }.tabItem { Label("Together", systemImage: "heart.fill") }
+            BitPracticeView().tabItem { Label("Practice", systemImage: "brain.head.profile") }
             NavigationStack { AnalyticsDashboardView() }.tabItem { Label("Stats", systemImage: "chart.bar.fill") }
             NavigationStack { AccountView().modifier(SprintTheme()) }.tabItem { Label("Account", systemImage: "person.crop.circle") }
         }
@@ -152,7 +153,6 @@ struct RootView: View {
         }
         .sheet(isPresented: $showingBite) { BiteAssistantView() }
         .sheet(isPresented: $showingMenu) { CourseMenuView() }
-        .sheet(isPresented: $showingPractice) { BitPracticeView() }
         .sheet(isPresented: $showingChallenge, onDismiss: { challengeStore.reset() }) {
             if let challenge = challengeStore.incomingChallenge ?? challengeStore.activeChallenge {
                 AcceptChallengeSheet(challenge: challenge).environmentObject(store)
@@ -1769,13 +1769,29 @@ struct AccountView: View {
                 Text("Features")
             }
             Section {
+                NavigationLink { TogetherView() } label: {
+                    Label("Together", systemImage: "heart.fill")
+                }
+            } header: {
+                Text("Social")
+            }
+            Section {
                 XPBreakdownRow()
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                     .listRowBackground(Color.clear)
             } header: {
                 Text("XP breakdown")
             }
-            BadgeGridSection()
+            Section("Your rank") {
+                GamificationHeader()
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    .listRowBackground(Color.clear)
+                NavigationLink {
+                    TrophyRoomView()
+                } label: {
+                    Label("\(AchievementStore.shared.unlocked.count)/\(AchievementStore.shared.achievements.count) achievements unlocked", systemImage: "trophy.fill")
+                }
+            }
             GoalSettingsSection()
             NotificationSettingsSection(notifications: notifications)
             VoiceSpeedSection()
