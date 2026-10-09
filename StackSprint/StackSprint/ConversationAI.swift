@@ -158,7 +158,7 @@ struct PracticeMessage: Identifiable, Codable {
 // MARK: - Bit Practice View
 
 struct BitPracticeView: View {
-    @StateObject private var conv = BitConversationStore.shared
+    @ObservedObject private var conv = BitConversationStore.shared
     @State private var input = ""
     @FocusState private var focused: Bool
 

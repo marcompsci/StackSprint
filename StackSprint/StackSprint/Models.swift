@@ -112,9 +112,12 @@ struct ProgressRow: Codable {
     }
 
     func recordDailyRecall(_ questionID: String) {
-        correctRecallAnswers.insert("\(Self.dayKey(Date()))|\(questionID)")
+        let key = "\(Self.dayKey(Date()))|\(questionID)"
+        guard !correctRecallAnswers.contains(key) else { return }
+        correctRecallAnswers.insert(key)
         practicedDays.insert(Self.dayKey(Date()))
         persist()
+        onPractice?()
     }
 
     func recalledToday(_ questionID: String) -> Bool {
@@ -136,6 +139,13 @@ struct ProgressRow: Codable {
         UserDefaults.standard.set(Array(completed), forKey: "native.completed.\(namespace)")
         UserDefaults.standard.set(Array(practicedDays), forKey: "native.practiceDays.\(namespace)")
         UserDefaults.standard.set(Array(correctRecallAnswers), forKey: "native.dailyRecall.\(namespace)")
+    }
+
+    var lastPracticedDate: Date? {
+        guard let latest = practicedDays.sorted().last else { return nil }
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f.date(from: latest)
     }
 
     var currentStreak: Int {

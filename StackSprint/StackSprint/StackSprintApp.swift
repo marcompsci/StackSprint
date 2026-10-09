@@ -97,6 +97,7 @@ import WebKit
 struct RootView: View {
     @EnvironmentObject var celebrations: CelebrationManager
     @EnvironmentObject var store: LearningStore
+    @Environment(\.scenePhase) private var scenePhase
     @ObservedObject private var themeStore = ThemeStore.shared
     @ObservedObject private var challengeStore = FriendChallengeStore.shared
     @ObservedObject private var achievementStore = AchievementStore.shared
@@ -161,6 +162,11 @@ struct RootView: View {
         .fullScreenCover(isPresented: Binding(get: { !welcomed }, set: { if !$0 { welcomed = true } })) { WelcomeAdventure() }
         .onChange(of: challengeStore.incomingChallenge != nil) { _, hasChallenge in
             if hasChallenge { showingChallenge = true }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active, let lastDate = store.lastPracticedDate {
+                WeeklyXPStore.shared.applyDecayIfNeeded(lastPracticed: lastDate)
+            }
         }
         .overlay {
             if let achievement = achievementStore.latestUnlock {
@@ -1747,6 +1753,7 @@ struct AccountView: View {
     @EnvironmentObject var notifications: NotificationManager
     @EnvironmentObject var premiumStore: PremiumStore
     @EnvironmentObject var seasonStore: SeasonStore
+    @ObservedObject private var achievementStore = AchievementStore.shared
     @State private var showingPaywall = false
     @State private var email = ""
     @State private var password = ""
@@ -1789,7 +1796,7 @@ struct AccountView: View {
                 NavigationLink {
                     TrophyRoomView()
                 } label: {
-                    Label("\(AchievementStore.shared.unlocked.count)/\(AchievementStore.shared.achievements.count) achievements unlocked", systemImage: "trophy.fill")
+                    Label("\(achievementStore.unlocked.count)/\(achievementStore.achievements.count) achievements unlocked", systemImage: "trophy.fill")
                 }
             }
             GoalSettingsSection()

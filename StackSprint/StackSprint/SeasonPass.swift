@@ -11,8 +11,16 @@ struct Season: Equatable {
     static let xpPerTier    = 200
     static let tiersTotal   = 10
 
-    // Season 1 begins Oct 1, 2026
-    static let current = Season(number: 1, startDate: isoDate("2026-10-01"))
+    private static let catalog: [Season] = [
+        Season(number: 1, startDate: isoDate("2026-10-01")),
+        Season(number: 2, startDate: isoDate("2026-12-10")),
+        Season(number: 3, startDate: isoDate("2027-02-18")),
+        Season(number: 4, startDate: isoDate("2027-04-29")),
+    ]
+
+    static var current: Season {
+        catalog.last(where: { $0.startDate <= Date() }) ?? catalog[0]
+    }
 
     var endDate: Date {
         Calendar.current.date(byAdding: .day, value: Self.durationDays, to: startDate) ?? startDate
@@ -50,37 +58,54 @@ struct SeasonReward: Identifiable, Codable {
     let description: String
     let isPro: Bool
 
-    static let all: [SeasonReward] = [
-        // Tier 1
-        SeasonReward(id: "s1-t1-free", tier: 1, name: "Spark Badge",    icon: "⚡️", description: "A badge for your first sprint", isPro: false),
-        SeasonReward(id: "s1-t1-pro",  tier: 1, name: "Dark Theme",      icon: "🌙", description: "Deep Space color scheme",         isPro: true),
-        // Tier 2
-        SeasonReward(id: "s1-t2-free", tier: 2, name: "100 XP Boost",   icon: "💎", description: "Instant 100 XP bonus",            isPro: false),
-        SeasonReward(id: "s1-t2-pro",  tier: 2, name: "Neon Streak",     icon: "🔮", description: "Neon glow streak counter",         isPro: true),
-        // Tier 3
-        SeasonReward(id: "s1-t3-free", tier: 3, name: "Coder Title",     icon: "🏅", description: "\"Code Sprinter\" leaderboard title", isPro: false),
-        SeasonReward(id: "s1-t3-pro",  tier: 3, name: "XP Multiplier",   icon: "✖️", description: "1.5× XP for one week",           isPro: true),
-        // Tier 4
-        SeasonReward(id: "s1-t4-free", tier: 4, name: "Bit Sticker",     icon: "🤖", description: "Animated Bit mascot badge",       isPro: false),
-        SeasonReward(id: "s1-t4-pro",  tier: 4, name: "Galaxy Theme",    icon: "🌌", description: "Galaxy gradient UI theme",        isPro: true),
-        // Tier 5
-        SeasonReward(id: "s1-t5-free", tier: 5, name: "500 XP Boost",   icon: "🪙", description: "Mid-season XP reward",            isPro: false),
-        SeasonReward(id: "s1-t5-pro",  tier: 5, name: "Pro Crown",       icon: "👑", description: "Gold crown on the leaderboard",  isPro: true),
-        // Tier 6
-        SeasonReward(id: "s1-t6-free", tier: 6, name: "Recall Champion", icon: "🧠", description: "\"Recall Champion\" title",       isPro: false),
-        SeasonReward(id: "s1-t6-pro",  tier: 6, name: "AI Extra Quota",  icon: "✨", description: "Extra AI lesson generations",    isPro: true),
-        // Tier 7
-        SeasonReward(id: "s1-t7-free", tier: 7, name: "Bit Hoodie",      icon: "🎽", description: "Bit mascot in hoodie sticker",    isPro: false),
-        SeasonReward(id: "s1-t7-pro",  tier: 7, name: "Ocean Theme",     icon: "🌊", description: "Deep ocean UI color scheme",      isPro: true),
-        // Tier 8
-        SeasonReward(id: "s1-t8-free", tier: 8, name: "1000 XP Bonus",  icon: "💰", description: "Big XP bonus reward",             isPro: false),
-        SeasonReward(id: "s1-t8-pro",  tier: 8, name: "Portfolio Pro",   icon: "📋", description: "Pro portfolio export template",   isPro: true),
-        // Tier 9
-        SeasonReward(id: "s1-t9-free", tier: 9, name: "Sprint Legend",   icon: "🏆", description: "\"Sprint Legend\" exclusive title", isPro: false),
-        SeasonReward(id: "s1-t9-pro",  tier: 9, name: "Sunset Theme",    icon: "🌅", description: "Warm sunset gradient theme",      isPro: true),
-        // Tier 10
-        SeasonReward(id: "s1-t10-free", tier: 10, name: "Season 1 Crown", icon: "🎖️", description: "Exclusive Season 1 finisher badge", isPro: false),
-        SeasonReward(id: "s1-t10-pro",  tier: 10, name: "Infinite Boost",  icon: "♾️", description: "2× XP until Season 2",           isPro: true),
+    static var all: [SeasonReward] {
+        let prefix = "s\(Season.current.number)-"
+        return _all.filter { $0.id.hasPrefix(prefix) }
+    }
+
+    private static let _all: [SeasonReward] = [
+        // MARK: Season 1
+        SeasonReward(id: "s1-t1-free",  tier: 1,  name: "Spark Badge",    icon: "⚡️", description: "A badge for your first sprint",         isPro: false),
+        SeasonReward(id: "s1-t1-pro",   tier: 1,  name: "Dark Theme",     icon: "🌙", description: "Deep Space color scheme",               isPro: true),
+        SeasonReward(id: "s1-t2-free",  tier: 2,  name: "100 XP Boost",   icon: "💎", description: "Instant 100 XP bonus",                  isPro: false),
+        SeasonReward(id: "s1-t2-pro",   tier: 2,  name: "Neon Streak",    icon: "🔮", description: "Neon glow streak counter",               isPro: true),
+        SeasonReward(id: "s1-t3-free",  tier: 3,  name: "Coder Title",    icon: "🏅", description: "\"Code Sprinter\" leaderboard title",    isPro: false),
+        SeasonReward(id: "s1-t3-pro",   tier: 3,  name: "XP Multiplier",  icon: "✖️", description: "1.5× XP for one week",                  isPro: true),
+        SeasonReward(id: "s1-t4-free",  tier: 4,  name: "Bit Sticker",    icon: "🤖", description: "Animated Bit mascot badge",              isPro: false),
+        SeasonReward(id: "s1-t4-pro",   tier: 4,  name: "Galaxy Theme",   icon: "🌌", description: "Galaxy gradient UI theme",               isPro: true),
+        SeasonReward(id: "s1-t5-free",  tier: 5,  name: "500 XP Boost",   icon: "🪙", description: "Mid-season XP reward",                   isPro: false),
+        SeasonReward(id: "s1-t5-pro",   tier: 5,  name: "Pro Crown",      icon: "👑", description: "Gold crown on the leaderboard",          isPro: true),
+        SeasonReward(id: "s1-t6-free",  tier: 6,  name: "Recall Champion",icon: "🧠", description: "\"Recall Champion\" title",              isPro: false),
+        SeasonReward(id: "s1-t6-pro",   tier: 6,  name: "AI Extra Quota", icon: "✨", description: "Extra AI lesson generations",            isPro: true),
+        SeasonReward(id: "s1-t7-free",  tier: 7,  name: "Bit Hoodie",     icon: "🎽", description: "Bit mascot in hoodie sticker",           isPro: false),
+        SeasonReward(id: "s1-t7-pro",   tier: 7,  name: "Ocean Theme",    icon: "🌊", description: "Deep ocean UI color scheme",             isPro: true),
+        SeasonReward(id: "s1-t8-free",  tier: 8,  name: "1000 XP Bonus",  icon: "💰", description: "Big XP bonus reward",                    isPro: false),
+        SeasonReward(id: "s1-t8-pro",   tier: 8,  name: "Portfolio Pro",  icon: "📋", description: "Pro portfolio export template",          isPro: true),
+        SeasonReward(id: "s1-t9-free",  tier: 9,  name: "Sprint Legend",  icon: "🏆", description: "\"Sprint Legend\" exclusive title",      isPro: false),
+        SeasonReward(id: "s1-t9-pro",   tier: 9,  name: "Sunset Theme",   icon: "🌅", description: "Warm sunset gradient theme",             isPro: true),
+        SeasonReward(id: "s1-t10-free", tier: 10, name: "Season 1 Crown", icon: "🎖️", description: "Exclusive Season 1 finisher badge",     isPro: false),
+        SeasonReward(id: "s1-t10-pro",  tier: 10, name: "Infinite Boost", icon: "♾️", description: "2× XP until Season 2",                  isPro: true),
+        // MARK: Season 2
+        SeasonReward(id: "s2-t1-free",  tier: 1,  name: "Winter Spark",   icon: "❄️", description: "A badge for your first winter sprint",   isPro: false),
+        SeasonReward(id: "s2-t1-pro",   tier: 1,  name: "Frost Theme",    icon: "🌨️", description: "Arctic frost color scheme",              isPro: true),
+        SeasonReward(id: "s2-t2-free",  tier: 2,  name: "100 XP Boost",   icon: "💎", description: "Instant 100 XP bonus",                  isPro: false),
+        SeasonReward(id: "s2-t2-pro",   tier: 2,  name: "Ice Streak",     icon: "🔵", description: "Ice blue streak counter",                isPro: true),
+        SeasonReward(id: "s2-t3-free",  tier: 3,  name: "Dev Title",      icon: "🏅", description: "\"Winter Dev\" leaderboard title",       isPro: false),
+        SeasonReward(id: "s2-t3-pro",   tier: 3,  name: "XP Multiplier",  icon: "✖️", description: "1.5× XP for one week",                  isPro: true),
+        SeasonReward(id: "s2-t4-free",  tier: 4,  name: "Bit Scarf",      icon: "🧣", description: "Animated Bit mascot with scarf",         isPro: false),
+        SeasonReward(id: "s2-t4-pro",   tier: 4,  name: "Aurora Theme",   icon: "🌌", description: "Aurora borealis gradient UI",            isPro: true),
+        SeasonReward(id: "s2-t5-free",  tier: 5,  name: "500 XP Boost",   icon: "🪙", description: "Mid-season XP reward",                   isPro: false),
+        SeasonReward(id: "s2-t5-pro",   tier: 5,  name: "Silver Crown",   icon: "🥈", description: "Silver crown on the leaderboard",        isPro: true),
+        SeasonReward(id: "s2-t6-free",  tier: 6,  name: "Code Frost",     icon: "🧊", description: "\"Code Frost\" title",                   isPro: false),
+        SeasonReward(id: "s2-t6-pro",   tier: 6,  name: "AI Extra Quota", icon: "✨", description: "Extra AI lesson generations",            isPro: true),
+        SeasonReward(id: "s2-t7-free",  tier: 7,  name: "Bit Coat",       icon: "🧥", description: "Bit mascot in winter coat sticker",      isPro: false),
+        SeasonReward(id: "s2-t7-pro",   tier: 7,  name: "Night Theme",    icon: "🌙", description: "Deep night sky color scheme",            isPro: true),
+        SeasonReward(id: "s2-t8-free",  tier: 8,  name: "1000 XP Bonus",  icon: "💰", description: "Big XP bonus reward",                    isPro: false),
+        SeasonReward(id: "s2-t8-pro",   tier: 8,  name: "Portfolio Pro",  icon: "📋", description: "Pro portfolio export template",          isPro: true),
+        SeasonReward(id: "s2-t9-free",  tier: 9,  name: "Winter Legend",  icon: "🏆", description: "\"Winter Legend\" exclusive title",      isPro: false),
+        SeasonReward(id: "s2-t9-pro",   tier: 9,  name: "Blizzard Theme", icon: "🌨️", description: "Blizzard animated theme",                isPro: true),
+        SeasonReward(id: "s2-t10-free", tier: 10, name: "Season 2 Crown", icon: "🎖️", description: "Exclusive Season 2 finisher badge",     isPro: false),
+        SeasonReward(id: "s2-t10-pro",  tier: 10, name: "Infinite Boost", icon: "♾️", description: "2× XP until Season 3",                  isPro: true),
     ]
 }
 
@@ -128,7 +153,7 @@ struct DailyMission: Identifiable, Codable, Equatable {
     @Published private(set) var completedMissions: Set<String> = []
     @Published private(set) var bonusXPAccumulated: Int = 0
 
-    let season = Season.current
+    var season: Season { Season.current }
 
     private enum Keys {
         static let tier      = "ss.season.tier"
@@ -136,6 +161,7 @@ struct DailyMission: Identifiable, Codable, Equatable {
         static let claimed   = "ss.season.claimedRewards"
         static let missions  = "ss.season.completedMissions"
         static let bonusXP   = "ss.season.bonusXP"
+        static let seasonNum = "ss.season.number"
     }
 
     init() { load() }
@@ -196,6 +222,14 @@ struct DailyMission: Identifiable, Codable, Equatable {
 
     private func load() {
         let ud = UserDefaults.standard
+        let savedSeasonNum = ud.integer(forKey: Keys.seasonNum)
+        // Season transition: reset all progress when a new season begins
+        if savedSeasonNum != 0 && savedSeasonNum != season.number {
+            tier = 0; tierXP = 0; bonusXPAccumulated = 0
+            claimedRewards = []; completedMissions = []
+            save()
+            return
+        }
         tier    = ud.integer(forKey: Keys.tier)
         tierXP  = ud.integer(forKey: Keys.tierXP)
         bonusXPAccumulated = ud.integer(forKey: Keys.bonusXP)
@@ -211,9 +245,10 @@ struct DailyMission: Identifiable, Codable, Equatable {
 
     private func save() {
         let ud = UserDefaults.standard
-        ud.set(tier,   forKey: Keys.tier)
-        ud.set(tierXP, forKey: Keys.tierXP)
+        ud.set(tier,          forKey: Keys.tier)
+        ud.set(tierXP,        forKey: Keys.tierXP)
         ud.set(bonusXPAccumulated, forKey: Keys.bonusXP)
+        ud.set(season.number, forKey: Keys.seasonNum)
         if let data = try? JSONEncoder().encode(claimedRewards) { ud.set(data, forKey: Keys.claimed) }
         if let data = try? JSONEncoder().encode(completedMissions) { ud.set(data, forKey: Keys.missions) }
     }
