@@ -173,3 +173,212 @@ struct IncomingChallengeBanner: View {
         .transition(.move(edge: .top).combined(with: .opacity))
     }
 }
+
+// MARK: - Splash Screen
+
+struct SplashView: View {
+    let onComplete: () -> Void
+
+    @State private var bitScale: CGFloat = 0.25
+    @State private var bitOpacity: Double = 0
+    @State private var ringRotation: Double = 0
+    @State private var ringOpacity: Double = 0
+    @State private var ringScale: CGFloat = 0.5
+    @State private var pulseScale: CGFloat = 1.0
+    @State private var glowOpacity: Double = 0.3
+    @State private var titleOpacity: Double = 0
+    @State private var titleOffset: CGFloat = 18
+    @State private var taglineCount: Int = 0
+    @State private var auroraPhase: CGFloat = 0
+    @State private var particleDrift: CGFloat = 0
+    @State private var exitOpacity: Double = 1
+
+    private let tagline = "Code. Learn. Sprint."
+    private let codeSymbols = ["{}", "</>", "//", "=>", "fn()", "var", "let", "::", "&&", "λ"]
+
+    var body: some View {
+        ZStack {
+            // Background
+            Color(red: 0.05, green: 0.08, blue: 0.15).ignoresSafeArea()
+
+            // Aurora glow blobs
+            auroraBackground
+
+            // Floating code particles
+            GeometryReader { geo in
+                ForEach(0..<14, id: \.self) { i in codeParticle(i, geo: geo) }
+            }
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+
+            // Center stage
+            VStack(spacing: 0) {
+                Spacer()
+
+                // Bit + orbit ring
+                ZStack {
+                    // Outer spinning gradient ring
+                    Circle()
+                        .strokeBorder(
+                            AngularGradient(
+                                colors: [.clear, .mint.opacity(0.9), .cyan.opacity(0.55),
+                                         .purple.opacity(0.4), .clear],
+                                center: .center
+                            ),
+                            lineWidth: 1.5
+                        )
+                        .frame(width: 158, height: 158)
+                        .rotationEffect(.degrees(ringRotation))
+                        .scaleEffect(ringScale)
+                        .opacity(ringOpacity)
+
+                    // Inner soft ring pulse
+                    Circle()
+                        .stroke(Color.mint.opacity(0.15), lineWidth: 1)
+                        .frame(width: 122, height: 122)
+                        .scaleEffect(pulseScale)
+                        .opacity(ringOpacity)
+
+                    // Glow halo — blurred Bit behind the mascot
+                    BiteAvatar()
+                        .frame(width: 88, height: 110)
+                        .blur(radius: 22)
+                        .opacity(glowOpacity)
+                        .scaleEffect(pulseScale * 0.95)
+
+                    // Bit mascot
+                    BiteAvatar()
+                        .frame(width: 88, height: 110)
+                        .scaleEffect(bitScale)
+                        .opacity(bitOpacity)
+                }
+                .frame(width: 180, height: 180)
+                .padding(.bottom, 30)
+
+                // "STACK" white + "SPRINT" mint→cyan
+                HStack(spacing: 1) {
+                    Text("STACK")
+                        .font(.system(size: 33, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(.white)
+                    Text("SPRINT")
+                        .font(.system(size: 33, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.mint, Color(red: 0.3, green: 0.9, blue: 1.0)],
+                                startPoint: .leading, endPoint: .trailing
+                            )
+                        )
+                }
+                .opacity(titleOpacity)
+                .offset(y: titleOffset)
+                .padding(.bottom, 10)
+
+                // Typewriter tagline
+                Text(String(tagline.prefix(taglineCount)))
+                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.42))
+                    .frame(height: 20)
+
+                Spacer()
+
+                // Build footnote
+                HStack(spacing: 5) {
+                    Image(systemName: "chevron.left.forwardslash.chevron.right")
+                        .font(.caption2).foregroundStyle(.mint.opacity(0.35))
+                    Text("v1.0  ·  Season 1")
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.18))
+                }
+                .opacity(titleOpacity)
+                .padding(.bottom, 50)
+            }
+        }
+        .opacity(exitOpacity)
+        .onAppear { runSequence() }
+    }
+
+    // MARK: Aurora
+
+    @ViewBuilder private var auroraBackground: some View {
+        Ellipse()
+            .fill(RadialGradient(colors: [.mint.opacity(0.24), .clear],
+                                 center: .center, startRadius: 0, endRadius: 230))
+            .frame(width: 430, height: 310)
+            .offset(x: -95, y: -190 + auroraPhase * 35)
+            .blur(radius: 38)
+        Ellipse()
+            .fill(RadialGradient(colors: [.purple.opacity(0.19), .clear],
+                                 center: .center, startRadius: 0, endRadius: 210))
+            .frame(width: 370, height: 270)
+            .offset(x: 115, y: 80 - auroraPhase * 22)
+            .blur(radius: 46)
+        Ellipse()
+            .fill(RadialGradient(colors: [Color(red: 1.0, green: 0.55, blue: 0.3).opacity(0.11), .clear],
+                                 center: .center, startRadius: 0, endRadius: 165))
+            .frame(width: 310, height: 230)
+            .offset(x: -55, y: 220 - auroraPhase * 14)
+            .blur(radius: 52)
+    }
+
+    // MARK: Particle
+
+    @ViewBuilder
+    private func codeParticle(_ index: Int, geo: GeometryProxy) -> some View {
+        let s      = Double(index * 17 + 5)
+        let x      = CGFloat(s.truncatingRemainder(dividingBy: 9) / 9) * geo.size.width
+        let baseY  = CGFloat((s * 1.9).truncatingRemainder(dividingBy: 11) / 11) * geo.size.height
+        let speed  = CGFloat(0.35 + Double(index % 6) * 0.09)
+        let raw    = baseY - particleDrift * speed
+        let wrapped = raw < -20 ? raw + geo.size.height + 40 : raw
+        let sym    = codeSymbols[index % codeSymbols.count]
+        let alpha  = 0.05 + Double(index % 5) * 0.025
+        let size   = 10.0 + Double(index % 4) * 1.5
+
+        Text(sym)
+            .font(.system(size: size, design: .monospaced))
+            .foregroundStyle(Color.mint.opacity(alpha))
+            .position(x: x, y: wrapped)
+    }
+
+    // MARK: Animation Sequence
+
+    private func runSequence() {
+        // Aurora breathes
+        withAnimation(.easeInOut(duration: 5).repeatForever(autoreverses: true)) { auroraPhase = 1 }
+        // Particles drift upward
+        withAnimation(.linear(duration: 22).repeatForever(autoreverses: false)) { particleDrift = 1200 }
+
+        // 0.15s: Bit springs in with overshoot
+        withAnimation(.spring(response: 0.52, dampingFraction: 0.48).delay(0.15)) {
+            bitScale = 1.0; bitOpacity = 1.0
+        }
+        // 0.45s: Ring expands + starts spinning
+        withAnimation(.easeOut(duration: 0.55).delay(0.45)) {
+            ringOpacity = 1.0; ringScale = 1.0
+        }
+        withAnimation(.linear(duration: 12).repeatForever(autoreverses: false).delay(0.45)) {
+            ringRotation = 360
+        }
+        // 0.45s: Glow pulse loop
+        withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true).delay(0.45)) {
+            pulseScale = 1.07; glowOpacity = 0.55
+        }
+        // 0.7s: Title slides up
+        withAnimation(.easeOut(duration: 0.4).delay(0.7)) {
+            titleOpacity = 1.0; titleOffset = 0
+        }
+        // 1.05s: Typewriter tagline
+        let typeStart = 1.05
+        for i in 0...tagline.count {
+            DispatchQueue.main.asyncAfter(deadline: .now() + typeStart + Double(i) * 0.058) {
+                taglineCount = i
+            }
+        }
+        // Fade out + call completion
+        let exitAt = typeStart + Double(tagline.count) * 0.058 + 0.5
+        DispatchQueue.main.asyncAfter(deadline: .now() + exitAt) {
+            withAnimation(.easeInOut(duration: 0.45)) { exitOpacity = 0 }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { onComplete() }
+        }
+    }
+}

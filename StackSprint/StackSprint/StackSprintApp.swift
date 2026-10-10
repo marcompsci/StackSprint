@@ -24,8 +24,10 @@ import WebKit
     @ObservedObject private var themeStore = ThemeStore.shared
     @ObservedObject private var weeklyXP = WeeklyXPStore.shared
     @AppStorage("appearance.mode") private var appearance = "dark"
+    @State private var splashDismissed = false
     var body: some Scene {
         WindowGroup {
+            ZStack {
             RootView()
                 .environmentObject(store)
                 .environmentObject(backend)
@@ -91,6 +93,15 @@ import WebKit
                     store.switchUser(id)
                     if id != nil { Task { try? await backend.sync(store) } }
                 }
+            if !splashDismissed {
+                SplashView {
+                    withAnimation(.easeInOut(duration: 0.4)) { splashDismissed = true }
+                }
+                .transition(.opacity)
+                .zIndex(100)
+            }
+            }
+            .animation(.easeInOut(duration: 0.4), value: splashDismissed)
         }
     }
 }
