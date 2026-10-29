@@ -59,7 +59,7 @@ struct BookmarkButton: View {
 
     var body: some View {
         Button {
-            withAnimation(.spring(response: 0.25, dampingFraction: 0.6)) {
+            withAnimation(.spring(response: 0.25, dampingFraction: 1)) {
                 bookmarks.toggle(lessonID)
             }
         } label: {
@@ -114,7 +114,7 @@ struct ReviewQueueSection: View {
                     HStack(spacing: 12) {
                         ForEach(queue) { lesson in
                             ReviewQueueCard(lesson: lesson, selected: selectedID == lesson.id) {
-                                withAnimation(.easeOut(duration: 0.15)) {
+                                withAnimation(.smooth(duration: 0.15)) {
                                     selectedID = selectedID == lesson.id ? nil : lesson.id
                                 }
                             }
@@ -124,8 +124,8 @@ struct ReviewQueueSection: View {
                 }
             }
             .padding(14)
-            .background(Color.yellow.opacity(0.06), in: RoundedRectangle(cornerRadius: 18))
-            .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.yellow.opacity(0.18)))
+            .background(Color.yellow.opacity(0.06), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.yellow.opacity(0.18)))
         }
     }
 }
@@ -158,8 +158,8 @@ private struct ReviewQueueCard: View {
         }
         .padding(14)
         .frame(width: 220, alignment: .leading)
-        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.yellow.opacity(selected ? 0.4 : 0.0)))
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.yellow.opacity(selected ? 0.4 : 0.0)))
         .onTapGesture(perform: onTap)
     }
 }
@@ -198,7 +198,7 @@ struct BookmarksSheet: View {
                                 ForEach(done) { lesson in BookmarkRow(lesson: lesson) }
                             }
                         } header: {
-                            Button { withAnimation { showDone.toggle() } } label: {
+                            Button { withAnimation(.smooth) { showDone.toggle() } } label: {
                                 HStack {
                                     Text("Completed (\(done.count))")
                                     Spacer()

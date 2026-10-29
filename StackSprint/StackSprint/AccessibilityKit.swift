@@ -5,7 +5,7 @@ import SwiftUI
 /// Wraps an animation in a reduce-motion-safe way.
 /// When Reduce Motion is enabled, applies an instant opacity transition instead.
 func sprintAnimation<V: Equatable>(
-    _ animation: Animation = .easeOut(duration: 0.25),
+    _ animation: Animation = .smooth(duration: 0.25),
     value: V,
     reduceMotion: Bool
 ) -> Animation? {
@@ -23,7 +23,7 @@ struct ReduceMotionAnimation: ViewModifier {
 
 extension View {
     /// Replace any spring/easeOut animation with `.none` when Reduce Motion is on.
-    func reduceMotionAnimation(_ animation: Animation = .easeOut(duration: 0.25)) -> some View {
+    func reduceMotionAnimation(_ animation: Animation = .smooth(duration: 0.25)) -> some View {
         modifier(ReduceMotionAnimation(animation: animation))
     }
 }

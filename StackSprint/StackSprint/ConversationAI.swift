@@ -42,7 +42,7 @@ enum PracticeMode: String, CaseIterable, Identifiable {
     }
     var firstMessage: String {
         switch self {
-        case .general:    return "Hi! I'm Bit ✨ Ask me anything about code — concepts, syntax, debugging, best practices, or whatever you're stuck on."
+        case .general:    return "Hi, I’m Bit. Ask me about a concept, some syntax, or a bug you’re stuck on."
         case .interview:  return "Welcome to Interview Practice! I'll act as your technical interviewer. Ready? Let's start with a classic: **What's the difference between a stack and a queue? When would you use each?**"
         case .codeReview: return "Hello! Paste your code and I'll review it for bugs, style, performance, and best practices. I'll also suggest improvements."
         }
@@ -202,7 +202,7 @@ struct BitPracticeView: View {
                 ForEach(PracticeMode.allCases) { m in
                     Button {
                         HapticManager.shared.selection()
-                        withAnimation { conv.mode = m }
+                        withAnimation(.smooth) { conv.mode = m }
                     } label: {
                         Label(m.label, systemImage: m.icon)
                             .font(.subheadline.bold())
@@ -241,7 +241,7 @@ struct BitPracticeView: View {
                 .padding(.horizontal, 16).padding(.vertical, 12)
             }
             .onChange(of: displayedMessages.count) { _, _ in
-                withAnimation { proxy.scrollTo("streaming", anchor: .bottom) }
+                withAnimation(.smooth) { proxy.scrollTo("streaming", anchor: .bottom) }
             }
             .onChange(of: conv.streamingText) { _, _ in
                 proxy.scrollTo("streaming", anchor: .bottom)
@@ -288,7 +288,7 @@ struct BitPracticeView: View {
                 .lineLimit(1...5)
                 .focused($focused)
                 .padding(.horizontal, 14).padding(.vertical, 10)
-                .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+                .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                 .disabled(conv.isStreaming)
 
             Button {
@@ -321,7 +321,7 @@ struct PracticeBubble: View {
         HStack(alignment: .top, spacing: 8) {
             if isUser { Spacer(minLength: 50) }
             if !isUser {
-                Text("🤖").font(.title3)
+                BiteAvatar().frame(width: 22, height: 30)
             }
             VStack(alignment: isUser ? .trailing : .leading, spacing: 6) {
                 ForEach(parseSegments(message.content)) { segment in
@@ -418,7 +418,7 @@ private struct CodeSegmentView: View {
             }
         }
         .background(Color.purple.opacity(0.07))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
@@ -430,7 +430,7 @@ private struct BitThinkingDots: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Text("🤖").font(.title3)
+            BiteAvatar().frame(width: 22, height: 30)
             HStack(spacing: 5) {
                 ForEach(0..<3) { i in
                     Circle().fill(Color.purple.opacity(phase == i ? 1 : 0.3))
@@ -438,7 +438,7 @@ private struct BitThinkingDots: View {
                 }
             }
             .padding(.horizontal, 14).padding(.vertical, 12)
-            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16))
+            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             Spacer()
         }
         .onReceive(timer) { _ in phase = (phase + 1) % 3 }

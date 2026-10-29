@@ -1,6 +1,7 @@
 import Combine
 import Network
 import SwiftUI
+import UIKit
 
 // MARK: - Haptic Manager
 
@@ -41,6 +42,7 @@ struct ShimmerView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
         .onAppear {
+            guard !UIAccessibility.isReduceMotionEnabled else { return }
             withAnimation(.easeInOut(duration: 1.3).repeatForever(autoreverses: false)) {
                 phase = 1.5
             }
@@ -63,7 +65,7 @@ struct SkeletonLessonCard: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, minHeight: 160, alignment: .leading)
-        .background(SprintPalette.card.opacity(0.82), in: RoundedRectangle(cornerRadius: 22))
+        .background(SprintPalette.card.opacity(0.82), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
 

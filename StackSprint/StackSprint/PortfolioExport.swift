@@ -198,12 +198,12 @@ struct PortfolioView: View {
             HStack(spacing: 28) {
                 statPill("\(portfolioData.totalLessons)", label: "Lessons")
                 statPill("\(portfolioData.totalCategories)", label: "Languages")
-                statPill("\(portfolioData.streak)🔥", label: "Streak")
+                statPill("\(portfolioData.streak)", label: "Streak")
                 statPill("\(portfolioData.xp) XP", label: "Total")
             }
         }
         .padding(20)
-        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private func statPill(_ value: String, label: String) -> some View {
@@ -229,7 +229,7 @@ struct PortfolioView: View {
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     .padding(12)
-                    .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 12))
+                    .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
             }
         }

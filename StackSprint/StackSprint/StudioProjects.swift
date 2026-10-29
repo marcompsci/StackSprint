@@ -195,7 +195,7 @@ private struct ProjectRow: View {
 
             if !project.snapshots.isEmpty {
                 Button {
-                    withAnimation(.easeOut(duration: 0.15)) { showSnapshots.toggle() }
+                    withAnimation(.smooth(duration: 0.15)) { showSnapshots.toggle() }
                 } label: {
                     Label("\(project.snapshots.count) snapshot\(project.snapshots.count == 1 ? "" : "s")",
                           systemImage: showSnapshots ? "chevron.up" : "clock.arrow.circlepath")

@@ -43,7 +43,7 @@ struct AnalyticsDashboardView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("YOUR LEARNING STATS").font(.caption.bold()).tracking(1.3).foregroundStyle(.mint)
+            Text("Stats").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
             Text("How you practice").font(.system(.title, design: .rounded, weight: .bold))
             Text("\(store.practicedDays.count) active days · \(store.completed.count) lessons done")
                 .font(.subheadline).foregroundStyle(.secondary)
@@ -62,7 +62,7 @@ struct AnalyticsDashboardView: View {
             statBlock(value: store.practicedDays.count, label: "Total days", icon: "calendar", color: .mint)
         }
         .padding(16)
-        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private func statBlock(value: Int, label: String, icon: String, color: Color) -> some View {
@@ -83,7 +83,7 @@ struct AnalyticsDashboardView: View {
             PracticeHeatmap(practicedDays: store.practicedDays)
         }
         .padding(16)
-        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     // MARK: – Category progress
@@ -133,7 +133,7 @@ struct AnalyticsDashboardView: View {
             }
         }
         .padding(16)
-        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     // MARK: – XP Breakdown chart
@@ -155,7 +155,7 @@ struct AnalyticsDashboardView: View {
                     VStack(spacing: 6) {
                         Text("\(item.1)").font(.title3.bold()).foregroundStyle(item.2)
                         Text("XP").font(.caption2).foregroundStyle(.secondary)
-                        RoundedRectangle(cornerRadius: 6)
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .fill(item.2.opacity(0.3))
                             .frame(width: 44, height: max(CGFloat(item.1) / 4, 8))
                         Text(item.0).font(.caption2).foregroundStyle(.secondary)
@@ -173,7 +173,7 @@ struct AnalyticsDashboardView: View {
             }
         }
         .padding(16)
-        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     // MARK: – Leaderboard link
@@ -191,7 +191,7 @@ struct AnalyticsDashboardView: View {
                 Image(systemName: "chevron.right").foregroundStyle(.secondary)
             }
             .padding(16)
-            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -209,7 +209,7 @@ struct AnalyticsDashboardView: View {
                 Image(systemName: "chevron.right").foregroundStyle(.secondary)
             }
             .padding(16)
-            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -226,7 +226,7 @@ struct AnalyticsDashboardView: View {
                 Image(systemName: "chevron.right").foregroundStyle(.secondary)
             }
             .padding(16)
-            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -243,7 +243,7 @@ struct AnalyticsDashboardView: View {
                 Image(systemName: "chevron.right").foregroundStyle(.secondary)
             }
             .padding(16)
-            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -253,7 +253,7 @@ struct AnalyticsDashboardView: View {
             SeasonView().environmentObject(seasonStore).environmentObject(premiumStore)
         } label: {
             HStack(spacing: 14) {
-                Text("🏆").font(.title2)
+                Image(systemName: "trophy.fill").font(.title2).symbolRenderingMode(.hierarchical).foregroundStyle(.tint)
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
                         Text("Season \(seasonStore.season.number)").font(.headline)
@@ -269,7 +269,7 @@ struct AnalyticsDashboardView: View {
                 Image(systemName: "chevron.right").foregroundStyle(.secondary)
             }
             .padding(16)
-            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -286,7 +286,7 @@ struct AnalyticsDashboardView: View {
                 Image(systemName: "chevron.right").foregroundStyle(.secondary)
             }
             .padding(16)
-            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -326,7 +326,7 @@ struct PracticeHeatmap: View {
         LazyVGrid(columns: Array(repeating: GridItem(.fixed(20), spacing: 4), count: cols), spacing: 4) {
             ForEach(days, id: \.self) { key in
                 let practiced = practicedDays.contains(key)
-                RoundedRectangle(cornerRadius: 4)
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
                     .fill(practiced ? Color.orange : Color.secondary.opacity(0.12))
                     .frame(width: 20, height: 20)
                     .overlay {

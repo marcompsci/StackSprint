@@ -172,7 +172,7 @@ struct CreateChallengeView: View {
                     Text(lesson.clue).font(.body).foregroundStyle(.secondary).multilineTextAlignment(.center)
                     if revealed {
                         Text(lesson.definition).font(.subheadline).padding(14)
-                            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 14))
+                            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
                 }
                 .padding(.horizontal, 24)
@@ -181,10 +181,10 @@ struct CreateChallengeView: View {
                     Button("Reveal") { revealed = true }.buttonStyle(.borderedProminent).tint(.blue)
                 } else {
                     HStack(spacing: 16) {
-                        Button("Got it ✓") {
+                        Button("Got it") {
                             myScore += 1; nextQuestion()
                         }.buttonStyle(.borderedProminent).tint(.mint).frame(maxWidth: .infinity)
-                        Button("Missed ✗") {
+                        Button("Missed") {
                             nextQuestion()
                         }.buttonStyle(.borderedProminent).tint(.orange.opacity(0.8)).frame(maxWidth: .infinity)
                     }.padding(.horizontal, 24)
@@ -317,11 +317,11 @@ struct ChallengeRaceView: View {
             .padding(.horizontal, 24)
             Spacer()
             HStack(spacing: 14) {
-                Button("Know it ✓") {
+                Button("Know it") {
                     HapticManager.shared.impact()
                     cs.answerCorrect()
                 }.buttonStyle(.borderedProminent).tint(.mint).font(.headline).frame(maxWidth: .infinity)
-                Button("Skip ✗") {
+                Button("Skip") {
                     HapticManager.shared.impact()
                     cs.answerWrong()
                 }.buttonStyle(.borderedProminent).tint(.orange.opacity(0.8)).font(.headline).frame(maxWidth: .infinity)

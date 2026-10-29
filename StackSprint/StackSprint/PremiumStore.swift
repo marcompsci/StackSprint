@@ -208,14 +208,14 @@ private struct PaywallProductButton: View {
             }
             .padding(16)
             .background(isYearly ? Color.mint.opacity(0.08) : SprintPalette.card,
-                        in: RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16)
+                        in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(isYearly ? Color.mint.opacity(0.5) : Color.secondary.opacity(0.15)))
         }
         .buttonStyle(.plain)
         .disabled(premiumStore.isPurchasing)
         .overlay(premiumStore.isPurchasing
-                 ? RoundedRectangle(cornerRadius: 16).fill(Color.black.opacity(0.2))
+                 ? RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.black.opacity(0.2))
                  : nil)
     }
 }

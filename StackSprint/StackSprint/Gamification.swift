@@ -77,11 +77,11 @@ struct GamificationHeader: View {
 
             ProgressView(value: progress)
                 .tint(level.color)
-                .animation(.easeOut(duration: 0.5), value: progress)
+                .animation(.smooth(duration: 0.5), value: progress)
         }
         .padding(16)
-        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 18))
-        .overlay(RoundedRectangle(cornerRadius: 18).stroke(level.color.opacity(0.25)))
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(level.color.opacity(0.25)))
     }
 }
 

@@ -301,7 +301,7 @@ extension SocialAuthManager {
     func pushPracticeCommit(to repoFullName: String, language: String, code: String) async throws -> String {
         guard let token = gitHubToken else {
             // Demo mode: no real commit, just confirm locally
-            return "Demo: \(language) practice logged for \(repoFullName) 🐙"
+            return "Demo: \(language) practice logged for \(repoFullName)"
         }
         let ext = langExt(language)
         let date = String(ISO8601DateFormatter().string(from: Date()).prefix(10))
@@ -338,7 +338,7 @@ extension SocialAuthManager {
             let msg = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["message"] as? String
             throw makeError(msg ?? "Commit failed (HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)).")
         }
-        return "\(language) practice committed to \(repoFullName) 🐙"
+        return "\(language) practice committed to \(repoFullName)"
     }
 
     // MARK: Private API helpers

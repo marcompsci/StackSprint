@@ -82,7 +82,7 @@ struct LeaderboardView: View {
                     }
                 }
 
-                ShareLink(item: "I\u{2019}m ranked #\(myRank) with \(xp) XP in StackSprint! \u{1F3C6} Think you can beat me?") {
+                ShareLink(item: "I\u{2019}m ranked #\(myRank) with \(xp) XP in StackSprint! Think you can beat me?") {
                     Label("Challenge a friend", systemImage: "person.badge.plus")
                         .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 14)
                 }
@@ -96,7 +96,7 @@ struct LeaderboardView: View {
 
     private func leaderboardHeader(xp: Int, rank: Int) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("LEADERBOARD").font(.caption.bold()).tracking(1.3).foregroundStyle(.mint)
+            Text("Leaderboard").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
             Text("How do you rank?").font(.system(.title2, design: .rounded, weight: .bold))
             if rank > 0 {
                 Text("You\u{2019}re #\(rank) with \(xp) XP").font(.subheadline).foregroundStyle(.secondary)
@@ -108,9 +108,9 @@ struct LeaderboardView: View {
 
     private func podiumView(_ top: [LeaderboardEntry]) -> some View {
         HStack(alignment: .bottom, spacing: 10) {
-            PodiumColumn(entry: top[1], medal: "\u{1F948}", barHeight: 68)
-            PodiumColumn(entry: top[0], medal: "\u{1F947}", barHeight: 92)
-            PodiumColumn(entry: top[2], medal: "\u{1F949}", barHeight: 52)
+            PodiumColumn(entry: top[1], medal: "2", barHeight: 68)
+            PodiumColumn(entry: top[0], medal: "1", barHeight: 92)
+            PodiumColumn(entry: top[2], medal: "3", barHeight: 52)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
@@ -126,13 +126,13 @@ private struct PodiumColumn: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            Text(medal).font(.title2)
+            Text(medal).font(.headline.monospacedDigit()).frame(width: 30, height: 30).background(.tint.opacity(0.18), in: Circle())
             Text(entry.name)
                 .font(.caption.bold()).multilineTextAlignment(.center).lineLimit(2)
                 .foregroundStyle(entry.isYou ? .mint : .primary)
             Text("\(entry.xp) XP").font(.caption2.monospaced()).foregroundStyle(.secondary)
             ZStack {
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(entry.isYou ? Color.mint.opacity(0.2) : SprintPalette.card)
                     .frame(height: barHeight)
                 Image(systemName: entry.level.icon)
@@ -171,8 +171,8 @@ private struct LeaderboardRow: View {
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
         .background(entry.isYou ? Color.mint.opacity(0.07) : SprintPalette.card,
-                    in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14)
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
             .stroke(entry.isYou ? Color.mint.opacity(0.25) : Color.clear))
     }
 }

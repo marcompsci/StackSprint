@@ -92,7 +92,7 @@ struct WatchRootView: View {
                     Text("\(xp) XP").font(.caption.bold())
                 }
                 .padding(8)
-                .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
             .padding()
         }
@@ -128,7 +128,7 @@ struct WatchStreakRing: View {
                 .rotationEffect(.degrees(-90))
             VStack(spacing: 0) {
                 Text("\(streak)").font(.system(size: 22, weight: .bold, design: .rounded))
-                Text("🔥").font(.caption2)
+                Image(systemName: "flame.fill").font(.caption2).foregroundStyle(.orange)
             }
         }
         .frame(width: 70, height: 70)
@@ -153,7 +153,7 @@ struct WatchDueLessonCard: View {
             Text("Open app to practice").font(.system(size: 10)).foregroundStyle(.secondary)
         }
         .padding(10)
-        .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+        .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
@@ -163,11 +163,11 @@ struct WatchDoneForDay: View {
     var body: some View {
         VStack(spacing: 6) {
             Image(systemName: "checkmark.seal.fill").font(.title2).foregroundStyle(.mint)
-            Text("All caught up!").font(.system(size: 13, weight: .semibold))
+            Text("All caught up").font(.system(size: 13, weight: .semibold))
             Text("Come back tomorrow").font(.system(size: 10)).foregroundStyle(.secondary)
         }
         .padding(12)
-        .background(Color.mint.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.mint.opacity(0.12), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 

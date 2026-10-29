@@ -300,18 +300,18 @@ struct StudyRoomView: View {
                         .font(.body).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 }
                 .padding(24)
-                .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 22))
+                .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                 .padding(.horizontal, 24)
                 Spacer()
                 HStack(spacing: 14) {
-                    Button("I knew it ✓") {
+                    Button("I knew it") {
                         HapticManager.shared.impact()
                         room.answerCorrect()
                     }
                     .buttonStyle(.borderedProminent).tint(.mint).font(.headline)
                     .frame(maxWidth: .infinity)
 
-                    Button("Not yet ✗") {
+                    Button("Not yet") {
                         HapticManager.shared.impact()
                         room.answerWrong()
                     }
@@ -341,7 +341,7 @@ struct StudyRoomView: View {
             .frame(maxWidth: .infinity)
         }
         .padding(16)
-        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16))
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     // MARK: Finished

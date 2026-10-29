@@ -154,36 +154,36 @@ struct AchievementContext {
 
     static let allAchievements: [Achievement] = [
         // Learner
-        Achievement(id: "first-spark",      title: "First Spark",      description: "Complete your first lesson",               icon: "⚡️", rarity: .bronze),
-        Achievement(id: "on-a-roll",        title: "On a Roll",        description: "Complete 10 lessons",                      icon: "🔥", rarity: .bronze),
-        Achievement(id: "halfway-sprint",   title: "Halfway Sprint",   description: "Complete 25 lessons",                      icon: "🏃", rarity: .silver),
-        Achievement(id: "code-veteran",     title: "Code Veteran",     description: "Complete 50 lessons",                      icon: "🎖️", rarity: .silver),
-        Achievement(id: "century-club",     title: "Century Club",     description: "Complete 100 lessons",                     icon: "💯", rarity: .gold),
-        Achievement(id: "sprint-master",    title: "Sprint Master",    description: "Complete every lesson in the curriculum",  icon: "🏆", rarity: .diamond),
+        Achievement(id: "first-spark",      title: "First Spark",      description: "Complete your first lesson",               icon: "bolt.fill", rarity: .bronze),
+        Achievement(id: "on-a-roll",        title: "On a Roll",        description: "Complete 10 lessons",                      icon: "flame.fill", rarity: .bronze),
+        Achievement(id: "halfway-sprint",   title: "Halfway Sprint",   description: "Complete 25 lessons",                      icon: "figure.run", rarity: .silver),
+        Achievement(id: "code-veteran",     title: "Code Veteran",     description: "Complete 50 lessons",                      icon: "medal.fill", rarity: .silver),
+        Achievement(id: "century-club",     title: "Century Club",     description: "Complete 100 lessons",                     icon: "checkmark.seal.fill", rarity: .gold),
+        Achievement(id: "sprint-master",    title: "Sprint Master",    description: "Complete every lesson in the curriculum",  icon: "trophy.fill", rarity: .diamond),
         // Streak
-        Achievement(id: "keep-it-up",       title: "Keep It Up",       description: "Build a 3-day streak",                     icon: "📅", rarity: .bronze),
-        Achievement(id: "week-warrior",     title: "Week Warrior",     description: "Build a 7-day streak",                     icon: "📆", rarity: .silver),
-        Achievement(id: "fortnight-fire",   title: "Fortnight Fire",   description: "Build a 14-day streak",                    icon: "🌋", rarity: .silver),
-        Achievement(id: "month-master",     title: "Month Master",     description: "Build a 30-day streak",                    icon: "🌙", rarity: .gold),
-        Achievement(id: "centurion-streak", title: "Centurion",        description: "Build a 100-day streak",                   icon: "👑", rarity: .diamond),
+        Achievement(id: "keep-it-up",       title: "Keep It Up",       description: "Build a 3-day streak",                     icon: "calendar", rarity: .bronze),
+        Achievement(id: "week-warrior",     title: "Week Warrior",     description: "Build a 7-day streak",                     icon: "calendar.badge.clock", rarity: .silver),
+        Achievement(id: "fortnight-fire",   title: "Fortnight Fire",   description: "Build a 14-day streak",                    icon: "flame.circle.fill", rarity: .silver),
+        Achievement(id: "month-master",     title: "Month Master",     description: "Build a 30-day streak",                    icon: "moon.fill", rarity: .gold),
+        Achievement(id: "centurion-streak", title: "Centurion",        description: "Build a 100-day streak",                   icon: "crown.fill", rarity: .diamond),
         // Recall
-        Achievement(id: "memory-test",      title: "Memory Test",      description: "Get your first correct recall",            icon: "🧠", rarity: .bronze),
-        Achievement(id: "sharp-mind",       title: "Sharp Mind",       description: "Get 10 correct recall answers",            icon: "🎯", rarity: .bronze),
-        Achievement(id: "recall-pro",       title: "Recall Pro",       description: "Get 50 correct recall answers",            icon: "💡", rarity: .silver),
-        Achievement(id: "photographic",     title: "Photographic",     description: "Get 100 correct recall answers",           icon: "📸", rarity: .gold),
+        Achievement(id: "memory-test",      title: "Memory Test",      description: "Get your first correct recall",            icon: "brain.head.profile", rarity: .bronze),
+        Achievement(id: "sharp-mind",       title: "Sharp Mind",       description: "Get 10 correct recall answers",            icon: "scope", rarity: .bronze),
+        Achievement(id: "recall-pro",       title: "Recall Pro",       description: "Get 50 correct recall answers",            icon: "lightbulb.fill", rarity: .silver),
+        Achievement(id: "photographic",     title: "Photographic",     description: "Get 100 correct recall answers",           icon: "camera.fill", rarity: .gold),
         // XP
-        Achievement(id: "thousand-xp",      title: "1K Club",          description: "Earn 1,000 XP",                            icon: "🪙", rarity: .bronze),
-        Achievement(id: "five-thousand-xp", title: "5K Grinder",       description: "Earn 5,000 XP",                            icon: "💎", rarity: .silver),
-        Achievement(id: "xp-rich",          title: "XP Rich",          description: "Earn 10,000 total XP",                     icon: "💰", rarity: .gold),
+        Achievement(id: "thousand-xp",      title: "1K Club",          description: "Earn 1,000 XP",                            icon: "circle.circle.fill", rarity: .bronze),
+        Achievement(id: "five-thousand-xp", title: "5K Grinder",       description: "Earn 5,000 XP",                            icon: "diamond.fill", rarity: .silver),
+        Achievement(id: "xp-rich",          title: "XP Rich",          description: "Earn 10,000 total XP",                     icon: "banknote.fill", rarity: .gold),
         // AI
-        Achievement(id: "ai-apprentice",    title: "AI Apprentice",    description: "Generate your first AI lesson",            icon: "✨", rarity: .bronze),
-        Achievement(id: "ai-scholar",       title: "AI Scholar",       description: "Generate 5 AI-powered lessons",            icon: "🤖", rarity: .silver),
+        Achievement(id: "ai-apprentice",    title: "AI Apprentice",    description: "Generate your first AI lesson",            icon: "sparkles", rarity: .bronze),
+        Achievement(id: "ai-scholar",       title: "AI Scholar",       description: "Generate 5 AI-powered lessons",            icon: "cpu", rarity: .silver),
         // Season
-        Achievement(id: "season-pioneer",   title: "Season Pioneer",   description: "Reach Season Tier 5",                      icon: "🌟", rarity: .gold),
-        Achievement(id: "season-champion",  title: "Season Champion",  description: "Max out the Season Battle Pass (Tier 10)", icon: "🎖️", rarity: .diamond),
+        Achievement(id: "season-pioneer",   title: "Season Pioneer",   description: "Reach Season Tier 5",                      icon: "star.circle.fill", rarity: .gold),
+        Achievement(id: "season-champion",  title: "Season Champion",  description: "Max out the Season Battle Pass (Tier 10)", icon: "medal.fill", rarity: .diamond),
         // Time-based
-        Achievement(id: "night-owl",        title: "Night Owl",        description: "Practice after 10 PM",                     icon: "🦉", rarity: .bronze),
-        Achievement(id: "early-bird",       title: "Early Bird",       description: "Practice before 7 AM",                     icon: "🐦", rarity: .bronze),
+        Achievement(id: "night-owl",        title: "Night Owl",        description: "Practice after 10 PM",                     icon: "moon.stars.fill", rarity: .bronze),
+        Achievement(id: "early-bird",       title: "Early Bird",       description: "Practice before 7 AM",                     icon: "sunrise.fill", rarity: .bronze),
     ]
 }
 
@@ -225,7 +225,7 @@ struct TrophyRoomView: View {
             statBlock(topRarityLabel, label: "Top Rarity")
         }
         .padding(16)
-        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private func statBlock(_ value: String, label: String) -> some View {
@@ -271,24 +271,19 @@ private struct FilterChip: View {
 
 struct AchievementCard: View {
     let achievement: Achievement
-    @State private var glowing = false
 
     var body: some View {
         VStack(spacing: 10) {
             ZStack {
                 if achievement.isUnlocked {
                     Circle().fill(achievement.rarity.color.opacity(0.15)).frame(width: 60, height: 60)
-                    if glowing {
-                        Circle().stroke(achievement.rarity.color.opacity(0.4), lineWidth: 2)
-                            .frame(width: 66, height: 66)
-                            .scaleEffect(glowing ? 1.1 : 1)
-                            .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: glowing)
-                    }
+                    Circle().strokeBorder(achievement.rarity.color.opacity(0.35), lineWidth: 1.5)
+                        .frame(width: 60, height: 60)
                 } else {
                     Circle().fill(Color.white.opacity(0.05)).frame(width: 60, height: 60)
                 }
-                Text(achievement.icon).font(.system(size: 28))
-                    .opacity(achievement.isUnlocked ? 1 : 0.25)
+                Image(systemName: achievement.icon).font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(achievement.isUnlocked ? achievement.rarity.color : Color.white.opacity(0.25))
             }
             VStack(spacing: 3) {
                 Text(achievement.title).font(.subheadline.bold())
@@ -306,16 +301,15 @@ struct AchievementCard: View {
         .frame(maxWidth: .infinity)
         .background(
             SprintPalette.card,
-            in: RoundedRectangle(cornerRadius: 18)
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 18)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .strokeBorder(
                     achievement.isUnlocked ? achievement.rarity.color.opacity(0.35) : Color.clear,
                     lineWidth: 1.5
                 )
         )
-        .onAppear { if achievement.isUnlocked { glowing = true } }
         .accessibilityLabel("\(achievement.title), \(achievement.rarity.label). \(achievement.isUnlocked ? "Unlocked" : "Locked: \(achievement.description)")")
     }
 }
@@ -335,12 +329,12 @@ struct AchievementUnlockOverlay: View {
                 .onTapGesture { dismiss() }
 
             VStack(spacing: 20) {
-                Text("Achievement Unlocked!").font(.caption.bold()).tracking(2)
+                Text("Achievement unlocked").font(.footnote.weight(.semibold))
                     .foregroundStyle(achievement.rarity.color)
 
                 ZStack {
                     Circle().fill(achievement.rarity.color.opacity(0.2)).frame(width: 100, height: 100)
-                    Text(achievement.icon).font(.system(size: 52))
+                    Image(systemName: achievement.icon).font(.system(size: 48, weight: .semibold)).foregroundStyle(achievement.rarity.color)
                 }
 
                 VStack(spacing: 6) {
@@ -357,12 +351,12 @@ struct AchievementUnlockOverlay: View {
                     .buttonStyle(.borderedProminent).tint(achievement.rarity.color)
             }
             .padding(30)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28))
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
             .padding(32)
             .scaleEffect(scale)
             .opacity(opacity)
             .onAppear {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                withAnimation(.spring(response: 0.4, dampingFraction: 1)) {
                     scale = 1; opacity = 1
                 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 4) { dismiss() }
@@ -371,7 +365,7 @@ struct AchievementUnlockOverlay: View {
     }
 
     private func dismiss() {
-        withAnimation(.easeOut(duration: 0.2)) { opacity = 0; scale = 0.8 }
+        withAnimation(.smooth(duration: 0.2)) { opacity = 0; scale = 0.8 }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { onDismiss() }
     }
 }

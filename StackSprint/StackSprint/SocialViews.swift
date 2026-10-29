@@ -17,7 +17,7 @@ struct SignInOptionsView: View {
     private var signInPrompt: some View {
         VStack(alignment: .leading, spacing: 22) {
             Text("Save your streak.")
-                .font(.system(.largeTitle, design: .rounded).bold())
+                .font(.largeTitle.bold())
             Text("Sign in once and your progress syncs to all your devices. Or tap below to continue as a guest — you can connect an account later.")
                 .foregroundStyle(.secondary)
 
@@ -79,7 +79,7 @@ struct SignInOptionsView: View {
             .padding(.top, 20)
 
             VStack(spacing: 8) {
-                Text("You're in!").font(.system(.title, design: .rounded).bold())
+                Text("You're in!").font(.title.bold())
                 Text("Signed in with \(socialAuth.authProvider.displayName)")
                     .foregroundStyle(.secondary)
                 if socialAuth.authProvider == .github, let user = socialAuth.gitHubUser {
@@ -121,9 +121,9 @@ private struct ProviderButton: View {
             .foregroundStyle(style == .google ? Color(red: 0.18, green: 0.18, blue: 0.18) : .white)
             .padding(.vertical, 15).padding(.horizontal, 20)
             .frame(maxWidth: .infinity)
-            .background(bgColor, in: RoundedRectangle(cornerRadius: 14))
+            .background(bgColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(style == .google ? Color(red: 0.78, green: 0.78, blue: 0.78) : Color.clear,
                             lineWidth: 1.5)
             )
@@ -181,7 +181,7 @@ struct GitHubStudioPanel: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 10) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 10)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .fill(Color(red: 0.09, green: 0.09, blue: 0.09))
                         .frame(width: 36, height: 36)
                     Image(systemName: "chevron.left.forwardslash.chevron.right")
@@ -198,12 +198,12 @@ struct GitHubStudioPanel: View {
                 }
                 Spacer()
                 Button {
-                    withAnimation(.easeInOut(duration: 0.2)) { expanded.toggle() }
+                    withAnimation(.smooth(duration: 0.2)) { expanded.toggle() }
                 } label: {
                     Image(systemName: expanded ? "chevron.up" : "chevron.down")
                         .font(.caption.bold()).foregroundStyle(.secondary)
                         .frame(width: 32, height: 32)
-                        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+                        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }
@@ -218,8 +218,8 @@ struct GitHubStudioPanel: View {
         }
         .padding(16)
         .background(Color(red: 0.09, green: 0.09, blue: 0.09).opacity(0.55),
-                    in: RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.10)))
+                    in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.10)))
     }
 
     private var connectRepoButton: some View {
@@ -231,8 +231,8 @@ struct GitHubStudioPanel: View {
                 Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
             }
             .padding(14)
-            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.mint.opacity(0.4)))
+            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.mint.opacity(0.4)))
         }
         .buttonStyle(.plain)
     }
@@ -250,7 +250,7 @@ struct GitHubStudioPanel: View {
                     Text("Connected").font(.caption).foregroundStyle(.mint)
                 }
                 .padding(12)
-                .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 12))
+                .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
             Button { showRepoPicker = true } label: {
                 Label("Connect another repository", systemImage: "plus.circle")
@@ -264,7 +264,7 @@ struct GitHubStudioPanel: View {
     private var inviteCard: some View {
         HStack(spacing: 16) {
             ZStack {
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(Color(red: 0.09, green: 0.09, blue: 0.09))
                     .frame(width: 52, height: 52)
                 Image(systemName: "chevron.left.forwardslash.chevron.right")
@@ -283,8 +283,8 @@ struct GitHubStudioPanel: View {
         }
         .padding(16)
         .background(Color(red: 0.09, green: 0.09, blue: 0.09).opacity(0.30),
-                    in: RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.08)))
+                    in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.08)))
     }
 }
 
@@ -340,7 +340,7 @@ struct GitHubConnectSheet: View {
         VStack(spacing: 30) {
             // GitHub-style icon
             ZStack {
-                RoundedRectangle(cornerRadius: 28)
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .fill(Color(red: 0.09, green: 0.09, blue: 0.09))
                     .frame(width: 108, height: 108)
                 Image(systemName: "chevron.left.forwardslash.chevron.right")
@@ -362,7 +362,7 @@ struct GitHubConnectSheet: View {
                 featureLine("star.fill", "Build a real portfolio from day one")
             }
             .padding(18)
-            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 18))
+            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
 
             if !errorMsg.isEmpty {
                 Text(errorMsg).font(.caption).foregroundStyle(.red)
@@ -393,7 +393,7 @@ struct GitHubConnectSheet: View {
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity).padding(16)
                     .background(Color(red: 0.09, green: 0.09, blue: 0.09),
-                                in: RoundedRectangle(cornerRadius: 14))
+                                in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
                 .buttonStyle(.plain).disabled(socialAuth.busy)
             }
@@ -447,7 +447,7 @@ struct GitHubConnectSheet: View {
             .padding(.top, 20)
 
             VStack(spacing: 10) {
-                Text("Repository connected!")
+                Text("Repository connected")
                     .font(.system(.title2, design: .rounded).bold())
                 Text("Your practice sessions in Studio will now push commits to your connected repositories.")
                     .multilineTextAlignment(.center).foregroundStyle(.secondary)
@@ -463,7 +463,7 @@ struct GitHubConnectSheet: View {
                             if let lang = repo.language { LanguageChip(language: lang) }
                         }
                         .padding(12)
-                        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 12))
+                        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
                 }
             }
@@ -476,7 +476,7 @@ struct GitHubConnectSheet: View {
                     stepNote("3", "Your GitHub activity graph updates")
                 }
                 .padding(16)
-                .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16))
+                .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
 
             Button("Back to Studio") { dismiss() }
@@ -571,9 +571,9 @@ private struct RepoRow: View {
         }
         .padding(14)
         .background(isConnected ? Color.mint.opacity(0.07) : SprintPalette.card,
-                    in: RoundedRectangle(cornerRadius: 14))
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 14)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(isConnected ? Color.mint.opacity(0.4) : Color.clear, lineWidth: 1.5)
         )
     }

@@ -35,11 +35,11 @@ import UserNotifications
         guard enabled, permissionGranted else { return }
         scheduleDailyReminder()
         scheduleComeback(afterHours: 48, id: "comeback.48h",
-                         title: "Your streak is at risk \u{26A0}\u{FE0F}",
-                         body: "Open StackSprint for just one lesson today to keep your streak alive.")
+                         title: "Your streak ends tomorrow",
+                         body: "One lesson today keeps it going.")
         scheduleComeback(afterHours: 168, id: "comeback.7d",
-                         title: "Bite misses you \u{1F916}",
-                         body: "It\u{2019}s been a week. One tiny lesson is all it takes to come back.")
+                         title: "Pick up where you left off",
+                         body: "Your next lesson takes about two minutes.")
     }
 
     // MARK: – Daily reminder (repeating calendar trigger)
@@ -52,7 +52,7 @@ import UserNotifications
         components.minute = dailyMinute
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
         let content = UNMutableNotificationContent()
-        content.title = "Time to build something tiny \u{1F525}"
+        content.title = "Daily practice"
         content.body = dailyMessages.randomElement() ?? dailyMessages[0]
         content.sound = .default
         center.add(UNNotificationRequest(identifier: "daily.reminder", content: content, trigger: trigger))
@@ -76,11 +76,11 @@ import UserNotifications
         guard enabled, permissionGranted else { return }
         // Reset comeback timers so they count from NOW
         scheduleComeback(afterHours: 48, id: "comeback.48h",
-                         title: "Your streak is at risk \u{26A0}\u{FE0F}",
-                         body: "Open StackSprint for just one lesson today to keep your streak alive.")
+                         title: "Your streak ends tomorrow",
+                         body: "One lesson today keeps it going.")
         scheduleComeback(afterHours: 168, id: "comeback.7d",
-                         title: "Bite misses you \u{1F916}",
-                         body: "It\u{2019}s been a week. One tiny lesson is all it takes to come back.")
+                         title: "Pick up where you left off",
+                         body: "Your next lesson takes about two minutes.")
     }
 
     // MARK: – Milestone alert (call when crossing 25 / 50 / 75 / 100 %)
@@ -121,10 +121,10 @@ import UserNotifications
 
     private func milestoneTitle(_ pct: Int) -> String {
         switch pct {
-        case 25: return "Quarter done! \u{1F389}"
-        case 50: return "Halfway there! \u{1F4AA}"
-        case 75: return "75% complete! \u{1F31F}"
-        default: return "All lessons complete! \u{1F3C6}"
+        case 25: return "25% of lessons done"
+        case 50: return "Halfway through"
+        case 75: return "75% of lessons done"
+        default: return "Every lesson done"
         }
     }
 

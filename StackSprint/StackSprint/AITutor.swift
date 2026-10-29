@@ -138,13 +138,13 @@ struct AITutorView: View {
                 .padding(16)
             }
             .onChange(of: vm.messages.count) { _, _ in
-                withAnimation { proxy.scrollTo(vm.messages.last?.id, anchor: .bottom) }
+                withAnimation(.smooth) { proxy.scrollTo(vm.messages.last?.id, anchor: .bottom) }
             }
             .onChange(of: vm.streamingText) { _, _ in
-                withAnimation { proxy.scrollTo("streaming", anchor: .bottom) }
+                withAnimation(.smooth) { proxy.scrollTo("streaming", anchor: .bottom) }
             }
             .onChange(of: vm.isGenerating) { _, generating in
-                if generating { withAnimation { proxy.scrollTo("thinking", anchor: .bottom) } }
+                if generating { withAnimation(.smooth) { proxy.scrollTo("thinking", anchor: .bottom) } }
             }
         }
     }
@@ -155,7 +155,7 @@ struct AITutorView: View {
                 .lineLimit(1...4)
                 .focused($inputFocused)
                 .padding(.horizontal, 14).padding(.vertical, 10)
-                .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 18))
+                .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             Button {
                 let text = input
                 input = ""
@@ -229,7 +229,7 @@ private struct ChatBubble: View {
                 .font(.subheadline)
                 .padding(.horizontal, 14).padding(.vertical, 10)
                 .background(message.role == .user ? Color.mint.opacity(0.18) : SprintPalette.card,
-                            in: RoundedRectangle(cornerRadius: 18))
+                            in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                 .frame(maxWidth: 280, alignment: message.role == .user ? .trailing : .leading)
             if message.role == .user {
                 Circle().fill(Color.mint.opacity(0.25)).frame(width: 32, height: 32)
@@ -252,11 +252,11 @@ private struct ThinkingDots: View {
                 Circle().fill(Color.mint).frame(width: 7, height: 7)
                     .scaleEffect(phase == i ? 1.2 : 0.8)
                     .opacity(phase == i ? 1.0 : 0.35)
-                    .animation(.easeInOut(duration: 0.25), value: phase)
+                    .animation(.smooth(duration: 0.25), value: phase)
             }
         }
         .padding(.horizontal, 12).padding(.vertical, 9)
-        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16))
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .task {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(350))

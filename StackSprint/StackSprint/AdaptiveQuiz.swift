@@ -134,7 +134,7 @@ struct AdaptiveQuizView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Label("CHALLENGE MODE", systemImage: "bolt.fill")
                         .font(.caption.bold()).foregroundStyle(.yellow)
-                    Text("Adaptive Quiz").font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    Text("Adaptive Quiz").font(.largeTitle.bold())
                     Text("Questions adapt to your weak spots. Get one wrong and it comes back sooner.")
                         .font(.subheadline).foregroundStyle(.secondary)
                 }
@@ -151,12 +151,12 @@ struct AdaptiveQuizView: View {
                         }
                     }
                     .padding(14)
-                    .background(Color.orange.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
+                    .background(Color.orange.opacity(0.07), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
 
                 // Category picker
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("CHOOSE A FOCUS").font(.caption.bold()).foregroundStyle(.secondary)
+                    Text("Choose a focus").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                     Picker("Category", selection: $category) {
                         ForEach(QuizCategory.allCases) { cat in
                             Text(cat.rawValue).tag(cat)
@@ -164,7 +164,7 @@ struct AdaptiveQuizView: View {
                     }
                     .pickerStyle(.menu)
                     .padding(12)
-                    .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 12))
+                    .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
 
                 Button { startQuiz() } label: {
@@ -222,8 +222,8 @@ struct AdaptiveQuizView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .buttonStyle(.plain)
-                        .background(choiceBG(i, q: q), in: RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(choiceBorder(i, q: q), lineWidth: 1.5))
+                        .background(choiceBG(i, q: q), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(choiceBorder(i, q: q), lineWidth: 1.5))
                         .disabled(selected != nil)
                     }
                 }
@@ -235,7 +235,7 @@ struct AdaptiveQuizView: View {
                         Text(q.explanation).font(.subheadline).foregroundStyle(.secondary)
                     }
                     .padding(14)
-                    .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 14))
+                    .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                     Button(index + 1 < questions.count ? "Next question" : "See results") {
                         if index + 1 < questions.count { index += 1; selected = nil }
@@ -255,7 +255,7 @@ struct AdaptiveQuizView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(scoreLabel).font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    Text(scoreLabel).font(.largeTitle.bold())
                     Text("\(score) / \(questions.count) correct").font(.title2).foregroundStyle(.secondary)
                     Text(scoreMessage).font(.subheadline).foregroundStyle(.secondary)
                 }
@@ -268,7 +268,7 @@ struct AdaptiveQuizView: View {
                         ForEach(topics.prefix(3)) { WeaknessRow(topic: $0) }
                     }
                     .padding(14)
-                    .background(Color.orange.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
+                    .background(Color.orange.opacity(0.07), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
 
                 HStack(spacing: 12) {
@@ -321,10 +321,10 @@ struct AdaptiveQuizView: View {
     private var scoreLabel: String {
         let pct = Double(score) / Double(max(questions.count, 1))
         switch pct {
-        case 0.9...: return "Perfect run! \u{1F3C6}"
-        case 0.7...: return "Great session! \u{1F4AA}"
-        case 0.5...: return "Solid effort. \u{1F4DA}"
-        default:     return "Good practice. \u{1F4A1}"
+        case 0.9...: return "Perfect run"
+        case 0.7...: return "Strong session"
+        case 0.5...: return "Solid effort"
+        default:     return "Good practice"
         }
     }
 

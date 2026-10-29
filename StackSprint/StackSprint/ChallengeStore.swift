@@ -21,24 +21,24 @@ struct WeeklyChallenge: Identifiable {
     // Four rotating weekly pools (based on ISO week % 4)
     private static let pools: [[WeeklyChallenge]] = [
         [
-            WeeklyChallenge(id: "c1-streak",  emoji: "\u{1F525}", title: "Stay lit",       description: "Keep a 3-day streak",          goal: 3,  type: .streak,  xpReward: 30),
-            WeeklyChallenge(id: "c1-lessons", emoji: "\u{1F4DA}", title: "Five-a-week",    description: "Practice 5 days this week",    goal: 5,  type: .lessons, xpReward: 50),
-            WeeklyChallenge(id: "c1-recall",  emoji: "\u{1F9E0}", title: "Recall sprint",  description: "Answer 10 recall questions",   goal: 10, type: .recall,  xpReward: 25),
+            WeeklyChallenge(id: "c1-streak",  emoji: "flame.fill", title: "Stay lit",       description: "Keep a 3-day streak",          goal: 3,  type: .streak,  xpReward: 30),
+            WeeklyChallenge(id: "c1-lessons", emoji: "books.vertical.fill", title: "Five-a-week",    description: "Practice 5 days this week",    goal: 5,  type: .lessons, xpReward: 50),
+            WeeklyChallenge(id: "c1-recall",  emoji: "brain.head.profile", title: "Recall sprint",  description: "Answer 10 recall questions",   goal: 10, type: .recall,  xpReward: 25),
         ],
         [
-            WeeklyChallenge(id: "c2-streak",  emoji: "\u{26A1}", title: "Power week",     description: "Practice 5 days in a row",     goal: 5,  type: .streak,  xpReward: 50),
-            WeeklyChallenge(id: "c2-lessons", emoji: "\u{1F680}", title: "Deep dive",      description: "Practice 7 days this week",    goal: 7,  type: .lessons, xpReward: 80),
-            WeeklyChallenge(id: "c2-recall",  emoji: "\u{1F3AF}", title: "Precision",      description: "Answer 20 recall questions",   goal: 20, type: .recall,  xpReward: 40),
+            WeeklyChallenge(id: "c2-streak",  emoji: "bolt.fill", title: "Power week",     description: "Practice 5 days in a row",     goal: 5,  type: .streak,  xpReward: 50),
+            WeeklyChallenge(id: "c2-lessons", emoji: "paperplane.fill", title: "Deep dive",      description: "Practice 7 days this week",    goal: 7,  type: .lessons, xpReward: 80),
+            WeeklyChallenge(id: "c2-recall",  emoji: "scope", title: "Precision",      description: "Answer 20 recall questions",   goal: 20, type: .recall,  xpReward: 40),
         ],
         [
-            WeeklyChallenge(id: "c3-streak",  emoji: "\u{1F30A}", title: "Flow state",     description: "Keep a 4-day streak",          goal: 4,  type: .streak,  xpReward: 40),
-            WeeklyChallenge(id: "c3-lessons", emoji: "\u{1F3C6}", title: "Gold rush",      description: "Practice every day this week", goal: 7,  type: .lessons, xpReward: 60),
-            WeeklyChallenge(id: "c3-recall",  emoji: "\u{1F4A1}", title: "Bright sparks",  description: "Answer 15 recall questions",   goal: 15, type: .recall,  xpReward: 30),
+            WeeklyChallenge(id: "c3-streak",  emoji: "water.waves", title: "Flow state",     description: "Keep a 4-day streak",          goal: 4,  type: .streak,  xpReward: 40),
+            WeeklyChallenge(id: "c3-lessons", emoji: "trophy.fill", title: "Gold rush",      description: "Practice every day this week", goal: 7,  type: .lessons, xpReward: 60),
+            WeeklyChallenge(id: "c3-recall",  emoji: "lightbulb.fill", title: "Bright sparks",  description: "Answer 15 recall questions",   goal: 15, type: .recall,  xpReward: 30),
         ],
         [
-            WeeklyChallenge(id: "c4-streak",  emoji: "\u{1F9BE}", title: "Resilient",      description: "Keep a 3-day streak",          goal: 3,  type: .streak,  xpReward: 30),
-            WeeklyChallenge(id: "c4-lessons", emoji: "\u{1F52C}", title: "Explorer",       description: "Practice 6 days this week",    goal: 6,  type: .lessons, xpReward: 70),
-            WeeklyChallenge(id: "c4-recall",  emoji: "\u{2B50}", title: "Star pupil",      description: "Answer 12 recall questions",   goal: 12, type: .recall,  xpReward: 35),
+            WeeklyChallenge(id: "c4-streak",  emoji: "shield.lefthalf.filled", title: "Resilient",      description: "Keep a 3-day streak",          goal: 3,  type: .streak,  xpReward: 30),
+            WeeklyChallenge(id: "c4-lessons", emoji: "magnifyingglass", title: "Explorer",       description: "Practice 6 days this week",    goal: 6,  type: .lessons, xpReward: 70),
+            WeeklyChallenge(id: "c4-recall",  emoji: "star.fill", title: "Star pupil",      description: "Answer 12 recall questions",   goal: 12, type: .recall,  xpReward: 35),
         ],
     ]
 
@@ -49,7 +49,7 @@ struct WeeklyChallenge: Identifiable {
 
     var activeEventName: String? {
         let weekday = Calendar.current.component(.weekday, from: Date())
-        if weekday == 7 || weekday == 1 { return "XP Weekend \u{1F680}" }
+        if weekday == 7 || weekday == 1 { return "XP Weekend" }
         return nil
     }
 
@@ -123,10 +123,10 @@ struct ChallengeBanner: View {
 
         Button { showSheet = true } label: {
             HStack(spacing: 12) {
-                Text("\u{1F3AF}").font(.title2)
+                Image(systemName: "scope").font(.title2).symbolRenderingMode(.hierarchical).foregroundStyle(.tint)
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
-                        Text("WEEKLY CHALLENGES").font(.caption.bold()).foregroundStyle(.orange)
+                        Text("Weekly challenges").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                         if let event = challenges.activeEventName {
                             Text(event).font(.caption.bold())
                                 .padding(.horizontal, 6).padding(.vertical, 2)
@@ -147,8 +147,8 @@ struct ChallengeBanner: View {
                 Image(systemName: "chevron.right").foregroundStyle(.secondary).font(.caption)
             }
             .padding(14)
-            .background(Color.orange.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.orange.opacity(0.18)))
+            .background(Color.orange.opacity(0.07), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.orange.opacity(0.18)))
         }
         .buttonStyle(.plain)
         .sheet(isPresented: $showSheet) { ChallengesSheet() }
@@ -188,16 +188,16 @@ struct ChallengesSheet: View {
 
     private func eventBanner(_ name: String) -> some View {
         HStack(spacing: 12) {
-            Text("\u{1F680}").font(.title)
+            Image(systemName: "paperplane.fill").font(.title).symbolRenderingMode(.hierarchical).foregroundStyle(.tint)
             VStack(alignment: .leading, spacing: 3) {
                 Text(name).font(.headline)
-                Text("All XP rewards doubled this weekend!").font(.caption).foregroundStyle(.secondary)
+                Text("All XP rewards are doubled this weekend.").font(.caption).foregroundStyle(.secondary)
             }
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.yellow.opacity(0.10), in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.yellow.opacity(0.3)))
+        .background(Color.yellow.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.yellow.opacity(0.3)))
     }
 }
 
@@ -214,7 +214,7 @@ private struct ChallengeCard: View {
 
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(challenge.emoji).font(.title2)
+                Image(systemName: challenge.emoji).font(.title2).symbolRenderingMode(.hierarchical).foregroundStyle(.tint).frame(width: 32)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(challenge.title).font(.headline)
                     Text(challenge.description).font(.caption).foregroundStyle(.secondary)
@@ -229,7 +229,7 @@ private struct ChallengeCard: View {
                 }
             }
             ProgressView(value: pct).tint(done ? .mint : .orange)
-                .animation(.easeOut(duration: 0.4), value: pct)
+                .animation(.smooth(duration: 0.4), value: pct)
             HStack {
                 Text("\(prog) / \(challenge.goal)").font(.caption.monospaced()).foregroundStyle(.secondary)
                 Spacer()
@@ -244,8 +244,8 @@ private struct ChallengeCard: View {
         }
         .padding(16)
         .background(done ? Color.mint.opacity(0.07) : SprintPalette.card,
-                    in: RoundedRectangle(cornerRadius: 18))
-        .overlay(RoundedRectangle(cornerRadius: 18)
+                    in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
             .stroke(done ? Color.mint.opacity(0.3) : Color.secondary.opacity(0.12)))
     }
 }

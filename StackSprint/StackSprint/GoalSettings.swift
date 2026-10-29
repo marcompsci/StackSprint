@@ -17,11 +17,11 @@ struct LearningGoal {
 
     var emoji: String {
         switch lessonsPerWeek {
-        case 1:  return "\u{1F331}"
-        case 3:  return "\u{1F4AA}"
-        case 5:  return "\u{1F525}"
-        case 10: return "\u{1F680}"
-        default: return "\u{2B50}"
+        case 1:  return "leaf.fill"
+        case 3:  return "dumbbell.fill"
+        case 5:  return "flame.fill"
+        case 10: return "paperplane.fill"
+        default: return "star.fill"
         }
     }
 
@@ -60,7 +60,7 @@ struct GoalProgressBanner: View {
         let met  = done >= goal
 
         HStack(spacing: 12) {
-            Text(met ? "\u{1F3C6}" : LearningGoal(lessonsPerWeek: goal).emoji)
+            Image(systemName: met ? "trophy.fill" : LearningGoal(lessonsPerWeek: goal).emoji).symbolRenderingMode(.hierarchical).foregroundStyle(.tint)
                 .font(.title2)
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
@@ -73,13 +73,13 @@ struct GoalProgressBanner: View {
                 }
                 ProgressView(value: pct)
                     .tint(met ? .mint : .orange)
-                    .animation(.easeOut(duration: 0.4), value: pct)
+                    .animation(.smooth(duration: 0.4), value: pct)
             }
         }
         .padding(14)
         .background(met ? Color.mint.opacity(0.08) : SprintPalette.card,
-                    in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16)
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
             .stroke(met ? Color.mint.opacity(0.3) : Color.secondary.opacity(0.12)))
     }
 }
@@ -93,10 +93,10 @@ struct GoalSettingsSection: View {
         Section {
             ForEach(LearningGoal.presets, id: \.lessonsPerWeek) { goal in
                 Button {
-                    withAnimation { weeklyGoal = goal.lessonsPerWeek }
+                    withAnimation(.smooth) { weeklyGoal = goal.lessonsPerWeek }
                 } label: {
                     HStack {
-                        Text(goal.emoji)
+                        Image(systemName: goal.emoji).foregroundStyle(.tint).frame(width: 24)
                         Text(goal.label).foregroundStyle(.primary)
                         Spacer()
                         if weeklyGoal == goal.lessonsPerWeek {
@@ -133,7 +133,7 @@ struct OnboardingGoalStep: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("ALMOST THERE").font(.caption.bold()).tracking(1.3).foregroundStyle(.mint)
+                Text("Almost there").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                 Text("Set your goal").font(.system(.title, design: .rounded, weight: .bold))
                 Text("Pick a pace that fits your life, then choose where to start.").font(.subheadline).foregroundStyle(.secondary)
             }
@@ -144,17 +144,17 @@ struct OnboardingGoalStep: View {
                 HStack(spacing: 10) {
                     ForEach(LearningGoal.presets, id: \.lessonsPerWeek) { goal in
                         Button {
-                            withAnimation(.easeOut(duration: 0.15)) { weeklyGoal = goal.lessonsPerWeek }
+                            withAnimation(.smooth(duration: 0.15)) { weeklyGoal = goal.lessonsPerWeek }
                         } label: {
                             VStack(spacing: 4) {
-                                Text(goal.emoji).font(.title2)
+                                Image(systemName: goal.emoji).font(.title2).symbolRenderingMode(.hierarchical).foregroundStyle(.tint)
                                 Text("\(goal.lessonsPerWeek)x").font(.headline)
                                 Text("week").font(.caption2).foregroundStyle(.secondary)
                             }
                             .frame(maxWidth: .infinity, minHeight: 72)
                             .background(weeklyGoal == goal.lessonsPerWeek ? Color.mint.opacity(0.15) : SprintPalette.card,
-                                        in: RoundedRectangle(cornerRadius: 14))
-                            .overlay(RoundedRectangle(cornerRadius: 14)
+                                        in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
                                 .stroke(weeklyGoal == goal.lessonsPerWeek ? Color.mint : Color.secondary.opacity(0.2)))
                         }
                         .buttonStyle(.plain)
@@ -167,7 +167,7 @@ struct OnboardingGoalStep: View {
                 Text("WHERE TO START?").font(.caption.bold()).foregroundStyle(.secondary)
                 ForEach(tracks, id: \.name) { track in
                     Button {
-                        withAnimation(.easeOut(duration: 0.15)) { startingTrack = track.name }
+                        withAnimation(.smooth(duration: 0.15)) { startingTrack = track.name }
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: track.icon)
@@ -184,8 +184,8 @@ struct OnboardingGoalStep: View {
                         }
                         .padding(12)
                         .background(startingTrack == track.name ? Color.mint.opacity(0.08) : SprintPalette.card,
-                                    in: RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14)
+                                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .stroke(startingTrack == track.name ? Color.mint.opacity(0.4) : Color.secondary.opacity(0.12)))
                     }
                     .buttonStyle(.plain)

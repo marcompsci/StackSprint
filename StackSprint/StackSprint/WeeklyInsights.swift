@@ -34,7 +34,7 @@ struct WeeklyInsightsView: View {
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 5), count: 7), spacing: 5) {
                 ForEach(last30Days, id: \.key) { entry in
-                    RoundedRectangle(cornerRadius: 4)
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
                         .fill(entry.practiced ? Color.mint.opacity(0.78) : Color.secondary.opacity(0.12))
                         .frame(height: 32)
                         .overlay(
@@ -46,15 +46,15 @@ struct WeeklyInsightsView: View {
             }
 
             HStack(spacing: 8) {
-                RoundedRectangle(cornerRadius: 2).fill(Color.secondary.opacity(0.12)).frame(width: 12, height: 12)
+                RoundedRectangle(cornerRadius: 2, style: .continuous).fill(Color.secondary.opacity(0.12)).frame(width: 12, height: 12)
                 Text("No activity").font(.caption2).foregroundStyle(.secondary)
                 Spacer()
-                RoundedRectangle(cornerRadius: 2).fill(Color.mint.opacity(0.78)).frame(width: 12, height: 12)
+                RoundedRectangle(cornerRadius: 2, style: .continuous).fill(Color.mint.opacity(0.78)).frame(width: 12, height: 12)
                 Text("Practiced").font(.caption2).foregroundStyle(.secondary)
             }
         }
         .padding(16)
-        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private struct DayEntry { let key: String; let dayLabel: String; let practiced: Bool }
@@ -101,7 +101,7 @@ struct WeeklyInsightsView: View {
             .chartYAxis { AxisMarks(position: .leading) { _ in AxisValueLabel().font(.caption) } }
         }
         .padding(16)
-        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private struct WeekBar { let label: String; let days: Int }
@@ -162,7 +162,7 @@ struct WeeklyInsightsView: View {
             }
         }
         .padding(16)
-        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private var weakTopics: [WeakTopic] {
@@ -205,7 +205,7 @@ struct WeeklyInsightsView: View {
             }
         }
         .padding(16)
-        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private var recommendations: [Lesson] {

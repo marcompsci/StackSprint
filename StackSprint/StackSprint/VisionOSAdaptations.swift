@@ -110,11 +110,11 @@ struct SpatialCard<Content: View>: View {
     var body: some View {
         #if os(visionOS)
         content()
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24))
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
             .hoverEffect(.lift)
         #else
         content()
-            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 24))
+            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         #endif
     }
 }

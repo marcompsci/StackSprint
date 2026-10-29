@@ -152,12 +152,12 @@ struct CodeRunnerView: View {
                         .foregroundStyle(out.hasPrefix("Error") ? Color.red : Color.mint)
                         .padding(12)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.black.opacity(0.18), in: RoundedRectangle(cornerRadius: 10))
+                        .background(Color.black.opacity(0.18), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .textSelection(.enabled)
                         .accessibilityLabel("Code output: \(out)")
                 }
                 .transition(.move(edge: .top).combined(with: .opacity))
-                .animation(.easeOut(duration: 0.2), value: runner.output)
+                .animation(.smooth(duration: 0.2), value: runner.output)
             }
         }
     }

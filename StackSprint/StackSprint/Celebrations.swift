@@ -94,8 +94,8 @@ struct LevelUpSheet: View {
                 }
 
                 VStack(spacing: 10) {
-                    Text("LEVEL UP!").font(.caption.bold()).tracking(2).foregroundStyle(newLevel.color)
-                    Text(newLevel.name).font(.system(size: 44, weight: .bold, design: .rounded))
+                    Text("Level up").font(.footnote.weight(.semibold)).foregroundStyle(newLevel.color)
+                    Text(newLevel.name).font(.largeTitle.bold())
                     Text("You reached level \(newLevel.number). Keep building.")
                         .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 }
@@ -123,7 +123,7 @@ struct TrackCompleteCard: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 24)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(LinearGradient(
                     colors: [SprintPalette.navy, catColor.opacity(0.4)],
                     startPoint: .topLeading, endPoint: .bottomTrailing
@@ -184,13 +184,13 @@ struct TrackCompleteSheet: View {
                 TrackCompleteCard(category: category, completedCount: completedCount)
 
                 Text("\(category) complete!")
-                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    .font(.largeTitle.bold())
                 Text("Every lesson in this track is done. You know this material.")
                     .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
                     .padding(.horizontal)
 
                 HStack(spacing: 12) {
-                    ShareLink(item: "I just completed all \(completedCount) \(category) lessons in StackSprint! \u{1F3C6}") {
+                    ShareLink(item: "I just completed all \(completedCount) \(category) lessons in StackSprint!") {
                         Label("Share achievement", systemImage: "square.and.arrow.up")
                             .font(.subheadline.bold())
                     }
@@ -214,18 +214,18 @@ struct StreakRecordBanner: View {
         HStack(spacing: 12) {
             Image(systemName: "trophy.fill").font(.title2).foregroundStyle(.yellow)
             VStack(alignment: .leading, spacing: 2) {
-                Text("New streak record!").font(.headline)
+                Text("New streak record").font(.headline)
                 Text("\(currentStreak) days — your previous best was \(previousRecord).")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
-            ShareLink(item: "I just hit a \(currentStreak)-day coding streak in StackSprint — my personal record! \u{1F525}") {
+            ShareLink(item: "I just hit a \(currentStreak)-day coding streak in StackSprint — my personal record!") {
                 Image(systemName: "square.and.arrow.up")
             }
         }
         .padding(14)
-        .background(Color.yellow.opacity(0.10), in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.yellow.opacity(0.3)))
+        .background(Color.yellow.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.yellow.opacity(0.3)))
     }
 }
 

@@ -96,13 +96,13 @@ import WebKit
                 }
             if !splashDismissed {
                 SplashView {
-                    withAnimation(.easeInOut(duration: 0.4)) { splashDismissed = true }
+                    withAnimation(.smooth(duration: 0.25)) { splashDismissed = true }
                 }
                 .transition(.opacity)
                 .zIndex(100)
             }
             }
-            .animation(.easeInOut(duration: 0.4), value: splashDismissed)
+            .animation(.smooth(duration: 0.25), value: splashDismissed)
         }
     }
 }
@@ -154,13 +154,13 @@ struct RootView: View {
                     .transition(.scale(scale: 0.6).combined(with: .opacity))
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: hideFloatingControls)
+        .animation(.smooth(duration: 0.2), value: hideFloatingControls)
         .overlay(alignment: .topTrailing) {
             if welcomed && !hideFloatingControls { HStack(spacing: 10) {
-                Button { withAnimation(.easeInOut(duration: 0.2)) { appearance = appearance == "dark" ? "light" : "dark" } } label: {
+                Button { withAnimation(.smooth(duration: 0.2)) { appearance = appearance == "dark" ? "light" : "dark" } } label: {
                     Image(systemName: appearance == "dark" ? "sun.max.fill" : "moon.fill")
                         .font(.title3.bold()).frame(width: 52, height: 52)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(appearance == "dark" ? "Turn on light mode" : "Turn on dark mode")
@@ -168,7 +168,7 @@ struct RootView: View {
                     Image(systemName: "line.3.horizontal")
                         .font(.title2.bold())
                         .frame(width: 52, height: 52)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Open course navigation")
@@ -197,7 +197,7 @@ struct RootView: View {
                     achievementStore.latestUnlock = nil
                 }
                 .transition(.opacity)
-                .animation(.easeInOut, value: achievementStore.latestUnlock != nil)
+                .animation(.smooth, value: achievementStore.latestUnlock != nil)
             }
         }
     }
@@ -222,11 +222,11 @@ struct CourseMenuView: View {
                         Text("StackSprint").font(.title.bold())
                     }
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("CURRENT COURSE").font(.caption.bold()).tracking(1.2).foregroundStyle(.secondary)
+                        Text("Current course").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                         Text("Web Development 101").font(.headline)
                     }
                     .padding(18).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+                    .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                     ForEach(Array(menuItems.enumerated()), id: \.offset) { index, item in
                         NavigationLink { destination(for: index) } label: {
                             HStack(spacing: 16) {
@@ -241,7 +241,7 @@ struct CourseMenuView: View {
                                 Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
                             }
                             .padding(.horizontal, 16).frame(minHeight: 58)
-                            .background(index == 1 ? Color.blue.opacity(0.14) : Color.clear, in: RoundedRectangle(cornerRadius: 16))
+                            .background(index == 1 ? Color.blue.opacity(0.14) : Color.clear, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                         }.buttonStyle(.plain)
                     }
                 }.padding(22)
@@ -290,8 +290,8 @@ struct RapidLearningDeck: View {
             VStack(alignment: .leading, spacing: 22) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("RAPID LEARNING DECK").font(.caption.bold()).tracking(1.4).foregroundStyle(.secondary)
-                        Text("Take a card.\nTake a guess.").font(.largeTitle.bold())
+                        Text("Web development").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                        Text("Flash cards").font(.largeTitle.bold())
                     }
                     Spacer()
                     Picker("Deck mode", selection: $mode) { Text("Study").tag(0); Text("Quiz").tag(1) }
@@ -310,9 +310,9 @@ struct RapidLearningDeck: View {
                     QuizView(questions: store.curriculum?.questions.filter { $0.id.hasPrefix("web-") } ?? [])
                         .frame(minHeight: 520)
                 } else if let lesson {
-                    Button { withAnimation(reduceMotion ? .easeOut(duration: 0.15) : .spring(response: 0.38, dampingFraction: 0.86)) { revealed.toggle() } } label: {
+                    Button { withAnimation(reduceMotion ? .smooth(duration: 0.15) : .spring(response: 0.38, dampingFraction: 0.86)) { revealed.toggle() } } label: {
                         VStack(alignment: .leading, spacing: 18) {
-                            Text(filter == "All cards" ? deckLabel(for: lesson) : filter.uppercased()).font(.caption.bold()).tracking(1.1)
+                            Text(filter == "All cards" ? deckLabel(for: lesson) : filter.uppercased()).font(.caption.bold()).tracking(0.4)
                                 .padding(.horizontal, 14).padding(.vertical, 8).overlay(Capsule().stroke(.white.opacity(0.5)))
                             Spacer()
                             Text(revealed ? lesson.definition : lesson.term).font(.system(size: 42, weight: .bold, design: .rounded))
@@ -322,7 +322,7 @@ struct RapidLearningDeck: View {
                             Label(revealed ? "Tap to see term" : "Tap to flip", systemImage: "arrow.triangle.2.circlepath").font(.subheadline.bold())
                         }
                         .foregroundStyle(.white).padding(28).frame(maxWidth: .infinity, minHeight: 390, alignment: .leading)
-                        .background(LinearGradient(colors: [.blue, Color(red: 0.22, green: 0.42, blue: 0.88)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 30))
+                        .background(LinearGradient(colors: [.blue, Color(red: 0.22, green: 0.42, blue: 0.88)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
                         .shadow(color: .blue.opacity(0.25), radius: 24, y: 14)
                     }.buttonStyle(.plain).accessibilityLabel(revealed ? "Answer: \(lesson.definition)" : "Card term: \(lesson.term). Tap to reveal")
                     HStack {
@@ -378,8 +378,8 @@ struct PythonEssentialsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("PYTHON ESSENTIALS · DAY 2 PRACTICE").font(.caption.bold()).tracking(1.4).foregroundStyle(.orange)
-                    Text("Small concepts.\nBig possibilities.").font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    Text("Python · Day 2").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                    Text("Python basics").font(.largeTitle.bold())
                     Text("Learn → recreate → create → run. \(practiced)/\(lessons.count) cards practiced.")
                         .font(.title3).foregroundStyle(.secondary)
                     ProgressView(value: Double(practiced), total: Double(max(lessons.count, 1))).tint(.orange)
@@ -388,19 +388,19 @@ struct PythonEssentialsView: View {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 135), spacing: 10)], spacing: 10) {
                     ForEach(modes, id: \.self) { item in
                         Button {
-                            withAnimation(.easeOut(duration: 0.18)) { mode = item; revealed = false }
+                            withAnimation(.smooth(duration: 0.18)) { mode = item; revealed = false }
                         } label: {
                             Text(item).font(.headline).frame(maxWidth: .infinity, minHeight: 48)
                         }
                         .buttonStyle(.plain)
                         .foregroundStyle(mode == item ? Color(red: 0.05, green: 0.18, blue: 0.16) : .primary)
-                        .background(mode == item ? Color.mint.opacity(0.32) : SprintPalette.card, in: RoundedRectangle(cornerRadius: 16))
-                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(mode == item ? Color.mint : Color.secondary.opacity(0.25), lineWidth: 1.5))
+                        .background(mode == item ? Color.mint.opacity(0.32) : SprintPalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(mode == item ? Color.mint : Color.secondary.opacity(0.25), lineWidth: 1.5))
                     }
                     NavigationLink { QuizView(questions: quiz) } label: {
                         Text("Full quiz").font(.headline).frame(maxWidth: .infinity, minHeight: 48)
-                    }.buttonStyle(.plain).background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16))
-                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.secondary.opacity(0.25), lineWidth: 1.5))
+                    }.buttonStyle(.plain).background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.secondary.opacity(0.25), lineWidth: 1.5))
                 }
 
                 if let lesson {
@@ -410,16 +410,16 @@ struct PythonEssentialsView: View {
                             Spacer()
                             if store.completed.contains(lesson.id) { Label("Practiced", systemImage: "checkmark.seal.fill").font(.caption.bold()).foregroundStyle(.green) }
                         }
-                        Text(cardTitle(lesson)).font(.system(.largeTitle, design: .rounded, weight: .bold))
+                        Text(cardTitle(lesson)).font(.largeTitle.bold())
                         Text(cardPrompt(lesson)).font(.title3)
-                        if mode == "Output sprint" { Text(lesson.code).font(.system(.body, design: .monospaced)).padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Color.black.opacity(0.18), in: RoundedRectangle(cornerRadius: 14)) }
+                        if mode == "Output sprint" { Text(lesson.code).font(.system(.body, design: .monospaced)).padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Color.black.opacity(0.18), in: RoundedRectangle(cornerRadius: 16, style: .continuous)) }
                         Button(revealed ? "Hide answer" : "Reveal & practice", systemImage: revealed ? "eye.slash" : "sparkles") {
-                            withAnimation(reduceMotion ? .easeOut(duration: 0.12) : .spring(response: 0.32, dampingFraction: 0.85)) { revealed.toggle() }
+                            withAnimation(reduceMotion ? .smooth(duration: 0.12) : .spring(response: 0.32, dampingFraction: 0.85)) { revealed.toggle() }
                         }.buttonStyle(.borderedProminent).tint(.orange)
                         if revealed {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text(lesson.definition).font(.headline)
-                                if mode != "Output sprint" && !lesson.code.isEmpty { Text(lesson.code).font(.system(.body, design: .monospaced)).padding(12).frame(maxWidth: .infinity, alignment: .leading).background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 12)) }
+                                if mode != "Output sprint" && !lesson.code.isEmpty { Text(lesson.code).font(.system(.body, design: .monospaced)).padding(12).frame(maxWidth: .infinity, alignment: .leading).background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous)) }
                                 NavigationLink { LessonView(lesson: lesson) } label: { Label("Recreate it, then make it yours", systemImage: "keyboard").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12) }.buttonStyle(.borderedProminent).tint(.mint)
                             }.transition(.move(edge: .top).combined(with: .opacity))
                         }
@@ -430,23 +430,23 @@ struct PythonEssentialsView: View {
                         Text("Complete both checkpoints: recreate the example, then build your own variation from memory.").font(.subheadline).foregroundStyle(.secondary)
                     }
                     .padding(sizeClass == .compact ? 18 : 28)
-                    .background(SprintPalette.card.opacity(0.82), in: RoundedRectangle(cornerRadius: 28))
+                    .background(SprintPalette.card.opacity(0.82), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
                 }
 
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("YOUR PYTHON TOOLBOX").font(.caption.bold()).tracking(1.3).foregroundStyle(.orange)
+                    Text("Python toolbox").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                     Text("Tap a concept to jump to its card.").foregroundStyle(.secondary)
                     LazyVGrid(columns: columns, spacing: 14) {
                         ForEach(Array(lessons.enumerated()), id: \.element.id) { number, item in
                             Button {
-                                withAnimation(.easeOut(duration: 0.18)) { index = number; revealed = false }
+                                withAnimation(.smooth(duration: 0.18)) { index = number; revealed = false }
                             } label: {
                                 VStack(alignment: .leading, spacing: 9) {
                                     HStack { Circle().fill(.orange).frame(width: 10); Text(item.term).font(.headline).foregroundStyle(.primary); Spacer(); if store.completed.contains(item.id) { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) } }
                                     Text(item.clue).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.leading)
                                 }.padding(16).frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
-                                    .background(index == number ? Color.orange.opacity(0.15) : SprintPalette.card.opacity(0.72), in: RoundedRectangle(cornerRadius: 20))
-                                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(index == number ? Color.orange : Color.secondary.opacity(0.18), lineWidth: index == number ? 2 : 1))
+                                    .background(index == number ? Color.orange.opacity(0.15) : SprintPalette.card.opacity(0.72), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                                    .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(index == number ? Color.orange : Color.secondary.opacity(0.18), lineWidth: index == number ? 2 : 1))
                             }.buttonStyle(.plain)
                         }
                     }
@@ -480,21 +480,21 @@ struct CybersecurityCourseView: View {
             VStack(alignment: .leading, spacing: 26) {
                 HStack(alignment: .bottom, spacing: 18) {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("COURSE 02 · SAFETY ESSENTIALS").font(.caption.bold()).tracking(1.3).foregroundStyle(.blue)
-                        Text("Cybersecurity\nMini Course").font(.system(.largeTitle, design: .rounded, weight: .bold))
+                        Text("Course 2").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                        Text("Cybersecurity basics").font(.largeTitle.bold())
                         Text("Build calm, practical safety instincts — from suspicious messages to safer sign-ins.")
                             .font(.title3).foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 0)
                     if sizeClass != .compact {
                         Label("\(lessons.count) terms\n\(questions.count)-question finish", systemImage: "bolt.fill")
-                            .font(.subheadline.bold()).padding(18).background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+                            .font(.subheadline.bold()).padding(18).background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                     }
                 }
                 VStack(alignment: .leading, spacing: 18) {
                     HStack {
                         VStack(alignment: .leading, spacing: 7) {
-                            Text("VOCABULARY WARM-UP").font(.caption.bold()).tracking(1.3).foregroundStyle(.secondary)
+                            Text("Vocabulary").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                             Text("Tap a term. See the safety move.").font(.title2.bold())
                             Text("A quick vocabulary pass makes the checkpoint feel much easier.").foregroundStyle(.secondary)
                         }
@@ -504,7 +504,7 @@ struct CybersecurityCourseView: View {
                     }
                     LazyVGrid(columns: columns, spacing: 14) {
                         ForEach(Array(lessons.enumerated()), id: \.element.id) { number, lesson in
-                            Button { withAnimation(.easeOut(duration: 0.18)) { toggle(lesson.id) } } label: {
+                            Button { withAnimation(.smooth(duration: 0.18)) { toggle(lesson.id) } } label: {
                                 VStack(alignment: .leading, spacing: 10) {
                                     Text(String(format: "%02d", number + 1)).font(.system(.caption, design: .monospaced).bold()).foregroundStyle(.purple)
                                     Spacer(minLength: 6)
@@ -515,8 +515,8 @@ struct CybersecurityCourseView: View {
                                         .font(.caption.bold()).foregroundStyle(.purple)
                                 }
                                 .padding(16).frame(maxWidth: .infinity, minHeight: 190, alignment: .leading)
-                                .background(SprintPalette.card.opacity(0.72), in: RoundedRectangle(cornerRadius: 20))
-                                .overlay(RoundedRectangle(cornerRadius: 20).stroke(revealed.contains(lesson.id) ? Color.purple : Color.white.opacity(0.12), lineWidth: 1.5))
+                                .background(SprintPalette.card.opacity(0.72), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(revealed.contains(lesson.id) ? Color.purple : Color.white.opacity(0.12), lineWidth: 1.5))
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel("\(lesson.term). \(revealed.contains(lesson.id) ? safetyMove(for: lesson) : lesson.clue)")
@@ -525,16 +525,16 @@ struct CybersecurityCourseView: View {
                     }
                 }
                 .padding(sizeClass == .compact ? 18 : 28)
-                .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 28))
+                .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
                 VStack(alignment: .leading, spacing: 20) {
                     HStack {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("FINAL CHECKPOINT").font(.caption.bold()).tracking(1.3).foregroundStyle(.secondary)
+                            Text("Final checkpoint").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                             Text("Can you spot the safer move?").font(.title2.bold())
                         }
                         Spacer()
                         Text("1 / \(questions.count)").font(.system(.subheadline, design: .monospaced)).foregroundStyle(.blue)
-                            .padding(.horizontal, 14).padding(.vertical, 9).background(.blue.opacity(0.14), in: RoundedRectangle(cornerRadius: 12))
+                            .padding(.horizontal, 14).padding(.vertical, 9).background(.blue.opacity(0.14), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
                     ProgressView(value: 0, total: Double(max(questions.count, 1)))
                     if let first = questions.first {
@@ -542,10 +542,10 @@ struct CybersecurityCourseView: View {
                         ForEach(first.choices.indices, id: \.self) { choice in
                             HStack(spacing: 14) {
                                 Text(["A", "B", "C", "D"][min(choice, 3)]).font(.caption.bold()).foregroundStyle(.secondary)
-                                    .frame(width: 38, height: 38).background(Color.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 10))
+                                    .frame(width: 38, height: 38).background(Color.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                                 Text(first.choices[choice]).font(.subheadline.bold())
                                 Spacer()
-                            }.padding(10).overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.12)))
+                            }.padding(10).overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.white.opacity(0.12)))
                         }
                     }
                     NavigationLink { QuizView(questions: questions) } label: {
@@ -554,7 +554,7 @@ struct CybersecurityCourseView: View {
                     Text("Choose the answer that keeps people and information safer.").font(.caption).foregroundStyle(.secondary)
                 }
                 .padding(sizeClass == .compact ? 18 : 28)
-                .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 28))
+                .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
             }.padding(22).frame(maxWidth: 980)
         }.navigationTitle("Cybersecurity").modifier(SprintTheme())
     }
@@ -597,8 +597,8 @@ struct GlossaryView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     HStack(alignment: .bottom) {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("KEEP THESE CLOSE").font(.caption.bold()).tracking(1.4).foregroundStyle(.blue)
-                            Text("Your pocket glossary").font(.largeTitle.bold())
+                            Text("Reference").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                            Text("Glossary").font(.largeTitle.bold())
                         }
                         Spacer()
                         if sizeClass != .compact { Text("Tap a term to bring its flash card back to the top.").font(.title3).foregroundStyle(.secondary) }
@@ -606,23 +606,23 @@ struct GlossaryView: View {
                     if sizeClass == .compact { Text("Tap a term to bring its flash card back to the top.").foregroundStyle(.secondary) }
                     if let selected {
                         VStack(alignment: .leading, spacing: 14) {
-                            HStack { Circle().fill(dotColor(for: selected)).frame(width: 11); Text(categoryLabel(for: selected)).font(.caption.bold()).tracking(1).foregroundStyle(dotColor(for: selected)); Spacer(); Button { selectedID = nil } label: { Image(systemName: "xmark.circle.fill") }.buttonStyle(.plain).accessibilityLabel("Close selected glossary card") }
-                            Text(selected.term).font(.system(.largeTitle, design: .rounded, weight: .bold))
+                            HStack { Circle().fill(dotColor(for: selected)).frame(width: 11); Text(categoryLabel(for: selected)).font(.caption.bold()).tracking(0.4).foregroundStyle(dotColor(for: selected)); Spacer(); Button { selectedID = nil } label: { Image(systemName: "xmark.circle.fill") }.buttonStyle(.plain).accessibilityLabel("Close selected glossary card") }
+                            Text(selected.term).font(.largeTitle.bold())
                             Text(selected.definition).font(.title3)
-                            if !selected.code.isEmpty { Text(selected.code).font(.system(.body, design: .monospaced)).foregroundStyle(.mint).padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 14)) }
+                            if !selected.code.isEmpty { Text(selected.code).font(.system(.body, design: .monospaced)).foregroundStyle(.mint).padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 16, style: .continuous)) }
                             NavigationLink("Practice this term →") { LessonView(lesson: selected) }.font(.headline).foregroundStyle(.white)
                         }
-                        .padding(22).background(LinearGradient(colors: [dotColor(for: selected).opacity(0.42), SprintPalette.card], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 26))
+                        .padding(22).background(LinearGradient(colors: [dotColor(for: selected).opacity(0.42), SprintPalette.card], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
                         .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
                     }
                     TextField("Search HTML, API, full-stack…", text: $query)
-                        .textFieldStyle(.plain).padding(14).background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 15))
-                        .overlay(RoundedRectangle(cornerRadius: 15).stroke(Color.white.opacity(0.12))).autocorrectionDisabled()
+                        .textFieldStyle(.plain).padding(14).background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.white.opacity(0.12))).autocorrectionDisabled()
                     LazyVGrid(columns: columns, spacing: 14) {
                         ForEach(lessons) { lesson in
                             Button {
-                                withAnimation(.easeOut(duration: 0.2)) { selectedID = lesson.id }
-                                withAnimation(.easeOut(duration: 0.35)) { proxy.scrollTo("glossary-top", anchor: .top) }
+                                withAnimation(.smooth(duration: 0.2)) { selectedID = lesson.id }
+                                withAnimation(.smooth(duration: 0.35)) { proxy.scrollTo("glossary-top", anchor: .top) }
                             } label: {
                                 VStack(alignment: .leading, spacing: 12) {
                                     HStack(spacing: 10) { Circle().fill(dotColor(for: lesson)).frame(width: 10); Text(lesson.term).font(.headline).multilineTextAlignment(.leading) }
@@ -630,8 +630,8 @@ struct GlossaryView: View {
                                     Spacer(minLength: 0)
                                 }
                                 .padding(18).frame(maxWidth: .infinity, minHeight: 128, alignment: .leading)
-                                .background(selectedID == lesson.id ? dotColor(for: lesson).opacity(0.15) : Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 20))
-                                .overlay(RoundedRectangle(cornerRadius: 20).stroke(selectedID == lesson.id ? dotColor(for: lesson) : Color.white.opacity(0.13), lineWidth: 1.5))
+                                .background(selectedID == lesson.id ? dotColor(for: lesson).opacity(0.15) : Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(selectedID == lesson.id ? dotColor(for: lesson) : Color.white.opacity(0.13), lineWidth: 1.5))
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel("\(lesson.term), \(categoryLabel(for: lesson))")
@@ -685,8 +685,8 @@ struct DailyPracticeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
                 VStack(alignment: .leading, spacing: 13) {
-                    Text("YOUR DAILY SHIPPING HABIT").font(.caption.bold()).tracking(1.5).foregroundStyle(.blue)
-                    Text("A little practice.\nSomething real.").font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    Text("Today").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                    Text("Daily practice").font(.largeTitle.bold())
                     Text("Recall a concept, rebuild a skill, then make one small thing your own.")
                         .font(.title3).foregroundStyle(.secondary)
                 }
@@ -725,7 +725,7 @@ struct DailyPracticeView: View {
                 }
                 .padding(22)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(SprintPalette.card.opacity(0.75), in: RoundedRectangle(cornerRadius: 26))
+                .background(SprintPalette.card.opacity(0.75), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
 
                 dailyStreakCard
                 firstSparkSection
@@ -767,20 +767,20 @@ struct DailyPracticeView: View {
             .padding(.horizontal, 15)
         }
         .buttonStyle(.plain)
-        .background(background, in: RoundedRectangle(cornerRadius: 15))
-        .overlay(RoundedRectangle(cornerRadius: 15).stroke(border, lineWidth: 1.4))
+        .background(background, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(border, lineWidth: 1.4))
         .disabled(selectedChoice != nil)
     }
 
     private var recallPanel: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("3 QUICK RECALL REPS · \(recallCount)/\(questions.count)")
-                .font(.caption.bold()).tracking(1.2).foregroundStyle(.blue)
+            Text("Quick review · \(recallCount) of \(questions.count)")
+                .font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
             if questions.isEmpty {
                 Text("Questions will appear when the course loads.").foregroundStyle(.secondary)
             } else if recallIndex >= questions.count {
                 Image(systemName: "checkmark.seal.fill").font(.system(size: 48)).foregroundStyle(.mint)
-                Text("Today’s recall is complete!").font(.title2.bold())
+                Text("Today’s review is done").font(.title2.bold())
                 Text("Come back tomorrow for a new mix, or keep building now.").foregroundStyle(.secondary)
             } else {
                 let question = questions[recallIndex]
@@ -802,14 +802,14 @@ struct DailyPracticeView: View {
             Spacer(minLength: 0)
         }
         .padding(20).frame(maxWidth: .infinity, minHeight: sizeClass == .compact ? 350 : 480, alignment: .topLeading)
-        .background(Color.indigo.opacity(0.08), in: RoundedRectangle(cornerRadius: 26))
-        .overlay(RoundedRectangle(cornerRadius: 26).stroke(Color.indigo.opacity(0.12)))
+        .background(Color.indigo.opacity(0.08), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color.indigo.opacity(0.12)))
     }
 
     private var buildPanel: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("REBUILD & REMIX").font(.caption.bold()).tracking(1.2).foregroundStyle(.blue)
-            Text("Your next tiny build").font(.title2.bold())
+            Text("Projects").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+            Text("Rebuild a project").font(.title2.bold())
             Text("Complete a mission, play it, then change a color or a rule. Make the result yours.")
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             NavigationLink { ProjectPlaygroundView(initialTrack: .build) } label: {
@@ -829,21 +829,21 @@ struct DailyPracticeView: View {
             Spacer(minLength: 0)
         }
         .padding(20).frame(maxWidth: .infinity, minHeight: sizeClass == .compact ? 260 : 480, alignment: .topLeading)
-        .background(Color.indigo.opacity(0.08), in: RoundedRectangle(cornerRadius: 26))
-        .overlay(RoundedRectangle(cornerRadius: 26).stroke(Color.indigo.opacity(0.12)))
+        .background(Color.indigo.opacity(0.08), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color.indigo.opacity(0.12)))
     }
 
     private var dailyStreakCard: some View {
         VStack(alignment: .leading, spacing: 19) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("MY CODING STREAK").font(.caption.bold()).tracking(1.3).foregroundStyle(.secondary)
+                    Text("Streak").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                     Text("\(store.currentStreak) \(store.currentStreak == 1 ? "day" : "days")")
                         .font(.system(size: 48, weight: .bold, design: .rounded))
                 }
                 Spacer()
                 Image(systemName: "flame.fill").font(.system(size: 30)).foregroundStyle(.orange)
-                    .frame(width: 62, height: 62).background(.orange.opacity(0.14), in: RoundedRectangle(cornerRadius: 18))
+                    .frame(width: 62, height: 62).background(.orange.opacity(0.14), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             }
             Text(store.currentStreak == 0 ? "Your first tiny win starts today. You belong here." : "Every small practice session counts. Keep your spark going tomorrow.")
                 .font(.title3).fixedSize(horizontal: false, vertical: true)
@@ -865,19 +865,18 @@ struct DailyPracticeView: View {
         }
         .padding(sizeClass == .compact ? 20 : 28)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 28))
-        .overlay(RoundedRectangle(cornerRadius: 28).stroke(Color.orange.opacity(0.38), lineWidth: 1.5))
+        .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color.orange.opacity(0.38), lineWidth: 1.5))
     }
 
     private var firstSparkSection: some View {
         VStack(alignment: .leading, spacing: 24) {
             HStack {
-                Text("YOUR POCKET CODING ARCADE").font(.caption.bold()).tracking(1.4).foregroundStyle(.secondary)
+                Text("Today").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                 Spacer()
-                Text("✦ \(store.practiceXP + projectsBuilt * 25) sprint XP")
+                Text("\(store.practiceXP + projectsBuilt * 25) XP")
                     .font(.caption.bold()).foregroundStyle(.orange)
             }
-            Text("A LITTLE CURIOUS. A LITTLE BRAVER.").font(.caption.bold()).tracking(1.2).foregroundStyle(.secondary)
 
             if sizeClass == .compact {
                 VStack(alignment: .leading, spacing: 24) { firstSparkIntro; firstSparkBite }
@@ -889,13 +888,13 @@ struct DailyPracticeView: View {
             }
 
             VStack(alignment: .leading, spacing: 9) {
-                Text("UNIT 01 · THE FIRST SPARK").font(.caption.bold()).tracking(1.1).foregroundStyle(.white.opacity(0.75))
+                Text("Unit 1").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                 Text("Meet your building blocks").font(.title2.bold())
-                Text("Match it. Arrange it. Predict it.").foregroundStyle(.white.opacity(0.78))
+                Text("Three short challenges: match, arrange, predict.").foregroundStyle(.white.opacity(0.78))
             }
             .foregroundStyle(.white)
             .padding(22).frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(red: 0.22, green: 0.27, blue: 0.43), in: RoundedRectangle(cornerRadius: 24))
+            .background(Color(red: 0.22, green: 0.27, blue: 0.43), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
 
             if sizeClass == .compact {
                 VStack(spacing: 12) { firstSparkSteps }
@@ -911,12 +910,12 @@ struct DailyPracticeView: View {
                 }
             }
             .padding(17).frame(maxWidth: .infinity, alignment: .leading)
-            .overlay(RoundedRectangle(cornerRadius: 18).stroke(.white.opacity(0.28)))
+            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(.white.opacity(0.28)))
             Text("A fresh start is always welcome. Try one round today.").font(.subheadline).foregroundStyle(.secondary)
         }
         .padding(sizeClass == .compact ? 20 : 28)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(red: 0.095, green: 0.125, blue: 0.22), in: RoundedRectangle(cornerRadius: 30))
+        .background(Color(red: 0.095, green: 0.125, blue: 0.22), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         .foregroundStyle(.white)
     }
 
@@ -934,7 +933,7 @@ struct DailyPracticeView: View {
                 Label("Start a tiny win", systemImage: "arrow.right")
                     .font(.headline).frame(maxWidth: sizeClass == .compact ? .infinity : 240, minHeight: 54)
             }.buttonStyle(.borderedProminent).tint(.mint)
-            Text("No hearts to lose. Mistakes are welcome.").font(.subheadline).foregroundStyle(.white.opacity(0.72))
+            Text("Wrong answers don’t cost anything.").font(.subheadline).foregroundStyle(.white.opacity(0.72))
         }
     }
 
@@ -962,7 +961,7 @@ struct DailyPracticeView: View {
     private func sparkStep(_ title: String, detail: String, icon: String, color: Color) -> some View {
         HStack(spacing: 14) {
             Image(systemName: icon).font(.title2.bold()).foregroundStyle(color)
-                .frame(width: 58, height: 58).background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
+                .frame(width: 58, height: 58).background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.subheadline.bold())
                 Text(detail).font(.caption).foregroundStyle(.white.opacity(0.65))
@@ -971,12 +970,12 @@ struct DailyPracticeView: View {
             Image(systemName: "arrow.up.right").font(.caption.bold()).foregroundStyle(.white.opacity(0.65))
         }
         .padding(12).frame(maxWidth: .infinity, minHeight: 82, alignment: .leading)
-        .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 18))
+        .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 }
 struct LayerChallengeView: View {
-    var body: some View { ScrollView { VStack(alignment: .leading, spacing: 18) { Text("Place the layers").font(.largeTitle.bold()); ForEach([("Front-end", "What people see and use"), ("Back-end", "Logic, data, and rules"), ("Full-stack", "The bridge across both sides")], id: \.0) { layer in HStack { Image(systemName: "square.stack.3d.up.fill").foregroundStyle(.mint); VStack(alignment: .leading) { Text(layer.0).font(.headline); Text(layer.1).foregroundStyle(.secondary) } }.padding().frame(maxWidth: .infinity, alignment: .leading).background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 18)) } }.padding(24) }.navigationTitle("Layer challenge") }
+    var body: some View { ScrollView { VStack(alignment: .leading, spacing: 18) { Text("Place the layers").font(.largeTitle.bold()); ForEach([("Front-end", "What people see and use"), ("Back-end", "Logic, data, and rules"), ("Full-stack", "The bridge across both sides")], id: \.0) { layer in HStack { Image(systemName: "square.stack.3d.up.fill").foregroundStyle(.mint); VStack(alignment: .leading) { Text(layer.0).font(.headline); Text(layer.1).foregroundStyle(.secondary) } }.padding().frame(maxWidth: .infinity, alignment: .leading).background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous)) } }.padding(24) }.navigationTitle("Layer challenge") }
 }
 enum ProjectTrack: String, CaseIterable { case design = "Design Games"; case build = "Building Games" }
 struct ProjectPlaygroundView: View {
@@ -1054,40 +1053,40 @@ struct ProjectPlaygroundView: View {
                 } else {
                 HStack(alignment: .bottom, spacing: 16) {
                     VStack(alignment: .leading, spacing: 9) {
-                        Text("COURSE 03 · PROJECT PLAYGROUND").font(.caption.bold()).tracking(1.3).foregroundStyle(.blue)
+                        Text("Course 3").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                         Text("Game Project Lab").font(.largeTitle.bold())
                         Text("Write real code, test your ideas, and play what you build. 30 design missions and 30 game builds take you from your first edit to a pocket portfolio.").font(.title3).foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 0)
-                    if sizeClass != .compact { Label("60 projects\n30 design · 30 build", systemImage: "sparkle").font(.subheadline.bold()).padding(18).background(.mint.opacity(0.12), in: RoundedRectangle(cornerRadius: 20)) }
+                    if sizeClass != .compact { Label("60 projects\n30 design · 30 build", systemImage: "sparkle").font(.subheadline.bold()).padding(18).background(.mint.opacity(0.12), in: RoundedRectangle(cornerRadius: 20, style: .continuous)) }
                 }
                 HStack(spacing: 12) { ForEach(ProjectTrack.allCases, id: \.self) { item in
                     Button { switchTrack(item) } label: {
                         HStack { Image(systemName: item == .design ? "pencil.and.outline" : "curlybraces"); Text(item.rawValue).font(.headline); Spacer(); Text("30 missions").font(.caption.monospaced()).foregroundStyle(.secondary) }
-                            .padding(16).frame(maxWidth: .infinity).background(track == item ? Color.mint.opacity(0.16) : Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 18))
-                            .overlay(RoundedRectangle(cornerRadius: 18).stroke(track == item ? Color.mint : Color.white.opacity(0.12), lineWidth: 1.5))
+                            .padding(16).frame(maxWidth: .infinity).background(track == item ? Color.mint.opacity(0.16) : Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(track == item ? Color.mint : Color.white.opacity(0.12), lineWidth: 1.5))
                     }.buttonStyle(.plain)
                 }}
                 VStack(alignment: .leading, spacing: 22) {
-                    HStack { Text(track == .design ? "DESIGN STUDIO · CSS" : "BUILD STUDIO · JAVASCRIPT").font(.caption.bold()).tracking(1.3).foregroundStyle(.blue); Spacer(); Text("1 / 30").font(.body.monospaced()).foregroundStyle(.mint).padding(.horizontal, 14).padding(.vertical, 9).background(.mint.opacity(0.12), in: RoundedRectangle(cornerRadius: 12)) }
-                    Text(track == .design ? "🎨 Palette Pop" : "🕹️ Tap Dash").font(.largeTitle.bold())
+                    HStack { Text(track == .design ? "CSS" : "JavaScript").font(.footnote.weight(.semibold)).foregroundStyle(.secondary); Spacer(); Text("1 / 30").font(.body.monospaced()).foregroundStyle(.mint).padding(.horizontal, 14).padding(.vertical, 9).background(.mint.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous)) }
+                    Text(track == .design ? "Palette Pop" : "Tap Dash").font(.largeTitle.bold())
                     Text(track == .design ? "A tiny arcade café needs a three-color look that feels fizzy and friendly. Build a color mission that makes one bright choice without losing readability." : "Build a one-button reflex game. Tap the target, update the score, and make each successful hit feel quick and satisfying.")
                         .font(.title3).foregroundStyle(.secondary).lineSpacing(6)
-                    HStack { ForEach(["01 Learn & edit", "02 Run checks", "03 Play & remix"], id: \.self) { Text($0).font(.caption.bold()).padding(10).background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 10)) } }
+                    HStack { ForEach(["01 Learn & edit", "02 Run checks", "03 Play & remix"], id: \.self) { Text($0).font(.caption.bold()).padding(10).background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous)) } }
                     ForEach(1...3, id: \.self) { step in
                         VStack(alignment: .leading, spacing: 12) {
-                            Button { withAnimation(.easeOut(duration: 0.18)) { openStep = openStep == step ? 0 : step } } label: {
-                                HStack { Text("\(step)").foregroundStyle(.blue).frame(width: 34, height: 34).background(.blue.opacity(0.12), in: RoundedRectangle(cornerRadius: 9)); Text(stepTitle(step)).font(.headline); Spacer(); Image(systemName: openStep == step ? "chevron.up" : "chevron.down") }.frame(maxWidth: .infinity)
+                            Button { withAnimation(.smooth(duration: 0.18)) { openStep = openStep == step ? 0 : step } } label: {
+                                HStack { Text("\(step)").foregroundStyle(.blue).frame(width: 34, height: 34).background(.blue.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous)); Text(stepTitle(step)).font(.headline); Spacer(); Image(systemName: openStep == step ? "chevron.up" : "chevron.down") }.frame(maxWidth: .infinity)
                             }.buttonStyle(.plain)
                             if openStep == step {
                                 Text(stepInstruction(step)).foregroundStyle(.secondary)
                                 DisclosureGroup("Show a worked example") { Text(workedExample(step)).font(.system(.subheadline, design: .monospaced)).foregroundStyle(.mint).padding(.top, 8).textSelection(.enabled) }
                             }
-                        }.padding(16).background(Color.white.opacity(0.035), in: RoundedRectangle(cornerRadius: 18)).overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(0.12)))
+                        }.padding(16).background(Color.white.opacity(0.035), in: RoundedRectangle(cornerRadius: 20, style: .continuous)).overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.12)))
                     }
                     codeWorkspace
                     playableResult
-                }.padding(sizeClass == .compact ? 18 : 28).background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 28))
+                }.padding(sizeClass == .compact ? 18 : 28).background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
                 }
             }.padding(22).frame(maxWidth: 1000)
             .frame(maxWidth: .infinity)
@@ -1098,8 +1097,8 @@ struct ProjectPlaygroundView: View {
         VStack(alignment: .leading, spacing: 20) {
             GitHubStudioPanel()
             VStack(alignment: .leading, spacing: 8) {
-                Text("YOUR LOCAL CODE WORKSPACE").font(.caption.bold()).tracking(1.3).foregroundStyle(.mint)
-                Text("Write it. Check it. Make it yours.").font(.system(.largeTitle, design: .rounded, weight: .bold))
+                Text("Studio").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                Text("Write CSS or JavaScript and see it run").font(.largeTitle.bold())
                 Text("Use your keyboard in the editor or terminal practice box. Each check reads the source you wrote.")
                     .foregroundStyle(.secondary)
             }
@@ -1152,14 +1151,14 @@ struct ProjectPlaygroundView: View {
                         .accessibilityLabel("Terminal practice code")
                 }
                 .padding(8)
-                .background(Color(red: 0.055, green: 0.09, blue: 0.15), in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.15)))
+                .background(Color(red: 0.055, green: 0.09, blue: 0.15), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.white.opacity(0.15)))
                 Button("Apply practice code & run checks", systemImage: "play.fill") { applyTerminalCode() }
                     .buttonStyle(.studioPrimary)
                     .disabled(terminalCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 HStack { Text("sprint $").font(.body.monospaced()).foregroundStyle(.mint); TextField("Type help, test, play, preview", text: $terminal).textFieldStyle(.plain).font(.body.monospaced()).onSubmit { runCommand() }; Button("Run") { runCommand() }.buttonStyle(.studioSecondary) }
             }.padding(16).background(Color(red: 0.035, green: 0.065, blue: 0.11))
-        }.clipShape(RoundedRectangle(cornerRadius: 22)).overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.white.opacity(0.16)))
+        }.clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous)).overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.16)))
     }
     private var playableResult: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -1468,7 +1467,7 @@ struct LearnView: View {
         let done  = store.completed.contains(lesson.id)
         Button {
             HapticManager.shared.selection()
-            withAnimation(reduceMotion ? .easeOut(duration: 0.12) : .spring(response: 0.32, dampingFraction: 0.82)) { selectedID = lesson.id }
+            withAnimation(reduceMotion ? .smooth(duration: 0.12) : .spring(response: 0.32, dampingFraction: 0.82)) { selectedID = lesson.id }
         } label: {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
@@ -1484,8 +1483,8 @@ struct LearnView: View {
             }
             .padding(16).frame(maxWidth: .infinity, minHeight: 160, alignment: .leading)
             .background(selectedID == lesson.id ? color.opacity(0.16) : SprintPalette.card.opacity(0.82),
-                        in: RoundedRectangle(cornerRadius: 22))
-            .overlay(RoundedRectangle(cornerRadius: 22)
+                        in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(selectedID == lesson.id ? color : Color.secondary.opacity(0.18),
                         lineWidth: selectedID == lesson.id ? 2 : 1.2))
         }
@@ -1496,31 +1495,23 @@ struct LearnView: View {
 
     private var heroCard: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("YOUR POCKET CODING ARCADE").font(.caption.bold()).tracking(1.5).foregroundStyle(.mint)
+            Text("Today").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
             HStack(alignment: .center, spacing: 18) {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Little lessons.\nReal superpowers.").font(.system(.largeTitle, design: .rounded, weight: .bold))
-                    Text("Learn a little. Build something yours.").font(.title3).foregroundStyle(.secondary)
-                    Text("No hearts to lose. Mistakes are welcome.").font(.subheadline).foregroundStyle(.secondary)
+                    Text(store.completed.isEmpty ? "Start learning" : "Pick up where you left off").font(.title.bold())
+                    Text("Short lessons with real code. Wrong answers don’t cost anything.")
+                        .font(.subheadline).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 4)
-                VStack(spacing: 2) {
-                    BiteAvatar().frame(width: 74, height: 100)
-                    Text("I've got you.").font(.caption.bold()).foregroundStyle(.mint)
-                }
+                BiteAvatar().frame(width: 60, height: 82)
             }
-            Text("Tap a card, make a prediction, then try the idea yourself.").font(.subheadline).foregroundStyle(.secondary)
             HStack(spacing: 12) {
                 ProgressView(value: Double(store.completed.count), total: Double(total)).tint(.mint)
-                Text("\(store.completed.count) / \(total)").font(.system(.caption, design: .monospaced).bold())
+                Text("\(store.completed.count) of \(total)").font(.caption.weight(.semibold).monospacedDigit()).foregroundStyle(.secondary)
             }
-            Text(store.completed.isEmpty ? "Your first tiny win is waiting." : "Nice streak\u{2014}every completed card powers up Bit.")
-                .font(.caption.bold()).foregroundStyle(.mint)
         }
         .padding(22)
-        .background(LinearGradient(colors: [Color.indigo.opacity(0.35), Color.mint.opacity(0.12)],
-                                   startPoint: .topLeading, endPoint: .bottomTrailing),
-                    in: RoundedRectangle(cornerRadius: 28))
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
     private var challengeButton: some View {
@@ -1535,8 +1526,8 @@ struct LearnView: View {
                 Image(systemName: "chevron.right").foregroundStyle(.secondary)
             }
             .padding(14)
-            .background(Color.yellow.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.yellow.opacity(0.2)))
+            .background(Color.yellow.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.yellow.opacity(0.2)))
         }
         .buttonStyle(.plain)
         .sheet(isPresented: $showingChallenge) { AdaptiveQuizView() }
@@ -1551,7 +1542,7 @@ struct LearnView: View {
                     ForEach(["All", "beginner", "intermediate", "advanced"], id: \.self) { level in
                         let selected = level == "All" ? difficultyFilter == nil : difficultyFilter == level
                         Button {
-                            withAnimation(.easeOut(duration: 0.15)) {
+                            withAnimation(.smooth(duration: 0.15)) {
                                 difficultyFilter = level == "All" ? nil : level
                             }
                         } label: {
@@ -1582,7 +1573,7 @@ struct LearnView: View {
                     } else {
                         Button {
                             HapticManager.shared.selection()
-                            withAnimation(.easeOut(duration: 0.2)) { category = name; selectedID = nil; difficultyFilter = nil }
+                            withAnimation(.smooth(duration: 0.2)) { category = name; selectedID = nil; difficultyFilter = nil }
                         } label: {
                             Label(shortName(name), systemImage: categoryIcon(name))
                                 .font(.subheadline.bold()).padding(.horizontal, 15).padding(.vertical, 11)
@@ -1600,7 +1591,7 @@ struct LearnView: View {
     private var trackHeader: some View {
         HStack(alignment: .bottom) {
             VStack(alignment: .leading, spacing: 5) {
-                Text(category.uppercased()).font(.caption.bold()).tracking(1.2).foregroundStyle(lessonColor(forCategory: category))
+                Text(category.uppercased()).font(.caption.bold()).tracking(0.4).foregroundStyle(lessonColor(forCategory: category))
                 Text("Choose your next challenge").font(.title2.bold())
             }
             Spacer()
@@ -1614,13 +1605,13 @@ struct LearnView: View {
             HStack {
                 Label("READY TO LEARN", systemImage: "sparkles").font(.caption.bold()).foregroundStyle(lessonColor(selected))
                 Spacer()
-                Button { withAnimation { selectedID = nil } } label: {
+                Button { withAnimation(.smooth) { selectedID = nil } } label: {
                     Image(systemName: "xmark.circle.fill").font(.title2)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Close lesson preview")
             }
-            Text(selected.term).font(.system(.largeTitle, design: .rounded, weight: .bold))
+            Text(selected.term).font(.largeTitle.bold())
             Text(selected.definition).font(.title3)
             Text("Prediction: \(selected.clue)").font(.subheadline).foregroundStyle(.secondary)
             ReadAloudButton(text: "\(selected.term). \(selected.definition)")
@@ -1630,8 +1621,8 @@ struct LearnView: View {
             }.buttonStyle(.borderedProminent).tint(lessonColor(selected))
         }
         .padding(20)
-        .background(lessonColor(selected).opacity(0.13), in: RoundedRectangle(cornerRadius: 24))
-        .overlay(RoundedRectangle(cornerRadius: 24).stroke(lessonColor(selected).opacity(0.75), lineWidth: 2))
+        .background(lessonColor(selected).opacity(0.13), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(lessonColor(selected).opacity(0.75), lineWidth: 2))
         .transition(.scale(scale: 0.96).combined(with: .opacity))
     }
 
@@ -1639,14 +1630,14 @@ struct LearnView: View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("MY CODING STREAK").font(.caption.bold()).tracking(1.3).foregroundStyle(.secondary)
+                    Text("Streak").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                     Text("\(store.currentStreak) \(store.currentStreak == 1 ? "day" : "days")")
                         .font(.system(size: 46, weight: .bold, design: .rounded))
                 }
                 Spacer()
                 Image(systemName: "flame.fill").font(.system(size: 34)).foregroundStyle(.orange)
                     .frame(width: 64, height: 64)
-                    .background(.orange.opacity(0.14), in: RoundedRectangle(cornerRadius: 20))
+                    .background(.orange.opacity(0.14), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             }
             Text(store.currentStreak == 0
                  ? "Your first tiny win starts today. You belong here."
@@ -1668,14 +1659,14 @@ struct LearnView: View {
             }.buttonStyle(.bordered)
         }
         .padding(20)
-        .background(Color.orange.opacity(0.11), in: RoundedRectangle(cornerRadius: 26))
-        .overlay(RoundedRectangle(cornerRadius: 26).stroke(Color.orange.opacity(0.35), lineWidth: 1.5))
+        .background(Color.orange.opacity(0.11), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color.orange.opacity(0.35), lineWidth: 1.5))
     }
 
     private var recallArcadeSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("RECALL ARCADE").font(.caption.bold()).tracking(1.3).foregroundStyle(.orange)
-            Text("Ready for a boss round?").font(.title2.bold())
+            Text("Review").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+            Text("Quizzes").font(.title2.bold())
             NavigationLink {
                 QuizView(questions: store.curriculum?.questions.filter { $0.id.hasPrefix("web-") } ?? [])
             } label: {
@@ -1693,7 +1684,7 @@ struct LearnView: View {
             if let exportError { Text(exportError).foregroundStyle(.red) }
         }
         .padding(20)
-        .background(Color.orange.opacity(0.09), in: RoundedRectangle(cornerRadius: 24))
+        .background(Color.orange.opacity(0.09), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
     private func shortName(_ value: String) -> String {
@@ -1753,8 +1744,8 @@ struct LessonView: View {
                     Text(lesson.definition).font(.title3)
                     if !lesson.code.isEmpty {
                         Text("Recreate this example").font(.headline)
-                        Text(lesson.code).font(.system(.body, design: .monospaced)).textSelection(.enabled).padding().frame(maxWidth: .infinity, alignment: .leading).background(.indigo.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
-                        TextEditor(text: $code).font(.system(.body, design: .monospaced)).autocorrectionDisabled().textInputAutocapitalization(.never).frame(minHeight: 170).padding(8).overlay(RoundedRectangle(cornerRadius: 12).stroke(.secondary.opacity(0.3))).accessibilityLabel("Type the lesson code")
+                        Text(lesson.code).font(.system(.body, design: .monospaced)).textSelection(.enabled).padding().frame(maxWidth: .infinity, alignment: .leading).background(.indigo.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        TextEditor(text: $code).font(.system(.body, design: .monospaced)).autocorrectionDisabled().textInputAutocapitalization(.never).frame(minHeight: 170).padding(8).overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(.secondary.opacity(0.3))).accessibilityLabel("Type the lesson code")
                         CodeRunnerView(code: $code, language: codeLanguage(lesson))
                         Text("Check your transcription or tap Run ▶ to execute it.").font(.caption).foregroundStyle(.secondary)
                         Button("Check my example") {
@@ -1799,8 +1790,8 @@ struct QuizView: View {
             VStack(alignment: .leading, spacing: 24) {
                 if questions.isEmpty { ContentUnavailableView("No questions available", systemImage: "questionmark.circle") }
                 else if index >= questions.count {
-                    Text("Round complete! 🎉").font(.largeTitle.bold())
-                    Text("\(score) / \(questions.count) correct. Every attempt is practice.")
+                    Text("Round complete").font(.largeTitle.bold())
+                    Text("\(score) of \(questions.count) correct")
                     Button("Play again") { index = 0; score = 0; selected = nil }.buttonStyle(.borderedProminent)
                 } else {
                     let q = questions[index]
@@ -2104,7 +2095,7 @@ struct WelcomeAdventure: View {
     var body: some View {
         VStack(spacing: 16) {
             HStack {
-                Text("YOUR FIRST SPARK").font(.caption.bold()).foregroundStyle(.mint)
+                Text("Welcome").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                 Spacer()
                 Button("Skip welcome") { finished = true }
             }
@@ -2123,35 +2114,35 @@ struct WelcomeAdventure: View {
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal, 24)
                                 .padding(.vertical, 14)
-                                .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+                                .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                                 .overlay(alignment: .bottom) { Triangle().fill(SprintPalette.card).frame(width: 22, height: 12).offset(y: 10) }
                             Text("I’m Bit, your coding buddy. We’ll learn a small idea, type it ourselves, and turn it into something you can play.").multilineTextAlignment(.center).foregroundStyle(.secondary)
                         }.frame(maxWidth: .infinity).padding(.top, 20)
                     } else if step == 1 {
                         SignInOptionsView(onComplete: { step += 1 })
                     } else if step == 2 {
-                        Text("Choose your learning space").font(.system(.largeTitle, design: .rounded).bold())
+                        Text("Choose your learning space").font(.largeTitle.bold())
                         Text("Pick the home screen that feels easiest on your eyes. You can switch anytime with the button in the top-right corner.").foregroundStyle(.secondary)
                         HStack(alignment: .top, spacing: 14) {
                             themeChoice("dark", title: "Dark mode")
                             themeChoice("light", title: "Light mode")
                         }
                     } else if step == 3 {
-                        Text("What will you make?").font(.system(.largeTitle, design: .rounded).bold())
+                        Text("What will you make?").font(.largeTitle.bold())
                         Text("Choose a starting intention. Every course stays available, and you can change this later.").foregroundStyle(.secondary)
                         ForEach(["Build my first website", "Make games", "Refresh my coding skills"], id: \.self) { choice in
                             choiceButton(choice, selected: goal == choice) { goal = choice }
                         }
                     } else if step == 4 {
-                        Text("A little time.\nA real habit.").font(.system(.largeTitle, design: .rounded).bold())
+                        Text("How much time a day?").font(.largeTitle.bold())
                         Text("Choose a daily intention. No timers or penalties — just a little room to explore.").foregroundStyle(.secondary)
                         ForEach([3, 5, 10], id: \.self) { value in
                             choiceButton("\(value) minutes · \(value == 3 ? "Tiny spark" : value == 5 ? "Steady builder" : "Curious explorer")", selected: minutes == value) { minutes = value }
                         }
                     } else {
-                        Text("Your first tiny win.").font(.system(.largeTitle, design: .rounded).bold())
+                        Text("Try one").font(.largeTitle.bold())
                         Text("Python can do math! What will this code print?").foregroundStyle(.secondary)
-                        Text("print(2 + 3)").font(.system(.title2, design: .monospaced)).padding().frame(maxWidth: .infinity).background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16))
+                        Text("print(2 + 3)").font(.system(.title2, design: .monospaced)).padding().frame(maxWidth: .infinity).background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                         ForEach(["23", "5", "Hello"], id: \.self) { choice in
                             choiceButton(choice, selected: correct && choice == "5") {
                                 correct = choice == "5"
@@ -2182,18 +2173,18 @@ struct WelcomeAdventure: View {
         Button(action: action) {
             HStack { Text(title); Spacer(); if selected { Image(systemName: "checkmark.circle.fill") } }
                 .padding(18).frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
-                .background(selected ? Color.mint.opacity(0.2) : SprintPalette.card, in: RoundedRectangle(cornerRadius: 16))
-                .overlay(RoundedRectangle(cornerRadius: 16).stroke(selected ? Color.mint : .clear, lineWidth: 2))
+                .background(selected ? Color.mint.opacity(0.2) : SprintPalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(selected ? Color.mint : .clear, lineWidth: 2))
         }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : [])
     }
     private func themeChoice(_ mode: String, title: String) -> some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.2)) { appearance = mode }
+            withAnimation(.smooth(duration: 0.2)) { appearance = mode }
         } label: {
             VStack(alignment: .leading, spacing: 12) {
                 ThemeHomePreview(dark: mode == "dark")
                 HStack { Text(title).font(.headline); Spacer(); Image(systemName: appearance == mode ? "checkmark.circle.fill" : "circle").foregroundStyle(appearance == mode ? .mint : .secondary) }
-            }.padding(10).background(appearance == mode ? Color.mint.opacity(0.15) : Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 20)).overlay(RoundedRectangle(cornerRadius: 20).stroke(appearance == mode ? Color.mint : Color.primary.opacity(0.12), lineWidth: 2))
+            }.padding(10).background(appearance == mode ? Color.mint.opacity(0.15) : Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 20, style: .continuous)).overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(appearance == mode ? Color.mint : Color.primary.opacity(0.12), lineWidth: 2))
         }.buttonStyle(.plain).accessibilityAddTraits(appearance == mode ? .isSelected : [])
     }
 }
@@ -2202,11 +2193,11 @@ struct ThemeHomePreview: View {
     let dark: Bool
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
-            HStack { Circle().fill(.mint).frame(width: 10); RoundedRectangle(cornerRadius: 3).fill(foreground.opacity(0.7)).frame(width: 45, height: 7); Spacer(); Image(systemName: "line.3.horizontal").font(.caption) }
-            RoundedRectangle(cornerRadius: 10).fill(panel).frame(height: 54).overlay(alignment: .leading) { VStack(alignment: .leading, spacing: 5) { RoundedRectangle(cornerRadius: 2).fill(foreground).frame(width: 70, height: 7); RoundedRectangle(cornerRadius: 2).fill(foreground.opacity(0.45)).frame(width: 92, height: 5) }.padding(10) }
-            HStack { ForEach(0..<3) { _ in RoundedRectangle(cornerRadius: 7).fill(panel).frame(height: 46) } }
+            HStack { Circle().fill(.mint).frame(width: 10); RoundedRectangle(cornerRadius: 3, style: .continuous).fill(foreground.opacity(0.7)).frame(width: 45, height: 7); Spacer(); Image(systemName: "line.3.horizontal").font(.caption) }
+            RoundedRectangle(cornerRadius: 12, style: .continuous).fill(panel).frame(height: 54).overlay(alignment: .leading) { VStack(alignment: .leading, spacing: 5) { RoundedRectangle(cornerRadius: 2, style: .continuous).fill(foreground).frame(width: 70, height: 7); RoundedRectangle(cornerRadius: 2, style: .continuous).fill(foreground.opacity(0.45)).frame(width: 92, height: 5) }.padding(10) }
+            HStack { ForEach(0..<3) { _ in RoundedRectangle(cornerRadius: 8, style: .continuous).fill(panel).frame(height: 46) } }
             HStack { Image(systemName: "sparkles"); Spacer(); Image(systemName: "curlybraces"); Spacer(); Image(systemName: "person.crop.circle") }.font(.caption).padding(.top, 3)
-        }.foregroundStyle(foreground).padding(12).frame(maxWidth: .infinity, minHeight: 150).background(background, in: RoundedRectangle(cornerRadius: 15))
+        }.foregroundStyle(foreground).padding(12).frame(maxWidth: .infinity, minHeight: 150).background(background, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
     private var background: Color { dark ? Color(red: 0.08, green: 0.11, blue: 0.19) : Color(red: 0.96, green: 0.97, blue: 0.99) }
     private var panel: Color { dark ? Color(red: 0.18, green: 0.23, blue: 0.36) : .white }

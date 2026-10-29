@@ -105,10 +105,10 @@ private struct ScreenshotMockLessonCard: View {
                 .font(.subheadline).foregroundStyle(.secondary)
             Text("var name: String? = nil").font(.system(.body, design: .monospaced))
                 .padding(10).frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .padding(20)
-        .background(Color(red: 0.09, green: 0.14, blue: 0.24), in: RoundedRectangle(cornerRadius: 22))
+        .background(Color(red: 0.09, green: 0.14, blue: 0.24), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
 
@@ -151,7 +151,7 @@ private struct ScreenshotLeaderRow: View {
         }
         .padding(14)
         .background(isYou ? Color.mint.opacity(0.1) : Color.white.opacity(0.04),
-                    in: RoundedRectangle(cornerRadius: 14))
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 

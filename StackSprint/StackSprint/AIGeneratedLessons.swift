@@ -151,7 +151,7 @@ struct GenerateLessonView: View {
             Spacer()
         }
         .padding(14)
-        .background(Color.orange.opacity(0.10), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.orange.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     var body: some View {
@@ -200,7 +200,7 @@ struct GenerateLessonView: View {
                 HapticManager.shared.impact()
                 Task { await vm.generate() }
             } label: {
-                Label("Generate with Bit ✦", systemImage: "sparkles")
+                Label("Generate with Bit", systemImage: "sparkles")
                     .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12)
             }
             .buttonStyle(.borderedProminent).tint(.purple)
@@ -208,7 +208,7 @@ struct GenerateLessonView: View {
             .accessibilityIdentifier("generate-lesson-button")
         }
         .padding(16)
-        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private var generatingIndicator: some View {
@@ -229,7 +229,7 @@ struct GenerateLessonView: View {
                 Text(gen.code)
                     .font(.system(.body, design: .monospaced))
                     .padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.purple.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
+                    .background(Color.purple.opacity(0.07), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
             HStack(spacing: 12) {
                 Button("Save to My Lessons") {
@@ -247,7 +247,7 @@ struct GenerateLessonView: View {
             }
         }
         .padding(16)
-        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
@@ -257,6 +257,6 @@ struct GenerateLessonView: View {
             Text("\"\(lesson.term)\" saved to My Lessons!").font(.subheadline.bold())
         }
         .padding(14)
-        .background(Color.mint.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.mint.opacity(0.1), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }

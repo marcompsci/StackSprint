@@ -42,7 +42,7 @@ private struct StudioKey: View {
 
     private var depth: CGFloat { isEnabled ? (role == .quiet ? 3 : 5) : 2 }
     private var pressed: Bool { configuration.isPressed && isEnabled }
-    private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: role == .icon ? 13 : 15, style: .continuous) }
+    private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: role == .icon ? 12 : 16, style: .continuous) }
 
     var body: some View {
         let travel: CGFloat = pressed ? depth - 1 : 0
@@ -52,8 +52,7 @@ private struct StudioKey: View {
             .background { shape.fill(lipColor).offset(y: depth - travel) }
             .offset(y: travel)
             .padding(.bottom, depth)
-        .shadow(color: glowColor, radius: pressed ? 3 : 10, y: pressed ? 1 : 4)
-        .animation(reduceMotion ? nil : .spring(response: 0.16, dampingFraction: 0.62), value: pressed)
+        .animation(reduceMotion ? nil : .spring(response: 0.16, dampingFraction: 1), value: pressed)
         .sensoryFeedback(.impact(weight: .light, intensity: 0.8), trigger: configuration.isPressed) { _, isDown in isDown && isEnabled }
         .contentShape(shape)
     }
@@ -71,7 +70,7 @@ private struct StudioKey: View {
                 ZStack {
                     shape.fill(faceColor)
                     // Soft top highlight sells the raised, glossy key.
-                    shape.fill(LinearGradient(colors: [.white.opacity(isEnabled ? 0.22 : 0.06), .clear],
+                    shape.fill(LinearGradient(colors: [.white.opacity(isEnabled ? 0.10 : 0.03), .clear],
                                               startPoint: .top, endPoint: .center))
                 }
             }
@@ -109,10 +108,6 @@ private struct StudioKey: View {
         case .secondary, .icon: return tint.opacity(0.35)
         case .quiet: return Color.white.opacity(0.14)
         }
-    }
-    private var glowColor: Color {
-        guard isEnabled, role == .primary else { return .clear }
-        return tint.opacity(pressed ? 0.18 : 0.42)
     }
 }
 
@@ -396,7 +391,7 @@ struct StudioPreviewPanel: View {
             .font(.caption.monospaced())
             .foregroundStyle(.white.opacity(0.7))
             .padding(.horizontal, 10).frame(height: 30)
-            .background(Color.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .background(Color.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             Button {
                 reloadToken += 1
             } label: {

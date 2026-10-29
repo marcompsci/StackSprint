@@ -26,12 +26,12 @@ enum ThemePreset: String, CaseIterable, Identifiable {
 
     var icon: String {
         switch self {
-        case .default:  return "🌌"
-        case .midnight: return "🌙"
-        case .ocean:    return "🌊"
-        case .neon:     return "⚡️"
-        case .forest:   return "🌲"
-        case .sakura:   return "🌸"
+        case .default:  return "sparkles"
+        case .midnight: return "moon.fill"
+        case .ocean:    return "water.waves"
+        case .neon:     return "bolt.fill"
+        case .forest:   return "tree.fill"
+        case .sakura:   return "camera.macro"
         }
     }
 
@@ -144,7 +144,7 @@ struct ThemePickerSection: View {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 80), spacing: 12)], spacing: 12) {
                 ForEach(ThemePreset.allCases) { preset in
                     ThemeChip(preset: preset, isSelected: themeStore.preset == preset) {
-                        withAnimation(.easeInOut(duration: 0.2)) {
+                        withAnimation(.smooth(duration: 0.2)) {
                             themeStore.preset = preset
                             HapticManager.shared.selection()
                         }
@@ -176,7 +176,7 @@ private struct ThemeChip: View {
                                 lineWidth: 3
                             )
                         )
-                    Text(preset.icon).font(.title3)
+                    Circle().fill(preset.accent).frame(width: 14, height: 14)
                 }
                 Text(preset.displayName)
                     .font(.system(size: 10, weight: isSelected ? .bold : .regular))

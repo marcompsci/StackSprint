@@ -21,10 +21,10 @@ enum AppIconVariant: String, CaseIterable, Identifiable {
     var displayName: String {
         switch self {
         case .default:  return "Default"
-        case .neon:     return "Neon ⚡️"
-        case .midnight: return "Midnight 🌙"
+        case .neon:     return "Neon"
+        case .midnight: return "Midnight"
         case .minimal:  return "Minimal"
-        case .season1:  return "Season 1 👑"
+        case .season1:  return "Season 1"
         }
     }
     var iconName: String? {
@@ -146,11 +146,11 @@ private struct IconPreviewCell: View {
         Button(action: action) {
             VStack(spacing: 8) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 14)
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .fill(variant.previewBackground)
                         .frame(width: 60, height: 60)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 14)
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
                                 .strokeBorder(
                                     isSelected ? variant.previewColor : Color.white.opacity(0.08),
                                     lineWidth: isSelected ? 2.5 : 1

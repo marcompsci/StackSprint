@@ -21,7 +21,7 @@ struct LearningPathSection: View {
                 }
                 .padding(16)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16))
+                .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             } else if let rec = advisor.recommendation {
                 RecommendationCard(rec: rec) {
                     advisor.refresh(completed: store.completed,
@@ -91,8 +91,8 @@ private struct RecommendationCard: View {
             }
         }
         .padding(16)
-        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16)
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
             .stroke(rec.aiPowered ? Color.mint.opacity(0.25) : Color.yellow.opacity(0.2)))
     }
 }

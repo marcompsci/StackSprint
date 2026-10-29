@@ -86,7 +86,7 @@ struct StreakWidgetView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Text("🔥").font(.title2)
+                Image(systemName: "flame.fill").font(.title2).foregroundStyle(.orange)
                 Text("\(entry.streak)").font(.system(.title, design: .rounded, weight: .black))
                 Text("day streak").font(.caption.bold()).foregroundStyle(.secondary)
             }

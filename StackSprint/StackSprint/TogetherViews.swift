@@ -32,11 +32,11 @@ struct SocialHubView: View {
     private var heroSection: some View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("BETTER WITH A BUDDY")
-                    .font(.caption.bold()).tracking(1.3).foregroundStyle(.mint)
-                Text("Build a little.\nCheer loud.")
-                    .font(.system(.title, design: .rounded).bold())
-                Text("Learning with someone makes both of you more consistent. One friend doubles completion rates.")
+                Text("Together")
+                    .font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                Text("Practice with a friend")
+                    .font(.title.bold())
+                Text("Send a challenge or share your streak. Nothing is shared unless you choose to.")
                     .font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
@@ -76,8 +76,8 @@ struct SocialHubView: View {
             weekCalendar
         }
         .padding(18)
-        .background(Color.orange.opacity(0.07), in: RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.orange.opacity(0.18)))
+        .background(Color.orange.opacity(0.07), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.orange.opacity(0.18)))
     }
 
     private var weekCalendar: some View {
@@ -129,7 +129,7 @@ struct SocialHubView: View {
     }
 
     private var streakShareText: String {
-        "I've been coding for \(store.currentStreak) day\(store.currentStreak == 1 ? "" : "s") in a row with StackSprint! 🔥 Come join me."
+        "I've been coding for \(store.currentStreak) day\(store.currentStreak == 1 ? "" : "s") in a row with StackSprint! Come join me."
     }
 
     // MARK: – Co-op Quests
@@ -182,12 +182,12 @@ struct SocialHubView: View {
             }
         }
         .padding(18)
-        .background(Color.yellow.opacity(0.06), in: RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.yellow.opacity(0.18)))
+        .background(Color.yellow.opacity(0.06), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.yellow.opacity(0.18)))
     }
 
     private func challengeText(days: Int) -> String {
-        "I'm issuing you a \(days)-day coding streak challenge! 🏆\n\nPractice every day for \(days) days in StackSprint. I'm at \(store.currentStreak) days — can you beat me? Let's go."
+        "I'm issuing you a \(days)-day coding streak challenge!\n\nPractice every day for \(days) days in StackSprint. I'm at \(store.currentStreak) days — can you beat me? Let's go."
     }
 
     // MARK: – Friend Invite
@@ -208,7 +208,7 @@ struct SocialHubView: View {
                     }
                     .padding(14)
                     .frame(maxWidth: .infinity)
-                    .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 14))
+                    .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
                 .buttonStyle(.plain)
 
@@ -222,7 +222,7 @@ struct SocialHubView: View {
                     }
                     .padding(14)
                     .frame(maxWidth: .infinity)
-                    .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 14))
+                    .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
                 .buttonStyle(.plain)
 
@@ -238,8 +238,8 @@ struct SocialHubView: View {
                         .padding(14)
                         .frame(maxWidth: .infinity)
                         .background(Color(red: 0.09, green: 0.09, blue: 0.09).opacity(0.5),
-                                    in: RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.08)))
+                                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.white.opacity(0.08)))
                     }
                     .buttonStyle(.plain)
                 }
@@ -266,7 +266,7 @@ struct SocialHubView: View {
                 .font(.caption).foregroundStyle(.secondary)
         }
         .padding(14)
-        .background(Color.secondary.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.secondary.opacity(0.07), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
@@ -280,21 +280,21 @@ struct CoopQuest: Identifiable {
     let shareMessage: String
 
     static let all: [CoopQuest] = [
-        CoopQuest(id: "python", emoji: "🐍", title: "Python buddy run",
+        CoopQuest(id: "python", emoji: "chevron.left.forwardslash.chevron.right", title: "Python buddy run",
                   instruction: "Practice Python for 5 minutes each. Share one thing you learned.",
-                  shareMessage: "🐍 Python buddy quest: practice for 5 minutes then show each other something you made! I'm using StackSprint."),
-        CoopQuest(id: "css", emoji: "🎨", title: "CSS colour swap",
+                  shareMessage: "Python buddy quest: practice for 5 minutes then show each other something you made! I'm using StackSprint."),
+        CoopQuest(id: "css", emoji: "paintpalette.fill", title: "CSS colour swap",
                   instruction: "Pick a colour palette and share a screenshot of your design card.",
-                  shareMessage: "🎨 CSS quest: build a colour palette for a mini-game. Share your screenshot! I'll share mine too."),
-        CoopQuest(id: "quiz", emoji: "🔐", title: "Cybersecurity duel",
+                  shareMessage: "CSS quest: build a colour palette for a mini-game. Share your screenshot! I'll share mine too."),
+        CoopQuest(id: "quiz", emoji: "lock.shield.fill", title: "Cybersecurity duel",
                   instruction: "Both take the cybersecurity quiz and compare scores.",
-                  shareMessage: "🔐 Security quiz duel! Take the cybersecurity quiz in StackSprint and let's compare scores. Go!"),
-        CoopQuest(id: "explain", emoji: "💬", title: "Explain it simply",
+                  shareMessage: "Security quiz duel! Take the cybersecurity quiz in StackSprint and let's compare scores. Go!"),
+        CoopQuest(id: "explain", emoji: "bubble.left.and.bubble.right.fill", title: "Explain it simply",
                   instruction: "Pick any concept card and explain it in plain English to your buddy.",
-                  shareMessage: "Quiz: what is a variable? Explain it in one sentence without using the word 'container.' I'll share mine if you share yours 😄"),
-        CoopQuest(id: "build", emoji: "🏗️", title: "Build something together",
+                  shareMessage: "Quiz: what is a variable? Explain it in one sentence without using the word 'container.' I'll share mine if you share yours"),
+        CoopQuest(id: "build", emoji: "hammer.fill", title: "Build something together",
                   instruction: "Each pick a Studio track. Share your finished code at the end.",
-                  shareMessage: "🏗️ Co-op build! Pick a Studio mission in StackSprint and share your code when you're done. I'll share mine too."),
+                  shareMessage: "Co-op build! Pick a Studio mission in StackSprint and share your code when you're done. I'll share mine too."),
     ]
 }
 
@@ -306,7 +306,7 @@ private struct CoopQuestCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
-                Text(quest.emoji).font(.title2)
+                Image(systemName: quest.emoji).font(.title2).symbolRenderingMode(.hierarchical).foregroundStyle(.tint).frame(width: 32)
                 Text(quest.title).font(.headline)
                 Spacer()
                 if done {
@@ -336,8 +336,8 @@ private struct CoopQuestCard: View {
         }
         .padding(16)
         .background(done ? Color.mint.opacity(0.06) : SprintPalette.card,
-                    in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16)
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
             .stroke(done ? Color.mint.opacity(0.3) : Color.clear, lineWidth: 1.5))
     }
 }

@@ -145,7 +145,7 @@ struct WeeklyLeaderboardView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
-        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: weekly.showRankUpBanner)
+        .animation(.spring(response: 0.4, dampingFraction: 1), value: weekly.showRankUpBanner)
     }
 
     // MARK: Weekly Header Card
@@ -154,7 +154,7 @@ struct WeeklyLeaderboardView: View {
         VStack(spacing: 14) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("THIS WEEK").font(.caption.bold()).tracking(1.2).foregroundStyle(.secondary)
+                    Text("This week").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                     Text("\(weekly.weeklyXP) XP earned").font(.title2.bold())
                     Text("\(weekly.daysUntilReset) day\(weekly.daysUntilReset == 1 ? "" : "s") until reset")
                         .font(.caption).foregroundStyle(.secondary)
@@ -193,7 +193,7 @@ struct WeeklyLeaderboardView: View {
                 .font(.caption2).foregroundStyle(.tertiary)
         }
         .padding(18)
-        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20))
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     // MARK: Rank Banner
@@ -203,13 +203,13 @@ struct WeeklyLeaderboardView: View {
             HStack(spacing: 10) {
                 Image(systemName: "arrow.up.circle.fill").foregroundStyle(.mint)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("You climbed the rankings!").font(.subheadline.bold())
+                    Text("You moved up the rankings").font(.subheadline.bold())
                     Text("From #\(weekly.previousRank) → #\(weekly.currentRank) this week").font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
             }
             .padding(14)
-            .background(Color.mint.opacity(0.10), in: RoundedRectangle(cornerRadius: 14))
+            .background(Color.mint.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
     }
 
@@ -264,8 +264,8 @@ private struct WeeklyLeaderRow: View {
         }
         .padding(14)
         .background(entry.isYou ? Color.mint.opacity(0.08) : SprintPalette.card,
-                    in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(entry.isYou ? Color.mint.opacity(0.3) : Color.clear, lineWidth: 1))
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(entry.isYou ? Color.mint.opacity(0.3) : Color.clear, lineWidth: 1))
     }
 
     private func rankColor(_ rank: Int) -> Color {
@@ -282,16 +282,16 @@ struct RankUpBanner: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "arrow.up.circle.fill").foregroundStyle(.yellow).font(.title3)
-            Text("You climbed the leaderboard! 🎉").font(.subheadline.bold())
+            Text("You moved up the leaderboard").font(.subheadline.bold())
             Spacer()
-            Button("✕") { onDismiss() }.font(.caption.bold()).foregroundStyle(.secondary)
+            Button { onDismiss() } label: { Image(systemName: "xmark") }.font(.caption.bold()).foregroundStyle(.secondary).accessibilityLabel("Dismiss")
         }
         .padding(14)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .padding(.horizontal, 16)
         .offset(y: offset)
         .onAppear {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) { offset = 0 }
+            withAnimation(.spring(response: 0.4, dampingFraction: 1)) { offset = 0 }
             DispatchQueue.main.asyncAfter(deadline: .now() + 5) { onDismiss() }
         }
     }
