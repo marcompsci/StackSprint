@@ -466,3 +466,38 @@ struct StudioSplitHandle: View {
         }
     }
 }
+
+// MARK: - Orientation: portrait everywhere except the Studio tab
+
+/// Asked by iOS every time it decides whether the screen may rotate.
+final class StackSprintAppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication,
+                     supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+        OrientationLock.mask
+    }
+}
+
+@MainActor enum OrientationLock {
+    static var mask: UIInterfaceOrientationMask = .portrait
+
+    /// Studio allows sideways; everywhere else snaps back to portrait.
+    static func set(_ newMask: UIInterfaceOrientationMask) {
+        guard newMask != mask else { return }
+        mask = newMask
+        for scene in UIApplication.shared.connectedScenes {
+            guard let windowScene = scene as? UIWindowScene else { continue }
+            windowScene.keyWindow?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+            if newMask == .portrait {
+                windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait)) { _ in }
+            }
+        }
+    }
+}
+
+extension View {
+    /// Lets this screen (and anything it pushes or presents) rotate to landscape.
+    func allowsLandscape() -> some View {
+        onAppear { OrientationLock.set(.allButUpsideDown) }
+            .onDisappear { OrientationLock.set(.portrait) }
+    }
+}

@@ -10,6 +10,7 @@ import WidgetKit
 import WebKit
 
 @main struct StackSprintApp: App {
+    @UIApplicationDelegateAdaptor(StackSprintAppDelegate.self) private var appDelegate
     @StateObject private var store = LearningStore()
     @StateObject private var backend = Backend()
     @StateObject private var socialAuth = SocialAuthManager()
@@ -120,7 +121,7 @@ struct RootView: View {
     var body: some View {
         TabView {
             NavigationStack { LearnView().modifier(SprintTheme()) }.tabItem { Label("Learn", systemImage: "sparkles") }
-            NavigationStack { StudioView().modifier(SprintTheme()) }.tabItem { Label("Studio", systemImage: "curlybraces") }
+            NavigationStack { StudioView().modifier(SprintTheme()) }.allowsLandscape().tabItem { Label("Studio", systemImage: "curlybraces") }
             BitPracticeView().tabItem { Label("Practice", systemImage: "brain.head.profile") }
             NavigationStack { AnalyticsDashboardView() }.tabItem { Label("Stats", systemImage: "chart.bar.fill") }
             NavigationStack { AccountView().modifier(SprintTheme()) }.tabItem { Label("Account", systemImage: "person.crop.circle") }
