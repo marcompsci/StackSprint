@@ -10,7 +10,16 @@ import SwiftUI
     @Published var syncStatus: SyncStatus = .idle
     @Published var lastSynced: Date?
 
-    private let db = CKContainer(identifier: "iCloud.com.stacksprint.app").privateCloudDatabase
+    /// CloudKit terminates the app the moment a `CKContainer` is created for a
+    /// container the signed build isn't entitled to. The target doesn't attach
+    /// StackSprint.entitlements yet, so the container is only created when the
+    /// build opts in with `SSCloudKitEnabled = YES` in Info.plist — and only
+    /// when a sync is actually requested, never just by opening Account.
+    static let containerID = "iCloud.com.stacksprint.app"
+    static var isAvailable: Bool {
+        (Bundle.main.object(forInfoDictionaryKey: "SSCloudKitEnabled") as? Bool) == true
+    }
+    private lazy var db: CKDatabase = CKContainer(identifier: Self.containerID).privateCloudDatabase
     private let recordType = "SprintProgress"
     private let recordID = CKRecord.ID(recordName: "progress-v1")
 
@@ -45,6 +54,10 @@ import SwiftUI
     private init() {}
 
     func syncNow(store: LearningStore, bookmarks: BookmarkStore) async {
+        guard Self.isAvailable else {
+            syncStatus = .error("iCloud sync isn't turned on in this build yet")
+            return
+        }
         syncStatus = .syncing
         do {
             // Try to fetch existing record; create new one if not found
@@ -129,11 +142,13 @@ struct CloudSyncSection: View {
             } label: {
                 Label("Sync now", systemImage: "arrow.triangle.2.circlepath.icloud")
             }
-            .disabled(sync.syncStatus == .syncing)
+            .disabled(sync.syncStatus == .syncing || !CloudKitSyncManager.isAvailable)
         } header: {
             Label("iCloud Sync", systemImage: "icloud")
         } footer: {
-            Text("Progress, streaks, and bookmarks are merged across your devices — your best score always wins.")
+            Text(CloudKitSyncManager.isAvailable
+                 ? "Progress, streaks, and bookmarks are merged across your devices — your best score always wins."
+                 : "iCloud sync is coming soon. Your progress is saved on this device.")
         }
     }
 }

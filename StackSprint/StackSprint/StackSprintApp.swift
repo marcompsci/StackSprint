@@ -985,12 +985,53 @@ struct ProjectPlaygroundView: View {
     @State private var showingProjects = false
     @State private var exportFile: CodeFile?
     @State private var activeProjectID: String = UUID().uuidString
+    @State private var showingFullPreview = false
+    @AppStorage("studio.splitFraction") private var splitFraction = 0.52
+    @FocusState private var editorFocused: Bool
     init(initialTrack: ProjectTrack, studioFirst: Bool = false) {
         self.studioFirst = studioFirst
         _track = State(initialValue: initialTrack)
         _code = State(initialValue: Self.starter(for: initialTrack))
     }
     var body: some View {
+        GeometryReader { geo in
+            // Sideways phone (or a wide iPad) = code on the left, live page on the right.
+            let landscape = geo.size.width > geo.size.height && geo.size.width >= 600
+            Group {
+                if landscape { splitWorkspace(totalWidth: geo.size.width) } else { portraitScroll }
+            }
+            .toolbar(landscape ? .hidden : .visible, for: .navigationBar)
+            .toolbar(landscape ? .hidden : .visible, for: .tabBar)
+        }
+        .navigationTitle(studioFirst ? "Studio" : "Project Playground").modifier(SprintTheme())
+        .onAppear { if let saved = UserDefaults.standard.string(forKey: draftKey) { code = saved } }
+        .onChange(of: code) { _, value in
+            UserDefaults.standard.set(value, forKey: draftKey)
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { editorFocused = false }.font(.body.bold())
+            }
+        }
+        .fullScreenCover(isPresented: $showingFullPreview) { fullPreview }
+        .sheet(isPresented: $showingProjects) {
+            ProjectPickerSheet(track: track == .design ? "design" : "build", currentCode: code) { project in
+                code = project.code
+                activeProjectID = project.id
+                log = "Loaded \"\(project.name)\"."
+            } onNew: { name in
+                projectStore.upsert(id: activeProjectID, name: name,
+                                    track: track == .design ? "design" : "build", code: code)
+                log = "Saved as \"\(name)\"."
+            }
+        }
+        .fileExporter(isPresented: Binding(get: { exportFile != nil }, set: { if !$0 { exportFile = nil } }),
+                      document: exportFile,
+                      contentType: .plainText,
+                      defaultFilename: track == .design ? "styles.css" : "game.js") { _ in exportFile = nil }
+    }
+    private var portraitScroll: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 if studioFirst {
@@ -1034,26 +1075,9 @@ struct ProjectPlaygroundView: View {
                 }.padding(sizeClass == .compact ? 18 : 28).background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 28))
                 }
             }.padding(22).frame(maxWidth: 1000)
-        }.navigationTitle(studioFirst ? "Studio" : "Project Playground").modifier(SprintTheme())
-        .onAppear { if let saved = UserDefaults.standard.string(forKey: draftKey) { code = saved } }
-        .onChange(of: code) { _, value in
-            UserDefaults.standard.set(value, forKey: draftKey)
+            .frame(maxWidth: .infinity)
         }
-        .sheet(isPresented: $showingProjects) {
-            ProjectPickerSheet(track: track == .design ? "design" : "build", currentCode: code) { project in
-                code = project.code
-                activeProjectID = project.id
-                log = "Loaded \"\(project.name)\"."
-            } onNew: { name in
-                projectStore.upsert(id: activeProjectID, name: name,
-                                    track: track == .design ? "design" : "build", code: code)
-                log = "Saved as \"\(name)\"."
-            }
-        }
-        .fileExporter(isPresented: Binding(get: { exportFile != nil }, set: { if !$0 { exportFile = nil } }),
-                      document: exportFile,
-                      contentType: .plainText,
-                      defaultFilename: track == .design ? "styles.css" : "game.js") { _ in exportFile = nil }
+        .scrollDismissesKeyboard(.interactively)
     }
     private var studioLanding: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -1068,19 +1092,16 @@ struct ProjectPlaygroundView: View {
                 ForEach(ProjectTrack.allCases, id: \.self) { item in
                     Button { switchTrack(item) } label: {
                         Label(item == .design ? "Design · CSS" : "Build · JavaScript", systemImage: item == .design ? "paintpalette.fill" : "curlybraces")
-                            .font(.subheadline.bold()).frame(maxWidth: .infinity, minHeight: 48)
                     }
-                    .buttonStyle(.plain)
-                    .background(track == item ? Color.mint.opacity(0.2) : SprintPalette.card, in: RoundedRectangle(cornerRadius: 15))
-                    .overlay(RoundedRectangle(cornerRadius: 15).stroke(track == item ? Color.mint : Color.secondary.opacity(0.2)))
+                    .buttonStyle(.studioKey(track == item ? .primary : .secondary, fullWidth: true))
+                    .accessibilityAddTraits(track == item ? .isSelected : [])
                 }
             }
             codeWorkspace
             playableResult
             NavigationLink { WebStudioView() } label: {
                 Label("Explore the full 60-project Studio", systemImage: "square.grid.2x2.fill")
-                    .font(.headline).frame(maxWidth: .infinity, minHeight: 52)
-            }.buttonStyle(.bordered)
+            }.buttonStyle(.studioKey(.secondary, fullWidth: true))
             Text("Want the three guided requirements? Open a design or building mission from Course navigation.")
                 .font(.subheadline).foregroundStyle(.secondary)
         }
@@ -1095,57 +1116,10 @@ struct ProjectPlaygroundView: View {
                 .background(Color(red: 0.055, green: 0.09, blue: 0.15))
                 .autocorrectionDisabled().textInputAutocapitalization(.never)
                 .accessibilityLabel(track == .design ? "CSS source editor" : "JavaScript source editor")
-            HStack(spacing: 8) {
-                Button("▶ Run checks") { runChecks() }.buttonStyle(.borderedProminent).tint(.mint)
-                Button("Play my game") { previewing = true }.buttonStyle(.bordered).disabled(!passed)
-                Button("Preview design") { previewing = true }.buttonStyle(.bordered)
-                Button("Save source ↓") {
-                    UserDefaults.standard.set(code, forKey: draftKey)
-                    projectStore.upsert(id: activeProjectID, name: "Draft (\(track == .design ? "CSS" : "JS"))",
-                                        track: track.rawValue.lowercased(), code: code)
-                    log += "\nSaved to My Projects."
-                }.buttonStyle(.bordered)
-                Button { showingProjects = true } label: {
-                    Image(systemName: "folder.fill")
-                }.buttonStyle(.bordered)
-                Button { exportFile = CodeFile(code: code) } label: {
-                    Image(systemName: "square.and.arrow.up")
-                }.buttonStyle(.bordered)
-                if socialAuth.authProvider == .github {
-                    Spacer()
-                    Button {
-                        guard !pushing else { return }
-                        pushing = true
-                        pushResult = ""
-                        let lang = track == .design ? "CSS" : "JavaScript"
-                        let snap = code
-                        Task {
-                            do {
-                                let repoName = socialAuth.connectedRepos.first?.fullName ?? socialAuth.gitHubUser.map { "\($0.login)/stacksprint-practice" } ?? ""
-                                if repoName.isEmpty {
-                                    pushResult = "Connect a repo in Studio to push commits."
-                                } else {
-                                    let msg = try await socialAuth.pushPracticeCommit(to: repoName, language: lang, code: snap)
-                                    pushResult = msg
-                                    log += "\n\(msg)"
-                                }
-                            } catch {
-                                pushResult = "Push failed: \(error.localizedDescription)"
-                                log += "\nGitHub push error: \(error.localizedDescription)"
-                            }
-                            pushing = false
-                        }
-                    } label: {
-                        if pushing {
-                            ProgressView().controlSize(.small).tint(.white)
-                        } else {
-                            Label("Push to GitHub \u{2191}", systemImage: "arrow.up.circle.fill")
-                        }
-                    }
-                    .buttonStyle(.borderedProminent).tint(Color(red: 0.09, green: 0.09, blue: 0.09))
-                    .disabled(pushing)
-                }
-            }.padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Color(red: 0.055, green: 0.09, blue: 0.15))
+                .focused($editorFocused)
+            studioToolbar
+                .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(red: 0.055, green: 0.09, blue: 0.15))
             VStack(alignment: .leading, spacing: 12) {
                 HStack { Text("TERMINAL").font(.caption.monospaced()); Spacer(); Text("Browser JavaScript & CSS workspace").font(.caption.monospaced()) }.foregroundStyle(.secondary)
                 Text(log).font(.system(.subheadline, design: .monospaced)).foregroundStyle(.mint).frame(maxWidth: .infinity, alignment: .leading)
@@ -1166,22 +1140,158 @@ struct ProjectPlaygroundView: View {
                 .background(Color(red: 0.055, green: 0.09, blue: 0.15), in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.15)))
                 Button("Apply practice code & run checks", systemImage: "play.fill") { applyTerminalCode() }
-                    .buttonStyle(.borderedProminent).tint(.mint)
+                    .buttonStyle(.studioPrimary)
                     .disabled(terminalCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                HStack { Text("sprint $").font(.body.monospaced()).foregroundStyle(.mint); TextField("Type help, test, play, preview", text: $terminal).textFieldStyle(.plain).font(.body.monospaced()).onSubmit { runCommand() }; Button("Run") { runCommand() }.buttonStyle(.bordered) }
+                HStack { Text("sprint $").font(.body.monospaced()).foregroundStyle(.mint); TextField("Type help, test, play, preview", text: $terminal).textFieldStyle(.plain).font(.body.monospaced()).onSubmit { runCommand() }; Button("Run") { runCommand() }.buttonStyle(.studioSecondary) }
             }.padding(16).background(Color(red: 0.035, green: 0.065, blue: 0.11))
         }.clipShape(RoundedRectangle(cornerRadius: 22)).overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.white.opacity(0.16)))
     }
     private var playableResult: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack { Text("Your playable result").font(.title2.bold()); Spacer(); Button("Export game.html ↓") { log += "\nExport is available in the full Studio workspace." }.buttonStyle(.bordered).disabled(!passed) }
-            VStack(spacing: 14) {
-                Image(systemName: previewing ? (track == .design ? "paintpalette.fill" : "gamecontroller.fill") : "diamond").font(.system(size: 42)).foregroundStyle(.mint)
-                Text(previewing ? (passed ? "Your project is playable!" : "Design preview") : "Build it. Then bring it to life.").font(.headline)
-                Text(previewing ? previewText : "Pass the three code checks to unlock your game. Design previews are available while you work.").multilineTextAlignment(.center).foregroundStyle(.secondary)
-            }.padding(28).frame(maxWidth: .infinity, minHeight: 220).background(Color.white.opacity(0.035), in: RoundedRectangle(cornerRadius: 24)).overlay(RoundedRectangle(cornerRadius: 24).stroke(style: StrokeStyle(lineWidth: 1.5, dash: [6])).foregroundStyle(.mint.opacity(0.65)))
-            HStack { Button("Practice from memory") { code = ""; passed = false; previewing = false }.buttonStyle(.bordered); Button("Restore last passing code") { if let saved = UserDefaults.standard.string(forKey: passKey) { code = saved; passed = true } }.buttonStyle(.bordered); Button("Next mission →") { log += "\nMission 2 unlocks after this project is saved." }.buttonStyle(.borderedProminent).tint(.mint).disabled(!passed) }
+            HStack(alignment: .firstTextBaseline) {
+                Text("Your playable result").font(.title2.bold())
+                Spacer(minLength: 8)
+                Button { showingFullPreview = true } label: {
+                    Label("Full screen", systemImage: "arrow.up.left.and.arrow.down.right")
+                }
+                .buttonStyle(.studioQuiet)
+            }
+            StudioPreviewPanel(track: track, code: code)
+                .frame(height: 340)
+            Label("Turn your phone sideways to code and watch the page side by side.", systemImage: "rectangle.split.2x1")
+                .font(.subheadline).foregroundStyle(.secondary)
+            StudioFlowLayout {
+                Button("Practice from memory", systemImage: "brain") { code = ""; passed = false; previewing = false }
+                    .buttonStyle(.studioSecondary)
+                Button("Restore last passing code", systemImage: "clock.arrow.circlepath") {
+                    if let saved = UserDefaults.standard.string(forKey: passKey) { code = saved; passed = true }
+                }
+                .buttonStyle(.studioSecondary)
+                Button("Next mission →") { log += "\nMission 2 unlocks after this project is saved." }
+                    .buttonStyle(.studioPrimary).disabled(!passed)
+            }
             Text("Short prototypes, real code. The app supplies the display and controls; you implement the rules or visual design.").foregroundStyle(.secondary)
+        }
+    }
+    /// Run, play, save, open, share — wraps to a second row instead of squeezing labels.
+    private var studioToolbar: some View {
+        StudioFlowLayout(spacing: 10, rowSpacing: 6) {
+            Button { runChecks() } label: { Label("Run checks", systemImage: "play.fill") }
+                .buttonStyle(.studioPrimary)
+            if track == .build {
+                Button { previewing = true; showingFullPreview = true } label: { Label("Play my game", systemImage: "gamecontroller.fill") }
+                    .buttonStyle(.studioSecondary).disabled(!passed)
+            } else {
+                Button { previewing = true; showingFullPreview = true } label: { Label("Preview design", systemImage: "eye.fill") }
+                    .buttonStyle(.studioSecondary)
+            }
+            Button { saveSource() } label: { Label("Save", systemImage: "square.and.arrow.down.fill") }
+                .buttonStyle(.studioSecondary)
+            Button { showingProjects = true } label: { Image(systemName: "folder.fill") }
+                .buttonStyle(.studioIcon).accessibilityLabel("My projects")
+            Button { exportFile = CodeFile(code: code) } label: { Image(systemName: "square.and.arrow.up") }
+                .buttonStyle(.studioIcon).accessibilityLabel("Export source file")
+            if socialAuth.authProvider == .github {
+                Button { pushToGitHub() } label: {
+                    if pushing { ProgressView().controlSize(.small).tint(.white) }
+                    else { Label("Push to GitHub", systemImage: "arrow.up.circle.fill") }
+                }
+                .buttonStyle(.studioKey(.secondary, tint: .white))
+                .disabled(pushing)
+            }
+        }
+    }
+    /// Landscape: editor on the left, live browser on the right, draggable divider.
+    private func splitWorkspace(totalWidth: CGFloat) -> some View {
+        HStack(spacing: 0) {
+            VStack(spacing: 0) {
+                HStack(spacing: 10) {
+                    Circle().fill(.mint).frame(width: 9, height: 9)
+                    Text(track == .design ? "styles.css" : "game.js").font(.subheadline.monospaced().bold())
+                    Spacer(minLength: 6)
+                    Picker("Track", selection: Binding(get: { track }, set: { switchTrack($0) })) {
+                        Text("CSS").tag(ProjectTrack.design)
+                        Text("JS").tag(ProjectTrack.build)
+                    }
+                    .pickerStyle(.segmented).frame(width: 110)
+                }
+                .padding(.horizontal, 14).padding(.vertical, 10)
+                .background(Color(red: 0.10, green: 0.15, blue: 0.25))
+                TextEditor(text: Binding(get: { code }, set: { code = $0; passed = false }))
+                    .font(.system(.callout, design: .monospaced)).scrollContentBackground(.hidden)
+                    .foregroundStyle(Color(red: 0.82, green: 0.91, blue: 0.94))
+                    .padding(.horizontal, 10)
+                    .background(Color(red: 0.055, green: 0.09, blue: 0.15))
+                    .autocorrectionDisabled().textInputAutocapitalization(.never)
+                    .accessibilityLabel(track == .design ? "CSS source editor" : "JavaScript source editor")
+                    .focused($editorFocused)
+                Text(log.components(separatedBy: "\n").last ?? log)
+                    .font(.caption.monospaced()).foregroundStyle(.mint).lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 14).padding(.vertical, 6)
+                    .background(Color(red: 0.035, green: 0.065, blue: 0.11))
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        Button { runChecks() } label: { Label("Run checks", systemImage: "play.fill") }
+                            .buttonStyle(.studioPrimary)
+                        Button { saveSource() } label: { Label("Save", systemImage: "square.and.arrow.down.fill") }
+                            .buttonStyle(.studioSecondary)
+                        Button { showingProjects = true } label: { Image(systemName: "folder.fill") }
+                            .buttonStyle(.studioIcon).accessibilityLabel("My projects")
+                        Button { exportFile = CodeFile(code: code) } label: { Image(systemName: "square.and.arrow.up") }
+                            .buttonStyle(.studioIcon).accessibilityLabel("Export source file")
+                    }
+                    .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 4)
+                }
+                .background(Color(red: 0.055, green: 0.09, blue: 0.15))
+            }
+            .frame(width: max(240, (totalWidth - 22) * splitFraction))
+            StudioSplitHandle(fraction: $splitFraction, totalWidth: totalWidth)
+            StudioPreviewPanel(track: track, code: code, compactChrome: true)
+        }
+        .background(Color(red: 0.035, green: 0.055, blue: 0.10).ignoresSafeArea())
+    }
+    private var fullPreview: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(track == .design ? "Design preview" : (passed ? "Your game" : "Game preview")).font(.headline)
+                Spacer()
+                Button { showingFullPreview = false } label: { Label("Close", systemImage: "xmark") }
+                    .buttonStyle(.studioQuiet)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 10)
+            StudioPreviewPanel(track: track, code: code, compactChrome: true)
+        }
+        .background(Color(red: 0.043, green: 0.071, blue: 0.125).ignoresSafeArea())
+        .preferredColorScheme(.dark)
+    }
+    private func saveSource() {
+        UserDefaults.standard.set(code, forKey: draftKey)
+        projectStore.upsert(id: activeProjectID, name: "Draft (\(track == .design ? "CSS" : "JS"))",
+                            track: track.rawValue.lowercased(), code: code)
+        log += "\nSaved to My Projects."
+    }
+    private func pushToGitHub() {
+        guard !pushing else { return }
+        pushing = true
+        pushResult = ""
+        let lang = track == .design ? "CSS" : "JavaScript"
+        let snap = code
+        Task {
+            do {
+                let repoName = socialAuth.connectedRepos.first?.fullName ?? socialAuth.gitHubUser.map { "\($0.login)/stacksprint-practice" } ?? ""
+                if repoName.isEmpty {
+                    pushResult = "Connect a repo in Studio to push commits."
+                } else {
+                    let msg = try await socialAuth.pushPracticeCommit(to: repoName, language: lang, code: snap)
+                    pushResult = msg
+                    log += "\n\(msg)"
+                }
+            } catch {
+                pushResult = "Push failed: \(error.localizedDescription)"
+                log += "\nGitHub push error: \(error.localizedDescription)"
+            }
+            pushing = false
         }
     }
     private var draftKey: String { "project.\(track.rawValue).draft" }
@@ -1217,7 +1327,7 @@ struct ProjectPlaygroundView: View {
         passed = false
         runChecks()
     }
-    private func runCommand() { let command = terminal.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(); terminal = ""; switch command { case "test": runChecks(); case "apply": applyTerminalCode(); case "play": if passed { previewing = true; log += "\nProject preview opened." } else { log += "\nPass all three checks to unlock play." }; case "preview": previewing = true; log += "\nDesign preview opened."; case "hint": log += "\n" + stepInstruction(openStep == 0 ? 1 : openStep); case "clear": log = "Ready."; case "help": log += "\nCommands: help · test · apply · play · preview · hint · clear"; default: log += "\nUnknown command. Type help." } }
+    private func runCommand() { let command = terminal.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(); terminal = ""; switch command { case "test": runChecks(); case "apply": applyTerminalCode(); case "play": if passed { previewing = true; showingFullPreview = true; log += "\nProject preview opened." } else { log += "\nPass all three checks to unlock play." }; case "preview": previewing = true; showingFullPreview = true; log += "\nDesign preview opened."; case "hint": log += "\n" + stepInstruction(openStep == 0 ? 1 : openStep); case "clear": log = "Ready."; case "help": log += "\nCommands: help · test · apply · play · preview · hint · clear"; default: log += "\nUnknown command. Type help." } }
 }
 struct LearnView: View {
     @EnvironmentObject var store: LearningStore
