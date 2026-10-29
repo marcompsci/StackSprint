@@ -114,11 +114,18 @@ struct RootView: View {
     @ObservedObject private var challengeStore = FriendChallengeStore.shared
     @ObservedObject private var achievementStore = AchievementStore.shared
     @ObservedObject private var studioLayout = StudioLayoutState.shared
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @State private var showingBite = false
     @State private var showingMenu = false
     @State private var showingChallenge = false
     @AppStorage("onboarding.finished") private var welcomed = false
     @AppStorage("appearance.mode") private var appearance = "dark"
+    /// The phone is sideways only on the Studio tab (everything else is locked
+    /// upright), so a compact height means the code + preview split is showing.
+    /// Bite and the corner buttons step aside so they don't cover the preview.
+    private var hideFloatingControls: Bool {
+        verticalSizeClass == .compact || studioLayout.isLandscapeSplit
+    }
     var body: some View {
         TabView {
             NavigationStack { LearnView().modifier(SprintTheme()) }.tabItem { Label("Learn", systemImage: "sparkles") }
@@ -140,16 +147,16 @@ struct RootView: View {
         }
         .overlay(alignment: .bottomTrailing) {
             // Bite steps aside while the Studio is sideways so the preview is fully visible.
-            if welcomed && !studioLayout.isLandscapeSplit {
+            if welcomed && !hideFloatingControls {
                 Button { showingBite = true } label: { BiteAvatar().frame(width: 66, height: 90) }
                     .buttonStyle(.plain).accessibilityLabel("Ask Bite, your coding assistant")
                     .padding(.trailing, 16).padding(.bottom, 60)
                     .transition(.scale(scale: 0.6).combined(with: .opacity))
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: studioLayout.isLandscapeSplit)
+        .animation(.easeInOut(duration: 0.2), value: hideFloatingControls)
         .overlay(alignment: .topTrailing) {
-            if welcomed { HStack(spacing: 10) {
+            if welcomed && !hideFloatingControls { HStack(spacing: 10) {
                 Button { withAnimation(.easeInOut(duration: 0.2)) { appearance = appearance == "dark" ? "light" : "dark" } } label: {
                     Image(systemName: appearance == "dark" ? "sun.max.fill" : "moon.fill")
                         .font(.title3.bold()).frame(width: 52, height: 52)

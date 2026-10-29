@@ -223,7 +223,7 @@ enum StudioPreviewDocument {
         <main class="arena">
           <h1>\(track == .design ? "Arcade Café" : "Tap Dash")</h1>
           <div class="target" role="button" aria-label="Target">TAP</div>
-          <p class="score">Score: <span id="score">0</span></p>
+          <p class="score">Score: <span id="ss-score-label">0</span></p>
         </main>
         <script>
         (function(){
@@ -235,9 +235,9 @@ enum StudioPreviewDocument {
         \(track == .design ? designPlayScript : "<script id=\"user-code\">\n\(userJS)\n</script>")
         <script>
         (function(){
-          var label = document.getElementById('score'), last = null;
+          var label = document.getElementById('ss-score-label'), last = null;
           function sync(){
-            try { if (typeof score !== 'undefined' && score !== last) { last = score; label.textContent = score; } } catch (e) {}
+            try { if (typeof score === 'number' && score !== last) { last = score; label.textContent = score; } } catch (e) {}
             requestAnimationFrame(sync);
           }
           requestAnimationFrame(sync);
@@ -258,7 +258,7 @@ enum StudioPreviewDocument {
     private static let designPlayScript = """
     <script>
     (function(){
-      var points = 0, label = document.getElementById('score');
+      var points = 0, label = document.getElementById('ss-score-label');
       document.querySelector('.target').addEventListener('click', function(){ points += 1; label.textContent = points; });
     })();
     </script>
