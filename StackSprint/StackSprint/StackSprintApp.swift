@@ -113,6 +113,7 @@ struct RootView: View {
     @ObservedObject private var themeStore = ThemeStore.shared
     @ObservedObject private var challengeStore = FriendChallengeStore.shared
     @ObservedObject private var achievementStore = AchievementStore.shared
+    @ObservedObject private var studioLayout = StudioLayoutState.shared
     @State private var showingBite = false
     @State private var showingMenu = false
     @State private var showingChallenge = false
@@ -138,12 +139,15 @@ struct RootView: View {
             }
         }
         .overlay(alignment: .bottomTrailing) {
-            if welcomed {
+            // Bite steps aside while the Studio is sideways so the preview is fully visible.
+            if welcomed && !studioLayout.isLandscapeSplit {
                 Button { showingBite = true } label: { BiteAvatar().frame(width: 66, height: 90) }
                     .buttonStyle(.plain).accessibilityLabel("Ask Bite, your coding assistant")
                     .padding(.trailing, 16).padding(.bottom, 60)
+                    .transition(.scale(scale: 0.6).combined(with: .opacity))
             }
         }
+        .animation(.easeInOut(duration: 0.2), value: studioLayout.isLandscapeSplit)
         .overlay(alignment: .topTrailing) {
             if welcomed { HStack(spacing: 10) {
                 Button { withAnimation(.easeInOut(duration: 0.2)) { appearance = appearance == "dark" ? "light" : "dark" } } label: {
@@ -1003,7 +1007,10 @@ struct ProjectPlaygroundView: View {
             }
             .toolbar(landscape ? .hidden : .visible, for: .navigationBar)
             .toolbar(landscape ? .hidden : .visible, for: .tabBar)
+            .onAppear { StudioLayoutState.shared.isLandscapeSplit = landscape }
+            .onChange(of: landscape) { _, isWide in StudioLayoutState.shared.isLandscapeSplit = isWide }
         }
+        .onDisappear { StudioLayoutState.shared.isLandscapeSplit = false }
         .navigationTitle(studioFirst ? "Studio" : "Project Playground").modifier(SprintTheme())
         .onAppear { if let saved = UserDefaults.standard.string(forKey: draftKey) { code = saved } }
         .onChange(of: code) { _, value in

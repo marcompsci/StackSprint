@@ -501,3 +501,13 @@ extension View {
             .onDisappear { OrientationLock.set(.portrait) }
     }
 }
+
+// MARK: - Studio layout state
+
+/// True while the Studio shows its sideways code + preview layout, so app-wide
+/// floating extras (like Bite) can step out of the way.
+@MainActor final class StudioLayoutState: ObservableObject {
+    static let shared = StudioLayoutState()
+    @Published var isLandscapeSplit = false
+    private init() {}
+}
