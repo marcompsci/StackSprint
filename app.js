@@ -1680,7 +1680,7 @@ function renderCard() {
   if (!state.revealed) cardHint.innerHTML = "Press <kbd>Space</kbd> to reveal";
   else if (!progress.read || !progress.typed) cardHint.innerHTML = "Read + type the code to start the prompt lab";
   else if (!promptsComplete(card)) cardHint.innerHTML = "Complete 3 AI prompts to unlock the next card";
-  else if (isLastCardInView()) cardHint.textContent = "This study path is complete ✦";
+  else if (isLastCardInView()) cardHint.textContent = "This study path is complete.";
   else cardHint.innerHTML = "Next card unlocked · press <kbd>→</kbd>";
   flipButtonText.textContent = state.revealed ? "Hide answer" : "Reveal answer";
   flipButtonIcon.textContent = state.revealed ? "↻" : "✦";
@@ -1808,7 +1808,7 @@ function renderQuiz() {
     const percent = Math.round((score / quizQuestions.length) * 100);
     quizView.innerHTML = `
       <div class="quiz-summary">
-        <span class="summary-spark">✦</span>
+        <span class="summary-spark" aria-hidden="true">◆</span>
         <h3>${percent >= 80 ? "Stack status: strong" : "Great reps!"}</h3>
         <p>You got <strong>${score} of ${quizQuestions.length}</strong> right. ${percent >= 80 ? "You can already tell the screen from the systems behind it." : "A quick card pass will make these ideas click even faster."}</p>
         <button class="restart-quiz" id="restartQuiz" type="button">Run it again</button>
@@ -1927,7 +1927,7 @@ function renderCyberQuiz() {
     const percent = Math.round((score / cyberQuizQuestions.length) * 100);
     cyberQuiz.innerHTML = `
       <div class="cyber-summary" aria-live="polite">
-        <span class="summary-spark" aria-hidden="true">✦</span>
+        <span class="summary-spark" aria-hidden="true">◆</span>
         <h3 id="cyber-quiz-title">Course complete — you finished the Cybersecurity Mini Course!</h3>
         <p>You got <strong>${score} of ${cyberQuizQuestions.length}</strong> right (${percent}%). ${percent >= 80 ? "Your safety vocabulary is looking strong." : "Nice work — replay it whenever you want another safety rep."}</p>
         <button class="restart-cyber-quiz" id="restartCyberQuiz" type="button">Practice again</button>
@@ -2035,7 +2035,7 @@ function renderGameProjectMap() {
     return `
       <article class="game-project-card is-${status}" ${isCurrent ? 'aria-current="step"' : ""}>
         <span class="game-project-card-number">${String(index + 1).padStart(2, "0")}</span>
-        <span class="game-project-card-icon" aria-hidden="true">${locked ? "🔒" : project.emoji}</span>
+        <span class="game-project-card-icon" aria-hidden="true">${locked ? "○" : complete ? "✓" : "●"}</span>
         <span class="game-project-card-copy"><strong>${project.title}</strong><small>${project.level}</small></span>
         <span class="game-project-card-status">${statusCopy}</span>
       </article>
@@ -2061,7 +2061,7 @@ function renderGameProjectLab() {
       <span class="game-mission-counter">${String(progress.current + 1).padStart(2, "0")} / ${track.projects.length}</span>
     </div>
     <div class="game-project-brief">
-      <div class="game-brief-kicker"><span aria-hidden="true">✦</span> Project brief</div>
+      <div class="game-brief-kicker">Project brief</div>
       <p>${project.brief}</p>
       <div class="game-project-outcome"><span>Build target</span><strong>${project.outcome}</strong></div>
       <div class="game-project-skills"><span>Practice</span>${project.skills.split(" · ").map((skill) => `<b>${skill}</b>`).join("")}</div>
@@ -2076,7 +2076,7 @@ function renderGameProjectLab() {
       </div>
       <div class="game-mission-actions">
         <p>${completedTotal} of ${track.projects.length} projects complete</p>
-        <button id="gameNextProject" class="game-next-project" type="button" ${isLastProject ? "disabled" : ""}>${isLastProject ? "Track complete ✦" : `Unlock project ${progress.current + 2} →`}</button>
+        <button id="gameNextProject" class="game-next-project" type="button" ${isLastProject ? "disabled" : ""}>${isLastProject ? "Track complete" : `Unlock project ${progress.current + 2} →`}</button>
       </div>
     ` : (() => {
       const stepIndex = progress.steps[progress.current];

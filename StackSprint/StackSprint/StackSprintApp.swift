@@ -997,18 +997,35 @@ struct ProjectPlaygroundView: View {
     @State private var exportFile: CodeFile?
     @State private var activeProjectID: String = ""
     @State private var showingFullPreview = false
+    @State private var missionIndex: Int
+    @State private var stepResults: [Bool] = []
+    @State private var checking = false
+    @State private var runner = StudioCheckRunner()
+    @StateObject private var free = FreeBuildSession()
+    @AppStorage("studio.freeMode") private var freeMode = false
     @AppStorage("studio.splitFraction") private var splitFraction = 0.52
     init(initialTrack: ProjectTrack, studioFirst: Bool = false) {
         self.studioFirst = studioFirst
+        let index = MissionProgress.currentIndex(for: initialTrack)
+        let mission = StudioMission.missions(for: initialTrack)[index]
         _track = State(initialValue: initialTrack)
-        _code = State(initialValue: Self.starter(for: initialTrack))
+        _missionIndex = State(initialValue: index)
+        _code = State(initialValue: UserDefaults.standard.string(forKey: MissionProgress.draftKey(mission)) ?? mission.starter)
     }
     var body: some View {
         GeometryReader { geo in
             // Sideways phone (or a wide iPad) = code on the left, live page on the right.
             let landscape = geo.size.width > geo.size.height && geo.size.width >= 600
             Group {
-                if landscape { splitWorkspace(totalWidth: geo.size.width) } else { portraitScroll }
+                if landscape {
+                    if studioFirst && freeMode {
+                        FreeBuildSplit(session: free, totalWidth: geo.size.width, fraction: $splitFraction)
+                    } else {
+                        splitWorkspace(totalWidth: geo.size.width)
+                    }
+                } else {
+                    portraitScroll
+                }
             }
             .toolbar(landscape ? .hidden : .visible, for: .navigationBar)
             .toolbar(landscape ? .hidden : .visible, for: .tabBar)
@@ -1061,35 +1078,20 @@ struct ProjectPlaygroundView: View {
                     VStack(alignment: .leading, spacing: 9) {
                         Text("Course 3").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                         Text("Game Project Lab").font(.largeTitle.bold())
-                        Text("Write real code, test your ideas, and play what you build. 30 design missions and 30 game builds take you from your first edit to a pocket portfolio.").font(.title3).foregroundStyle(.secondary)
+                        Text("Write real code, check what it actually does, and play the result. Each mission builds on the one before.").font(.title3).foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 0)
-                    if sizeClass != .compact { Label("60 projects\n30 design · 30 build", systemImage: "sparkle").font(.subheadline.bold()).padding(18).background(.mint.opacity(0.12), in: RoundedRectangle(cornerRadius: 20, style: .continuous)) }
+                    if sizeClass != .compact { Label("\(StudioMission.cssMissions.count) CSS · \(StudioMission.jsMissions.count) JavaScript", systemImage: "list.bullet").font(.subheadline.bold()).padding(18).background(.mint.opacity(0.12), in: RoundedRectangle(cornerRadius: 20, style: .continuous)) }
                 }
                 HStack(spacing: 12) { ForEach(ProjectTrack.allCases, id: \.self) { item in
                     Button { switchTrack(item) } label: {
-                        HStack { Image(systemName: item == .design ? "pencil.and.outline" : "curlybraces"); Text(item.rawValue).font(.headline); Spacer(); Text("30 missions").font(.caption.monospaced()).foregroundStyle(.secondary) }
+                        HStack { Image(systemName: item == .design ? "pencil.and.outline" : "curlybraces"); Text(item.rawValue).font(.headline); Spacer(); Text("\(StudioMission.missions(for: item).count) missions").font(.caption.monospaced()).foregroundStyle(.secondary) }
                             .padding(16).frame(maxWidth: .infinity).background(track == item ? Color.mint.opacity(0.16) : Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                             .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(track == item ? Color.mint : Color.white.opacity(0.12), lineWidth: 1.5))
                     }.buttonStyle(.plain)
                 }}
                 VStack(alignment: .leading, spacing: 22) {
-                    HStack { Text(track == .design ? "CSS" : "JavaScript").font(.footnote.weight(.semibold)).foregroundStyle(.secondary); Spacer(); Text("1 / 30").font(.body.monospaced()).foregroundStyle(.mint).padding(.horizontal, 14).padding(.vertical, 9).background(.mint.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous)) }
-                    Text(track == .design ? "Palette Pop" : "Tap Dash").font(.largeTitle.bold())
-                    Text(track == .design ? "A tiny arcade café needs a three-color look that feels fizzy and friendly. Build a color mission that makes one bright choice without losing readability." : "Build a one-button reflex game. Tap the target, update the score, and make each successful hit feel quick and satisfying.")
-                        .font(.title3).foregroundStyle(.secondary).lineSpacing(6)
-                    HStack { ForEach(["01 Learn & edit", "02 Run checks", "03 Play & remix"], id: \.self) { Text($0).font(.caption.bold()).padding(10).background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous)) } }
-                    ForEach(1...3, id: \.self) { step in
-                        VStack(alignment: .leading, spacing: 12) {
-                            Button { withAnimation(.smooth(duration: 0.18)) { openStep = openStep == step ? 0 : step } } label: {
-                                HStack { Text("\(step)").foregroundStyle(.blue).frame(width: 34, height: 34).background(.blue.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous)); Text(stepTitle(step)).font(.headline); Spacer(); Image(systemName: openStep == step ? "chevron.up" : "chevron.down") }.frame(maxWidth: .infinity)
-                            }.buttonStyle(.plain)
-                            if openStep == step {
-                                Text(stepInstruction(step)).foregroundStyle(.secondary)
-                                DisclosureGroup("Show a worked example") { Text(workedExample(step)).font(.system(.subheadline, design: .monospaced)).foregroundStyle(.mint).padding(.top, 8).textSelection(.enabled) }
-                            }
-                        }.padding(16).background(Color.white.opacity(0.035), in: RoundedRectangle(cornerRadius: 20, style: .continuous)).overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Color.white.opacity(0.12)))
-                    }
+                    missionCard
                     codeWorkspace
                     playableResult
                 }.padding(sizeClass == .compact ? 18 : 28).background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
@@ -1105,25 +1107,24 @@ struct ProjectPlaygroundView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Studio").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                 Text("Write CSS or JavaScript and see it run").font(.largeTitle.bold())
-                Text("Use your keyboard in the editor or terminal practice box. Each check reads the source you wrote.")
+                Text("Work through short missions, or build your own page. The preview updates as you type.")
                     .foregroundStyle(.secondary)
             }
-            HStack(spacing: 10) {
-                ForEach(ProjectTrack.allCases, id: \.self) { item in
-                    Button { switchTrack(item) } label: {
-                        Label(item == .design ? "Design · CSS" : "Build · JavaScript", systemImage: item == .design ? "paintpalette.fill" : "curlybraces")
-                    }
-                    .buttonStyle(.studioKey(track == item ? .primary : .secondary, fullWidth: true))
-                    .accessibilityAddTraits(track == item ? .isSelected : [])
-                }
+            HStack(spacing: 8) {
+                modeKey("CSS", selected: !freeMode && track == .design) { freeMode = false; switchTrack(.design) }
+                modeKey("JavaScript", selected: !freeMode && track == .build) { freeMode = false; switchTrack(.build) }
+                modeKey("Free build", selected: freeMode) { freeMode = true }
             }
-            codeWorkspace
-            playableResult
+            if freeMode {
+                FreeBuildPortrait(session: free) { showingFullPreview = true }
+            } else {
+                missionCard
+                codeWorkspace
+                playableResult
+            }
             NavigationLink { WebStudioView() } label: {
                 Label("Explore the full 60-project Studio", systemImage: "square.grid.2x2.fill")
             }.buttonStyle(.studioKey(.secondary, fullWidth: true))
-            Text("Want the three guided requirements? Open a design or building mission from Course navigation.")
-                .font(.subheadline).foregroundStyle(.secondary)
         }
     }
     private var codeWorkspace: some View {
@@ -1171,28 +1172,29 @@ struct ProjectPlaygroundView: View {
                 }
                 .buttonStyle(.studioQuiet)
             }
-            StudioPreviewPanel(track: track, code: code)
+            StudioPreviewPanel(track: track, code: code, title: mission.pageTitle)
                 .frame(height: 340)
             Label("Turn your phone sideways to code and watch the page side by side.", systemImage: "rectangle.split.2x1")
                 .font(.subheadline).foregroundStyle(.secondary)
             StudioFlowLayout {
-                Button("Practice from memory", systemImage: "brain") { code = ""; passed = false; previewing = false }
+                Button("Practice from memory", systemImage: "brain") { code = ""; passed = false; previewing = false; stepResults = [] }
                     .buttonStyle(.studioSecondary)
                 Button("Restore last passing code", systemImage: "clock.arrow.circlepath") {
                     if let saved = UserDefaults.standard.string(forKey: passKey) { code = saved; passed = true }
                 }
                 .buttonStyle(.studioSecondary)
-                Button("Next mission →") { log += "\nMission 2 unlocks after this project is saved." }
-                    .buttonStyle(.studioPrimary).disabled(!passed)
+                if missionIndex + 1 < missions.count {
+                    Button("Next: \(missions[missionIndex + 1].title) →") { selectMission(missionIndex + 1) }
+                        .buttonStyle(.studioPrimary).disabled(!MissionProgress.isCompleted(mission) && !passed)
+                }
             }
-            Text("Short prototypes, real code. The app supplies the display and controls; you implement the rules or visual design.").foregroundStyle(.secondary)
         }
     }
     /// Run, play, save, open, share — wraps to a second row instead of squeezing labels.
     private var studioToolbar: some View {
         StudioFlowLayout(spacing: 10, rowSpacing: 6) {
-            Button { runChecks() } label: { Label("Run checks", systemImage: "play.fill") }
-                .buttonStyle(.studioPrimary)
+            Button { runChecks() } label: { runChecksLabel }
+                .buttonStyle(.studioPrimary).disabled(checking)
             if track == .build {
                 Button { previewing = true; showingFullPreview = true } label: { Label("Play my game", systemImage: "gamecontroller.fill") }
                     .buttonStyle(.studioSecondary).disabled(!passed)
@@ -1204,8 +1206,7 @@ struct ProjectPlaygroundView: View {
                 .buttonStyle(.studioSecondary)
             Button { showingProjects = true } label: { Image(systemName: "folder.fill") }
                 .buttonStyle(.studioIcon).accessibilityLabel("My projects")
-            Button { exportFile = CodeFile(code: code) } label: { Image(systemName: "square.and.arrow.up") }
-                .buttonStyle(.studioIcon).accessibilityLabel("Export source file")
+            exportMenu
             if socialAuth.authProvider == .github {
                 Button { pushToGitHub() } label: {
                     if pushing { ProgressView().controlSize(.small).tint(.white) }
@@ -1222,7 +1223,7 @@ struct ProjectPlaygroundView: View {
             VStack(spacing: 0) {
                 HStack(spacing: 10) {
                     Circle().fill(.mint).frame(width: 9, height: 9)
-                    Text(track == .design ? "styles.css" : "game.js").font(.subheadline.monospaced().bold())
+                    Text("\(mission.number). \(mission.title)").font(.subheadline.weight(.semibold)).lineLimit(1)
                     Spacer(minLength: 6)
                     Picker("Track", selection: Binding(get: { track }, set: { switchTrack($0) })) {
                         Text("CSS").tag(ProjectTrack.design)
@@ -1237,21 +1238,20 @@ struct ProjectPlaygroundView: View {
                            accessibilityLabel: track == .design ? "CSS source editor" : "JavaScript source editor",
                            fontSize: 14)
                     .background(Color(red: 0.055, green: 0.09, blue: 0.15))
-                Text(log.components(separatedBy: "\n").last ?? log)
+                Text(log.components(separatedBy: "\n").first ?? log)
                     .font(.caption.monospaced()).foregroundStyle(.mint).lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 14).padding(.vertical, 6)
                     .background(Color(red: 0.035, green: 0.065, blue: 0.11))
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
-                        Button { runChecks() } label: { Label("Run checks", systemImage: "play.fill") }
-                            .buttonStyle(.studioPrimary)
+                        Button { runChecks() } label: { runChecksLabel }
+                            .buttonStyle(.studioPrimary).disabled(checking)
                         Button { saveSource() } label: { Label("Save", systemImage: "square.and.arrow.down.fill") }
                             .buttonStyle(.studioSecondary)
                         Button { showingProjects = true } label: { Image(systemName: "folder.fill") }
                             .buttonStyle(.studioIcon).accessibilityLabel("My projects")
-                        Button { exportFile = CodeFile(code: code) } label: { Image(systemName: "square.and.arrow.up") }
-                            .buttonStyle(.studioIcon).accessibilityLabel("Export source file")
+                        exportMenu
                     }
                     .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 4)
                 }
@@ -1259,20 +1259,49 @@ struct ProjectPlaygroundView: View {
             }
             .frame(width: max(240, (totalWidth - 22) * splitFraction))
             StudioSplitHandle(fraction: $splitFraction, totalWidth: totalWidth)
-            StudioPreviewPanel(track: track, code: code, compactChrome: true)
+            StudioPreviewPanel(track: track, code: code, title: mission.pageTitle, compactChrome: true)
         }
         .background(Color(red: 0.035, green: 0.055, blue: 0.10).ignoresSafeArea())
+    }
+    private func modeKey(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(title, action: action)
+            .buttonStyle(.studioKey(selected ? .primary : .secondary, fullWidth: true))
+            .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+    private var missionPageExport: HTMLPageExport {
+        let slug = mission.title.lowercased().components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .filter { !$0.isEmpty }.joined(separator: "-")
+        return HTMLPageExport(fileName: slug + ".html",
+                              html: StudioPreviewDocument.html(track: track, code: code, title: mission.pageTitle))
+    }
+    private var exportMenu: some View {
+        Menu {
+            ShareLink(item: missionPageExport, preview: SharePreview(missionPageExport.fileName)) {
+                Label("Web page (.html)", systemImage: "globe")
+            }
+            Button { exportFile = CodeFile(code: code) } label: {
+                Label(track == .design ? "Source file (.css)" : "Source file (.js)", systemImage: "doc.text")
+            }
+        } label: {
+            Image(systemName: "square.and.arrow.up")
+        }
+        .buttonStyle(.studioIcon)
+        .accessibilityLabel("Export")
     }
     private var fullPreview: some View {
         VStack(spacing: 0) {
             HStack {
-                Text(track == .design ? "Design preview" : (passed ? "Your game" : "Game preview")).font(.headline)
+                Text(studioFirst && freeMode ? free.current.name : (track == .design ? "Design preview" : (passed ? "Your game" : "Game preview"))).font(.headline)
                 Spacer()
                 Button { showingFullPreview = false } label: { Label("Close", systemImage: "xmark") }
                     .buttonStyle(.studioQuiet)
             }
             .padding(.horizontal, 16).padding(.vertical, 10)
-            StudioPreviewPanel(track: track, code: code, compactChrome: true)
+            if studioFirst && freeMode {
+                StudioPreviewPanel(track: .build, code: "", title: free.current.name, customHTML: free.document, compactChrome: true)
+            } else {
+                StudioPreviewPanel(track: track, code: code, title: mission.pageTitle, compactChrome: true)
+            }
         }
         .background(Color(red: 0.043, green: 0.071, blue: 0.125).ignoresSafeArea())
         .preferredColorScheme(.dark)
@@ -1293,8 +1322,7 @@ struct ProjectPlaygroundView: View {
         UserDefaults.standard.set(code, forKey: draftKey)
         if activeProjectID.isEmpty { activeProjectID = Self.activeProjectID(for: track) }
         // Keep the name the project already has; only brand-new saves get a default.
-        let name = projectStore.project(activeProjectID)?.name
-            ?? (track == .design ? "Palette Pop" : "Tap Dash")
+        let name = projectStore.project(activeProjectID)?.name ?? mission.title
         projectStore.upsert(id: activeProjectID, name: name, track: trackKey, code: code)
         log += "\nSaved “\(name)” to My Projects."
     }
@@ -1321,31 +1349,152 @@ struct ProjectPlaygroundView: View {
             pushing = false
         }
     }
-    private var draftKey: String { "project.\(track.rawValue).draft" }
-    private var passKey: String { "project.\(track.rawValue).passing" }
-    private var previewText: String { track == .design ? "Your palette uses the deep arena, bright target, and readable text you coded." : "Tap Dash is ready: the target responds, the score updates, and your rules control the round." }
-    private func switchTrack(_ newTrack: ProjectTrack) { track = newTrack; code = UserDefaults.standard.string(forKey: "project.\(newTrack.rawValue).draft") ?? Self.starter(for: newTrack); terminalCode = ""; passed = false; previewing = false; log = "Ready."; activeProjectID = Self.activeProjectID(for: newTrack) }
-    private static func starter(for track: ProjectTrack) -> String { track == .design ? "/* Design Palette Pop with real CSS. */\n/* Implement each of the three studio requirements below. */\n\n.arena {\n  /* TODO: background-color */\n}\n\n.target {\n  /* TODO: background-color */\n}\n\n.arena {\n  /* TODO: color */\n}" : "// Build Tap Dash with JavaScript.\n// Implement each of the three studio requirements below.\n\nlet score = 0;\n\nconst target = document.querySelector('.target');\n\n// TODO: respond to a tap\n// TODO: update the score\n// TODO: start the game loop" }
-    private func stepTitle(_ step: Int) -> String { ["", track == .design ? "Set the visual foundation" : "Wire the first interaction", track == .design ? "Shape the interaction" : "Update the game state", track == .design ? "Polish for the player" : "Polish the game loop"][step] }
-    private func stepInstruction(_ step: Int) -> String { track == .design ? ["", "Select .arena and set background-color to #172554. Then run checks to see the change in the design preview.", "Give .target a bright background-color so the player knows where to tap.", "Set a readable color on .arena and preview the complete palette."][step] : ["", "Add an event listener to the target so a device tap triggers your game.", "Increase score inside the interaction and show the new value.", "Use requestAnimationFrame to keep the game loop smooth."][step] }
-    private func workedExample(_ step: Int) -> String { track == .design ? ["", ".arena { background-color: #172554; }", ".target { background-color: #5eead4; }", ".arena { color: white; }"][step] : ["", "target.addEventListener('click', hit);", "score += 1;", "requestAnimationFrame(loop);"][step] }
-    private func runChecks() {
-        let source = code.replacingOccurrences(of: "/\\*[\\s\\S]*?\\*/|//[^\\n]*", with: "", options: .regularExpression)
-        func matches(_ pattern: String) -> Bool {
-            source.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil
+    private var missions: [StudioMission] { StudioMission.missions(for: track) }
+    private var mission: StudioMission { missions[min(missionIndex, missions.count - 1)] }
+    private var draftKey: String { MissionProgress.draftKey(mission) }
+    private var passKey: String { MissionProgress.passingKey(mission) }
+    private func isUnlocked(_ index: Int) -> Bool { index == 0 || MissionProgress.isCompleted(missions[index - 1]) }
+
+    private var runChecksLabel: some View {
+        Group {
+            if checking {
+                HStack(spacing: 8) { ProgressView().controlSize(.small).tint(.black); Text("Checking") }
+            } else {
+                Label("Run checks", systemImage: "play.fill")
+            }
         }
-        let checks = track == .design
-            ? [matches("\\.arena\\s*\\{[^}]*background-color\\s*:\\s*#172554\\s*;?"),
-               matches("\\.target\\s*\\{[^}]*background-color\\s*:\\s*[^;}\\s]+"),
-               matches("\\.arena\\s*\\{[^}]*?(?<!background-)color\\s*:\\s*[^;}\\s]+")]
-            : [matches("\\.addEventListener\\s*\\("),
-               matches("\\bscore\\s*(?:\\+=|\\+\\+|=\\s*score\\s*\\+)"),
-               matches("\\brequestAnimationFrame\\s*\\(")]
-        let count = checks.filter { $0 }.count
-        passed = count == 3
-        log = "StackSprint Studio · \(track.rawValue)\n\(count) / 3 checks passed." + (passed ? "\nAll checks passed. Preview unlocked!" : "\nKeep going — compare your code with the three steps.")
-        if passed { UserDefaults.standard.set(code, forKey: passKey) }
     }
+
+    /// The current mission: title, brief, and its three steps with live results.
+    private var missionCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("\(track == .design ? "CSS" : "JavaScript") · Mission \(mission.number) of \(missions.count)")
+                    .font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                Spacer()
+                Menu {
+                    ForEach(missions.indices, id: \.self) { index in
+                        let item = missions[index]
+                        Button { selectMission(index) } label: {
+                            Label("\(item.number). \(item.title)",
+                                  systemImage: MissionProgress.isCompleted(item) ? "checkmark.circle.fill" : (isUnlocked(index) ? "circle" : "lock.fill"))
+                        }
+                        .disabled(!isUnlocked(index))
+                    }
+                } label: {
+                    Label("All missions", systemImage: "list.bullet").font(.subheadline.weight(.semibold))
+                }
+            }
+            Text(mission.title).font(.title.bold())
+            Text(mission.brief).foregroundStyle(.secondary)
+            VStack(spacing: 8) {
+                ForEach(Array(mission.steps.enumerated()), id: \.offset) { index, step in
+                    stepRow(index, step)
+                }
+            }
+        }
+        .padding(18)
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+
+    private func stepRow(_ index: Int, _ step: StudioMission.Step) -> some View {
+        let result: Bool? = index < stepResults.count ? stepResults[index] : nil
+        let open = openStep == index + 1
+        return VStack(alignment: .leading, spacing: 10) {
+            Button {
+                withAnimation(.smooth(duration: 0.2)) { openStep = open ? 0 : index + 1 }
+            } label: {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle().fill(result == true ? Color.mint : (result == false ? Color.orange.opacity(0.22) : Color.white.opacity(0.08)))
+                        if result == true {
+                            Image(systemName: "checkmark").font(.caption.weight(.bold)).foregroundStyle(.black)
+                        } else if result == false {
+                            Image(systemName: "xmark").font(.caption.weight(.bold)).foregroundStyle(.orange)
+                        } else {
+                            Text("\(index + 1)").font(.caption.weight(.bold)).foregroundStyle(.secondary)
+                        }
+                    }
+                    .frame(width: 28, height: 28)
+                    Text(step.title).font(.headline)
+                    Spacer()
+                    Image(systemName: "chevron.down").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(open ? 180 : 0))
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Step \(index + 1): \(step.title)" + (result == true ? ", done" : result == false ? ", not done yet" : ""))
+            if open {
+                Text(step.instruction).foregroundStyle(.secondary)
+                Text(step.example)
+                    .font(.system(.subheadline, design: .monospaced)).foregroundStyle(.mint)
+                    .textSelection(.enabled)
+                    .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color(red: 0.055, green: 0.09, blue: 0.15), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+        }
+        .padding(12)
+        .background(Color.white.opacity(0.035), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func selectMission(_ index: Int) {
+        guard missions.indices.contains(index), isUnlocked(index) else { return }
+        UserDefaults.standard.set(code, forKey: draftKey)
+        missionIndex = index
+        MissionProgress.setCurrentIndex(index, for: track)
+        loadMission()
+    }
+
+    private func loadMission() {
+        code = UserDefaults.standard.string(forKey: draftKey) ?? mission.starter
+        terminalCode = ""; passed = false; previewing = false; stepResults = []; openStep = 1
+        log = "Ready."
+    }
+
+    private func switchTrack(_ newTrack: ProjectTrack) {
+        guard newTrack != track else { return }
+        UserDefaults.standard.set(code, forKey: draftKey)
+        track = newTrack
+        missionIndex = MissionProgress.currentIndex(for: newTrack)
+        activeProjectID = Self.activeProjectID(for: newTrack)
+        loadMission()
+    }
+
+    /// Runs each step's check inside the real page and reports what passed.
+    private func runChecks() {
+        guard !checking else { return }
+        checking = true
+        let snapshot = code
+        let current = mission
+        log = "Checking \(current.title)…"
+        Task {
+            let result = await runner.run(current, code: snapshot)
+            checking = false
+            guard current == mission else { return }
+            stepResults = result.passed
+            let count = result.passed.filter { $0 }.count
+            let allPassed = count == current.steps.count
+            passed = allPassed && snapshot == code
+            var lines = ["\(count) of \(current.steps.count) checks passed"]
+            for (step, ok) in zip(current.steps, result.passed) {
+                lines.append("\(ok ? "✓" : "✗") \(step.title)")
+            }
+            if let error = result.error { lines.append("Error in your code: \(error)") }
+            if allPassed {
+                UserDefaults.standard.set(snapshot, forKey: passKey)
+                MissionProgress.markCompleted(current)
+                lines.append(missionIndex + 1 < missions.count
+                             ? "Mission complete. \(missions[missionIndex + 1].title) is unlocked."
+                             : "Every \(track == .design ? "CSS" : "JavaScript") mission is complete.")
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+            } else if let firstMiss = result.passed.firstIndex(of: false) {
+                openStep = firstMiss + 1
+            }
+            log = lines.joined(separator: "\n")
+        }
+    }
+
     private func applyTerminalCode() {
         let snippet = terminalCode.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !snippet.isEmpty else { return }
@@ -1354,7 +1503,25 @@ struct ProjectPlaygroundView: View {
         passed = false
         runChecks()
     }
-    private func runCommand() { let command = terminal.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(); terminal = ""; switch command { case "test": runChecks(); case "apply": applyTerminalCode(); case "play": if passed { previewing = true; showingFullPreview = true; log += "\nProject preview opened." } else { log += "\nPass all three checks to unlock play." }; case "preview": previewing = true; showingFullPreview = true; log += "\nDesign preview opened."; case "hint": log += "\n" + stepInstruction(openStep == 0 ? 1 : openStep); case "clear": log = "Ready."; case "help": log += "\nCommands: help · test · apply · play · preview · hint · clear"; default: log += "\nUnknown command. Type help." } }
+
+    private func runCommand() {
+        let command = terminal.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        terminal = ""
+        switch command {
+        case "test", "check": runChecks()
+        case "apply": applyTerminalCode()
+        case "play":
+            if passed { previewing = true; showingFullPreview = true; log += "\nOpened your game." }
+            else { log += "\nPass all three checks to unlock play." }
+        case "preview": previewing = true; showingFullPreview = true
+        case "hint":
+            let index = stepResults.firstIndex(of: false) ?? max(openStep - 1, 0)
+            log += "\n" + mission.steps[min(index, mission.steps.count - 1)].instruction
+        case "clear": log = "Ready."
+        case "help": log += "\nCommands: help · test · apply · play · preview · hint · clear"
+        default: log += "\nUnknown command. Type help."
+        }
+    }
 }
 struct LearnView: View {
     @EnvironmentObject var store: LearningStore

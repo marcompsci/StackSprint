@@ -176,8 +176,10 @@ enum StudioPreviewDocument {
     /// score; the learner's CSS or JavaScript brings it to life. A content
     /// security policy blocks every network request, so the preview is for
     /// viewing only.
-    static func html(track: ProjectTrack, code: String) -> String {
+    static func html(track: ProjectTrack, code: String, title: String? = nil, instrumented: Bool = false) -> String {
         let source = straighten(code)
+        let heading = (title ?? (track == .design ? "Arcade Café" : "Tap Dash"))
+            .replacingOccurrences(of: "<", with: "&lt;")
         let userCSS = track == .design ? source.replacingOccurrences(of: "</", with: "<\\/") : ""
         let userJS = track == .build ? source.replacingOccurrences(of: "</", with: "<\\/") : ""
         let page = """
@@ -185,26 +187,9 @@ enum StudioPreviewDocument {
         <html><head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; font-src data:">
-        <script>
-        (function(){
-          var post = function(type, message){ try { window.webkit.messageHandlers.studio.postMessage({type: type, message: String(message)}); } catch (e) {} };
-          var firstUserLine = __USER_CODE_LINE__;
-          window.addEventListener('error', function(e){
-            var line = e.lineno ? e.lineno - firstUserLine + 1 : 0;
-            post('error', (e.message || 'Error') + (line > 0 ? ' — line ' + line + ' of your code' : ''));
-          });
-          ['log','info','warn','error'].forEach(function(level){
-            var original = console[level];
-            console[level] = function(){
-              var text = Array.prototype.map.call(arguments, function(v){ try { return typeof v === 'string' ? v : JSON.stringify(v); } catch (err) { return String(v); } }).join(' ');
-              post(level === 'error' ? 'error' : 'log', text);
-              if (original) original.apply(console, arguments);
-            };
-          });
-          post('ready', '');
-        })();
-        </script>
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'\(instrumented ? " 'unsafe-eval'" : ""); img-src data:; font-src data:">
+        \(instrumented ? checkPreamble : "")
+        \(consoleBridge)
         <style>
         :where(html, body) { margin: 0; height: 100%; }
         :where(body) { background: #0b1220; font-family: -apple-system, system-ui, sans-serif; -webkit-user-select: none; user-select: none; }
@@ -217,7 +202,7 @@ enum StudioPreviewDocument {
         <style>\(userCSS)</style>
         </head><body>
         <main class="arena">
-          <h1>\(track == .design ? "Arcade Café" : "Tap Dash")</h1>
+          <h1>\(heading)</h1>
           <div class="target" role="button" aria-label="Target">TAP</div>
           <p class="score">Score: <span id="ss-score-label">0</span></p>
         </main>
@@ -228,15 +213,16 @@ enum StudioPreviewDocument {
           ['pointerup','pointercancel','pointerleave'].forEach(function(t){ target.addEventListener(t, function(){ target.classList.remove('is-hit'); }); });
         })();
         </script>
+        \(instrumented && track == .build ? "<script>if (window.__ss) window.__ss.armed = true;</script>" : "")
         \(track == .design ? designPlayScript : "<script id=\"user-code\">\n\(userJS)\n</script>")
         <script>
         (function(){
           var label = document.getElementById('ss-score-label'), last = null;
           function sync(){
             try { if (typeof score === 'number' && score !== last) { last = score; label.textContent = score; } } catch (e) {}
-            requestAnimationFrame(sync);
+            (window.__ssRaf || requestAnimationFrame)(sync);
           }
-          requestAnimationFrame(sync);
+          (window.__ssRaf || requestAnimationFrame)(sync);
         })();
         </script>
         </body></html>
@@ -248,6 +234,74 @@ enum StudioPreviewDocument {
         }
         return page.replacingOccurrences(of: "__USER_CODE_LINE__", with: String(firstLine))
     }
+
+    /// Forwards console output and errors to the app, with error lines counted
+    /// from the top of the learner's own code.
+    static let consoleBridge = """
+    <script>
+    (function(){
+      var post = function(type, message){ try { window.webkit.messageHandlers.studio.postMessage({type: type, message: String(message)}); } catch (e) {} };
+      var firstUserLine = __USER_CODE_LINE__;
+      window.addEventListener('error', function(e){
+        var line = e.lineno ? e.lineno - firstUserLine + 1 : 0;
+        post('error', (e.message || 'Error') + (line > 0 ? ' — line ' + line + ' of your code' : ''));
+      });
+      ['log','info','warn','error'].forEach(function(level){
+        var original = console[level];
+        console[level] = function(){
+          var text = Array.prototype.map.call(arguments, function(v){ try { return typeof v === 'string' ? v : JSON.stringify(v); } catch (err) { return String(v); } }).join(' ');
+          post(level === 'error' ? 'error' : 'log', text);
+          if (original) original.apply(console, arguments);
+        };
+      });
+      post('ready', '');
+    })();
+    </script>
+    """
+
+    /// A complete page from the three free-build files.
+    static func freeBuild(html: String, css: String, js: String) -> String {
+        let page = """
+        <!doctype html>
+        <html><head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; font-src data:">
+        \(consoleBridge)
+        <style>
+        \(straighten(css).replacingOccurrences(of: "</", with: "<\\/"))
+        </style>
+        </head><body>
+        \(straighten(html))
+        <script id="user-code">
+        \(straighten(js).replacingOccurrences(of: "</", with: "<\\/"))
+        </script>
+        </body></html>
+        """
+        var firstLine = 0
+        if let tag = page.range(of: "<script id=\"user-code\">") {
+            firstLine = page[..<tag.lowerBound].reduce(1) { $1 == "\n" ? $0 + 1 : $0 } + 1
+        }
+        return page.replacingOccurrences(of: "__USER_CODE_LINE__", with: String(firstLine))
+    }
+
+    /// Loaded before anything else when checks run: counts the tap listeners and
+    /// animation frames the learner's code sets up, and collects any errors.
+    private static let checkPreamble = """
+    <script>
+    window.__ss = { armed: false, listeners: 0, raf: 0, errors: [] };
+    window.__ssRaf = window.requestAnimationFrame.bind(window);
+    (function(){
+      var add = EventTarget.prototype.addEventListener;
+      EventTarget.prototype.addEventListener = function(type, fn, opts){
+        if (window.__ss.armed && this && this.classList && this.classList.contains('target')) window.__ss.listeners++;
+        return add.call(this, type, fn, opts);
+      };
+      window.requestAnimationFrame = function(cb){ if (window.__ss.armed) window.__ss.raf++; return window.__ssRaf(cb); };
+      window.addEventListener('error', function(e){ window.__ss.errors.push(e.message || 'Error'); });
+    })();
+    </script>
+    """
 
     /// Design missions style the game; this keeps the target tappable so the
     /// palette can be judged in motion.
@@ -332,6 +386,9 @@ struct StudioPreviewWebView: UIViewRepresentable {
 struct StudioPreviewPanel: View {
     let track: ProjectTrack
     let code: String
+    var title: String? = nil
+    /// A complete page to show instead of a mission page (free build).
+    var customHTML: String? = nil
     var compactChrome = false
     @State private var html = ""
     @State private var reloadToken = 0
@@ -340,6 +397,11 @@ struct StudioPreviewPanel: View {
     @State private var errorCount = 0
 
     private var fileName: String { track == .design ? "styles.css" : "game.js" }
+    private var slug: String {
+        (title ?? (track == .design ? "Arcade Café" : "Tap Dash")).lowercased()
+            .replacingOccurrences(of: "é", with: "e")
+            .components(separatedBy: CharacterSet.alphanumerics.inverted).filter { !$0.isEmpty }.joined(separator: "-")
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -366,10 +428,10 @@ struct StudioPreviewPanel: View {
             }
         }
         // Rebuild the page shortly after typing pauses, so every keystroke doesn't reload it.
-        .task(id: "\(track.rawValue)|\(code)") {
+        .task(id: "\(track.rawValue)|\(title ?? "")|\(code)|\(customHTML ?? "")") {
             if !html.isEmpty { try? await Task.sleep(for: .milliseconds(450)) }
             guard !Task.isCancelled else { return }
-            html = StudioPreviewDocument.html(track: track, code: code)
+            html = customHTML ?? StudioPreviewDocument.html(track: track, code: code, title: title)
         }
     }
 
@@ -382,7 +444,7 @@ struct StudioPreviewPanel: View {
             }.accessibilityHidden(true)
             HStack(spacing: 6) {
                 Image(systemName: "lock.fill").font(.caption2)
-                Text("preview://\(track == .design ? "arcade-cafe" : "tap-dash")").lineLimit(1).truncationMode(.middle)
+                Text("preview://\(slug)").lineLimit(1).truncationMode(.middle)
                 Spacer(minLength: 4)
                 Text("VIEW ONLY").font(.system(size: 9, weight: .heavy)).tracking(0.8)
                     .padding(.horizontal, 6).padding(.vertical, 3)
@@ -408,7 +470,7 @@ struct StudioPreviewPanel: View {
         HStack(spacing: 8) {
             Image(systemName: consoleIsError ? "exclamationmark.triangle.fill" : "terminal.fill")
                 .foregroundStyle(consoleIsError ? Color(red: 1, green: 0.55, blue: 0.5) : .mint)
-            Text(consoleLine.isEmpty ? "Running \(fileName) · updates as you type" : consoleLine)
+            Text(consoleLine.isEmpty ? "Running \(customHTML == nil ? fileName : "your page") · updates as you type" : consoleLine)
                 .lineLimit(2)
                 .foregroundStyle(consoleIsError ? Color(red: 1, green: 0.72, blue: 0.68) : Color.white.opacity(0.62))
             Spacer(minLength: 0)
