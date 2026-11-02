@@ -32,7 +32,20 @@ struct SavedProject: Codable, Identifiable, Equatable {
 
     // MARK: – CRUD
 
+    /// Studio tracks are stored as "design", "build" or "free". Older builds saved
+    /// the display name ("Design Games" / "design games"), which hid those
+    /// projects from My Projects; this maps every spelling to the stored key.
+    static func trackKey(_ track: String) -> String {
+        let t = track.lowercased()
+        if t.hasPrefix("design") || t == "css" { return "design" }
+        if t.hasPrefix("build") || t == "js" || t == "javascript" { return "build" }
+        return t
+    }
+
+    func project(_ id: String) -> SavedProject? { projects.first { $0.id == id } }
+
     func upsert(id: String, name: String, track: String, code: String) {
+        let track = Self.trackKey(track)
         if let idx = projects.firstIndex(where: { $0.id == id }) {
             var p = projects[idx]
             // Save a snapshot before updating
@@ -74,7 +87,8 @@ struct SavedProject: Codable, Identifiable, Equatable {
     }
 
     func projectsForTrack(_ track: String) -> [SavedProject] {
-        projects.filter { $0.track == track }.sorted { $0.lastSaved > $1.lastSaved }
+        let key = Self.trackKey(track)
+        return projects.filter { $0.track == key }.sorted { $0.lastSaved > $1.lastSaved }
     }
 
     // MARK: – Persistence
@@ -89,7 +103,12 @@ struct SavedProject: Codable, Identifiable, Equatable {
         guard let data = UserDefaults.standard.data(forKey: key),
               let decoded = try? JSONDecoder().decode([SavedProject].self, from: data)
         else { return }
-        projects = decoded
+        // Recover projects saved under the old track names.
+        let migrated = decoded.map { p -> SavedProject in
+            var p = p; p.track = Self.trackKey(p.track); return p
+        }
+        projects = migrated
+        if migrated != decoded { persist() }
     }
 }
 

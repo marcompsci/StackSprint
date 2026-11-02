@@ -995,10 +995,9 @@ struct ProjectPlaygroundView: View {
     @State private var pushResult = ""
     @State private var showingProjects = false
     @State private var exportFile: CodeFile?
-    @State private var activeProjectID: String = UUID().uuidString
+    @State private var activeProjectID: String = ""
     @State private var showingFullPreview = false
     @AppStorage("studio.splitFraction") private var splitFraction = 0.52
-    @FocusState private var editorFocused: Bool
     init(initialTrack: ProjectTrack, studioFirst: Bool = false) {
         self.studioFirst = studioFirst
         _track = State(initialValue: initialTrack)
@@ -1018,25 +1017,32 @@ struct ProjectPlaygroundView: View {
         }
         .onDisappear { StudioLayoutState.shared.isLandscapeSplit = false }
         .navigationTitle(studioFirst ? "Studio" : "Project Playground").modifier(SprintTheme())
-        .onAppear { if let saved = UserDefaults.standard.string(forKey: draftKey) { code = saved } }
+        .onAppear {
+            if let saved = UserDefaults.standard.string(forKey: draftKey) { code = saved }
+            activeProjectID = Self.activeProjectID(for: track)
+        }
         .onChange(of: code) { _, value in
             UserDefaults.standard.set(value, forKey: draftKey)
         }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
-                Button("Done") { editorFocused = false }.font(.body.bold())
+                Button("Done") {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }.font(.body.bold())
             }
         }
         .fullScreenCover(isPresented: $showingFullPreview) { fullPreview }
         .sheet(isPresented: $showingProjects) {
             ProjectPickerSheet(track: track == .design ? "design" : "build", currentCode: code) { project in
                 code = project.code
-                activeProjectID = project.id
+                setActiveProject(project.id)
                 log = "Loaded \"\(project.name)\"."
             } onNew: { name in
-                projectStore.upsert(id: activeProjectID, name: name,
-                                    track: track == .design ? "design" : "build", code: code)
+                // "Save as" starts a new project instead of renaming the open one.
+                let newID = UUID().uuidString
+                projectStore.upsert(id: newID, name: name, track: trackKey, code: code)
+                setActiveProject(newID)
                 log = "Saved as \"\(name)\"."
             }
         }
@@ -1123,14 +1129,11 @@ struct ProjectPlaygroundView: View {
     private var codeWorkspace: some View {
         VStack(spacing: 0) {
             HStack { Circle().fill(.mint).frame(width: 10); Text(track == .design ? "styles.css" : "game.js").font(.body.monospaced()); Spacer(); Text(track == .design ? "CSS · local workspace" : "JavaScript · local workspace").font(.caption.monospaced()).foregroundStyle(.secondary) }.padding(16).background(Color(red: 0.10, green: 0.15, blue: 0.25))
-            TextEditor(text: Binding(get: { code }, set: { code = $0; passed = false }))
-                .font(.system(.body, design: .monospaced)).scrollContentBackground(.hidden)
-                .foregroundStyle(Color(red: 0.82, green: 0.91, blue: 0.94))
-                .padding(14).frame(minHeight: 300)
+            CodeEditor(text: Binding(get: { code }, set: { code = $0; passed = false }),
+                       language: track == .design ? .css : .javascript,
+                       accessibilityLabel: track == .design ? "CSS source editor" : "JavaScript source editor")
+                .frame(height: 320)
                 .background(Color(red: 0.055, green: 0.09, blue: 0.15))
-                .autocorrectionDisabled().textInputAutocapitalization(.never)
-                .accessibilityLabel(track == .design ? "CSS source editor" : "JavaScript source editor")
-                .focused($editorFocused)
             studioToolbar
                 .padding(14).frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color(red: 0.055, green: 0.09, blue: 0.15))
@@ -1142,13 +1145,11 @@ struct ProjectPlaygroundView: View {
                     if terminalCode.isEmpty {
                         Text(track == .design ? ".arena { background-color: #172554; }" : "target.addEventListener('click', hit);")
                             .font(.system(.subheadline, design: .monospaced)).foregroundStyle(.white.opacity(0.42))
-                            .padding(.horizontal, 8).padding(.vertical, 13).allowsHitTesting(false)
+                            .padding(.horizontal, 14).padding(.vertical, 12).allowsHitTesting(false)
                     }
-                    TextEditor(text: $terminalCode)
-                        .font(.system(.body, design: .monospaced)).scrollContentBackground(.hidden)
-                        .foregroundStyle(Color(red: 0.82, green: 0.91, blue: 0.94))
-                        .frame(minHeight: 124).autocorrectionDisabled().textInputAutocapitalization(.never)
-                        .accessibilityLabel("Terminal practice code")
+                    CodeEditor(text: $terminalCode, language: track == .design ? .css : .javascript,
+                               accessibilityLabel: "Practice code", fontSize: 14)
+                        .frame(height: 124)
                 }
                 .padding(8)
                 .background(Color(red: 0.055, green: 0.09, blue: 0.15), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -1231,14 +1232,11 @@ struct ProjectPlaygroundView: View {
                 }
                 .padding(.horizontal, 14).padding(.vertical, 10)
                 .background(Color(red: 0.10, green: 0.15, blue: 0.25))
-                TextEditor(text: Binding(get: { code }, set: { code = $0; passed = false }))
-                    .font(.system(.callout, design: .monospaced)).scrollContentBackground(.hidden)
-                    .foregroundStyle(Color(red: 0.82, green: 0.91, blue: 0.94))
-                    .padding(.horizontal, 10)
+                CodeEditor(text: Binding(get: { code }, set: { code = $0; passed = false }),
+                           language: track == .design ? .css : .javascript,
+                           accessibilityLabel: track == .design ? "CSS source editor" : "JavaScript source editor",
+                           fontSize: 14)
                     .background(Color(red: 0.055, green: 0.09, blue: 0.15))
-                    .autocorrectionDisabled().textInputAutocapitalization(.never)
-                    .accessibilityLabel(track == .design ? "CSS source editor" : "JavaScript source editor")
-                    .focused($editorFocused)
                 Text(log.components(separatedBy: "\n").last ?? log)
                     .font(.caption.monospaced()).foregroundStyle(.mint).lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -1279,11 +1277,26 @@ struct ProjectPlaygroundView: View {
         .background(Color(red: 0.043, green: 0.071, blue: 0.125).ignoresSafeArea())
         .preferredColorScheme(.dark)
     }
+    private var trackKey: String { track == .design ? "design" : "build" }
+    private static func activeProjectID(for track: ProjectTrack) -> String {
+        let key = "studio.activeProject.\(track == .design ? "design" : "build")"
+        if let id = UserDefaults.standard.string(forKey: key) { return id }
+        let id = UUID().uuidString
+        UserDefaults.standard.set(id, forKey: key)
+        return id
+    }
+    private func setActiveProject(_ id: String) {
+        activeProjectID = id
+        UserDefaults.standard.set(id, forKey: "studio.activeProject.\(trackKey)")
+    }
     private func saveSource() {
         UserDefaults.standard.set(code, forKey: draftKey)
-        projectStore.upsert(id: activeProjectID, name: "Draft (\(track == .design ? "CSS" : "JS"))",
-                            track: track.rawValue.lowercased(), code: code)
-        log += "\nSaved to My Projects."
+        if activeProjectID.isEmpty { activeProjectID = Self.activeProjectID(for: track) }
+        // Keep the name the project already has; only brand-new saves get a default.
+        let name = projectStore.project(activeProjectID)?.name
+            ?? (track == .design ? "Palette Pop" : "Tap Dash")
+        projectStore.upsert(id: activeProjectID, name: name, track: trackKey, code: code)
+        log += "\nSaved “\(name)” to My Projects."
     }
     private func pushToGitHub() {
         guard !pushing else { return }
@@ -1311,7 +1324,7 @@ struct ProjectPlaygroundView: View {
     private var draftKey: String { "project.\(track.rawValue).draft" }
     private var passKey: String { "project.\(track.rawValue).passing" }
     private var previewText: String { track == .design ? "Your palette uses the deep arena, bright target, and readable text you coded." : "Tap Dash is ready: the target responds, the score updates, and your rules control the round." }
-    private func switchTrack(_ newTrack: ProjectTrack) { track = newTrack; code = UserDefaults.standard.string(forKey: "project.\(newTrack.rawValue).draft") ?? Self.starter(for: newTrack); terminalCode = ""; passed = false; previewing = false; log = "Ready." }
+    private func switchTrack(_ newTrack: ProjectTrack) { track = newTrack; code = UserDefaults.standard.string(forKey: "project.\(newTrack.rawValue).draft") ?? Self.starter(for: newTrack); terminalCode = ""; passed = false; previewing = false; log = "Ready."; activeProjectID = Self.activeProjectID(for: newTrack) }
     private static func starter(for track: ProjectTrack) -> String { track == .design ? "/* Design Palette Pop with real CSS. */\n/* Implement each of the three studio requirements below. */\n\n.arena {\n  /* TODO: background-color */\n}\n\n.target {\n  /* TODO: background-color */\n}\n\n.arena {\n  /* TODO: color */\n}" : "// Build Tap Dash with JavaScript.\n// Implement each of the three studio requirements below.\n\nlet score = 0;\n\nconst target = document.querySelector('.target');\n\n// TODO: respond to a tap\n// TODO: update the score\n// TODO: start the game loop" }
     private func stepTitle(_ step: Int) -> String { ["", track == .design ? "Set the visual foundation" : "Wire the first interaction", track == .design ? "Shape the interaction" : "Update the game state", track == .design ? "Polish for the player" : "Polish the game loop"][step] }
     private func stepInstruction(_ step: Int) -> String { track == .design ? ["", "Select .arena and set background-color to #172554. Then run checks to see the change in the design preview.", "Give .target a bright background-color so the player knows where to tap.", "Set a readable color on .arena and preview the complete palette."][step] : ["", "Add an event listener to the target so a device tap triggers your game.", "Increase score inside the interaction and show the new value.", "Use requestAnimationFrame to keep the game loop smooth."][step] }
