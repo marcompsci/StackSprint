@@ -2109,7 +2109,7 @@ struct AccountView: View {
             GoalSettingsSection()
             NotificationSettingsSection(notifications: notifications)
             VoiceSpeedSection()
-            CloudSyncSection()
+            if CloudKitSyncManager.isAvailable { CloudSyncSection() }
             Section {
                 if premiumStore.isPro {
                     HStack(spacing: 10) {
@@ -2117,7 +2117,7 @@ struct AccountView: View {
                         Text("You're on StackSprint Pro").font(.subheadline.bold())
                         Spacer()
                     }
-                    Text("Enjoy all Pro tracks, unlimited AI Tutor, and leaderboard perks.")
+                    Text("Go, Rust and Interview Prep tracks are unlocked.")
                         .font(.caption).foregroundStyle(.secondary)
                 } else {
                     VStack(alignment: .leading, spacing: 8) {
@@ -2160,20 +2160,24 @@ struct AccountView: View {
                 }
             } else {
                 Section("Connect an account") {
-                    Text("Sign in with Apple, Google, or GitHub to save your streak across devices.")
+                    Text("Sign in with Apple to put your name on your progress. Your progress is saved on this device.")
                         .font(.subheadline).foregroundStyle(.secondary)
                     Button {
                         Task { try? await socialAuth.signInWithApple() }
                     } label: { Label("Continue with Apple", systemImage: "apple.logo") }
-                    Button {
-                        Task { try? await socialAuth.signInWithGoogle() }
-                    } label: { Label("Continue with Google", systemImage: "g.circle.fill") }
-                    Button {
-                        Task { try? await socialAuth.signInWithGitHub() }
-                    } label: { Label("Continue with GitHub", systemImage: "chevron.left.forwardslash.chevron.right") }
+                    if SocialAuthManager.isGoogleAvailable {
+                        Button {
+                            Task { try? await socialAuth.signInWithGoogle() }
+                        } label: { Label("Continue with Google", systemImage: "g.circle.fill") }
+                    }
+                    if SocialAuthManager.isGitHubAvailable {
+                        Button {
+                            Task { try? await socialAuth.signInWithGitHub() }
+                        } label: { Label("Continue with GitHub", systemImage: "chevron.left.forwardslash.chevron.right") }
+                    }
                 }
             }
-            if backend.config == nil { Section("Guest mode") { Text("Learning works without an account. To enable cloud accounts, configure BackendConfig.json and deploy backend/schema.sql using SETUP.md.") } }
+            if backend.config == nil { Section("Guest mode") { Text("Everything works without an account. Your progress is saved on this device.") } }
             if let session = backend.session {
                 Section("Signed in") {
                     Text(session.user.email ?? "Your account")
@@ -2181,7 +2185,7 @@ struct AccountView: View {
                     Button("Sign out") { perform { await backend.signOut() } }
                     Button("Delete account", role: .destructive) { confirmDelete = true }
                 }
-            } else {
+            } else if backend.config != nil {
                 Section("Cloud account") {
                     TextField("Email", text: $email).keyboardType(.emailAddress).textContentType(.username).textInputAutocapitalization(.never).autocorrectionDisabled()
                     SecureField("Password", text: $password).textContentType(.password)
@@ -2191,7 +2195,10 @@ struct AccountView: View {
             }
             if backend.busy { ProgressView("Working…") }
             if !backend.message.isEmpty { Text(backend.message) }
-            Section("About your progress") { Text("Guest and account lesson progress are separate. Sync uploads completed native lessons and merges cloud completions. Shared-device code drafts and the web studio remain local, independent of your account. Clear app data before handing the device to someone else.") }
+            if backend.config != nil {
+                Section("About your progress") { Text("Guest and account lesson progress are separate. Sync uploads completed native lessons and merges cloud completions. Code drafts and the web studio stay on this device.") }
+            }
+            LegalLinksSection()
         }.disabled(backend.busy).navigationTitle("Account")
         .confirmationDialog("Delete your account and all cloud progress? This cannot be undone.", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("Delete permanently", role: .destructive) { perform {

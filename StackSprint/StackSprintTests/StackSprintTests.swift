@@ -239,3 +239,84 @@ struct PremiumStoreTests {
         #expect(!store.isPro)
     }
 }
+
+// MARK: - Compliance regressions
+
+@Suite("Compliance")
+@MainActor
+struct ComplianceTests {
+    @Test func challengeNamesAreCleaned() {
+        #expect(FriendChallengeStore.cleanName("  Sam  ") == "Sam")
+        #expect(FriendChallengeStore.cleanName("") == "A friend")
+        #expect(FriendChallengeStore.cleanName("visit https://example.com") == "A friend")
+        #expect(FriendChallengeStore.cleanName("line\nbreak") == "linebreak")
+        #expect(FriendChallengeStore.cleanName(String(repeating: "a", count: 80)).count == 24)
+    }
+
+    @Test func challengeLinksAreBounded() {
+        let store = FriendChallengeStore.shared
+        let url = URL(string: "stacksprint://challenge?ids=a,b,c,d,e,f,g,h&score=999&from=Kim")!
+        store.parseURL(url)
+        let challenge = try? #require(store.incomingChallenge)
+        #expect((challenge?.lessonIDs.count ?? 99) <= FriendChallengeStore.questionsPerChallenge)
+        #expect((challenge?.creatorScore ?? 999) <= FriendChallengeStore.questionsPerChallenge)
+    }
+
+    @Test func pacersAreLabelledNotInventedPeople() {
+        let entries = LeaderboardStore.globalEntries(playerXP: 120)
+        #expect(entries.filter { !$0.isYou }.allSatisfy { $0.name.hasPrefix("Pacer ") })
+        #expect(entries.contains { $0.isYou })
+    }
+
+    @Test func simulatedSignInIsOff() {
+        #expect(!SocialAuthManager.isGitHubAvailable)
+        #expect(!SocialAuthManager.isGoogleAvailable)
+    }
+
+    @Test func seasonRewardsDoNotPromiseFeatures() {
+        for reward in SeasonReward.all {
+            let text = (reward.name + " " + reward.description).lowercased()
+            #expect(!text.contains("theme"), "\(reward.name) promises a theme")
+            #expect(!text.contains("× xp") && !text.contains("xp bonus"), "\(reward.name) promises XP")
+            #expect(!text.contains("quota"), "\(reward.name) promises AI quota")
+        }
+    }
+
+    @Test func everyMissionHasThreeChecks() {
+        for mission in StudioMission.cssMissions + StudioMission.jsMissions {
+            #expect(mission.steps.count == 3, "\(mission.id)")
+            #expect(mission.steps.allSatisfy { !$0.check.isEmpty })
+        }
+    }
+}
+
+@Suite("CodeEditing")
+@MainActor
+struct CodeEditingTests {
+    @Test func bracesCloseThemselves() {
+        let edit = CodeEditing.edit(for: "a ", range: NSRange(location: 2, length: 0), replacement: "{")
+        #expect(edit?.text == "{}")
+        #expect(edit?.cursor == 3)
+    }
+
+    @Test func returnBetweenBracesOpensABlock() {
+        let edit = CodeEditing.edit(for: "  x {}", range: NSRange(location: 5, length: 0), replacement: "\n")
+        #expect(edit?.text == "\n    \n  ")
+        #expect(edit?.cursor == 10)
+    }
+
+    @Test func typingACloserStepsOverIt() {
+        let edit = CodeEditing.edit(for: "()", range: NSRange(location: 1, length: 0), replacement: ")")
+        #expect(edit?.text == "")
+        #expect(edit?.cursor == 2)
+    }
+
+    @Test func apostropheInsideAWordIsLeftAlone() {
+        #expect(CodeEditing.edit(for: "don", range: NSRange(location: 3, length: 0), replacement: "'") == nil)
+    }
+
+    @Test func backspaceRemovesAnEmptyPair() {
+        let edit = CodeEditing.edit(for: "()", range: NSRange(location: 0, length: 1), replacement: "")
+        #expect(edit?.range == NSRange(location: 0, length: 2))
+    }
+}

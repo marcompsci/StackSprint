@@ -58,13 +58,26 @@ struct FriendChallenge: Identifiable, Codable {
               let score = Int(scoreVal)
         else { return }
 
-        let ids = idsVal.split(separator: ",").map(String.init)
+        // Links come from outside the app: keep only what a real challenge contains.
+        let ids = idsVal.split(separator: ",").prefix(Self.questionsPerChallenge)
+            .map { String($0.prefix(120)) }
+            .filter { $0.allSatisfy { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" } }
+        guard !ids.isEmpty else { return }
         incomingChallenge = FriendChallenge(
             id: UUID(), lessonIDs: ids,
-            creatorScore: score,
-            creatorName: fromVal,
+            creatorScore: min(max(score, 0), Self.questionsPerChallenge),
+            creatorName: Self.cleanName(fromVal),
             createdAt: .now
         )
+    }
+
+    /// A short, printable display name: no control characters, links or line breaks.
+    static func cleanName(_ raw: String) -> String {
+        let printable = raw.unicodeScalars.filter { !CharacterSet.controlCharacters.contains($0) && !CharacterSet.newlines.contains($0) }
+        var name = String(String.UnicodeScalarView(printable)).trimmingCharacters(in: .whitespaces)
+        if name.lowercased().contains("http") || name.contains("www.") || name.contains("/") { name = "" }
+        name = String(name.prefix(24))
+        return name.isEmpty ? "A friend" : name
     }
 
     // MARK: Start a challenge race

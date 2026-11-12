@@ -16,6 +16,8 @@ enum ProProductID: String, CaseIterable {
     @Published var products: [Product] = []
     @Published var purchaseError: String?
     @Published var isPurchasing = false
+    /// True once a product request has finished, whether or not it returned products.
+    @Published var productsLoaded = false
 
     static let proTracks: Set<String> = ["Go", "Rust", "Interview Prep"]
 
@@ -27,11 +29,14 @@ enum ProProductID: String, CaseIterable {
     }
 
     func loadProducts() async {
+        productsLoaded = false
+        defer { productsLoaded = true }
         do {
             products = try await Product.products(for: ProProductID.allCases.map(\.rawValue))
                 .sorted { $0.price < $1.price }
+            if !products.isEmpty { purchaseError = nil }
         } catch {
-            purchaseError = "Could not load products."
+            purchaseError = "Could not reach the App Store."
         }
     }
 
@@ -99,9 +104,14 @@ struct ProPaywallView: View {
                         Text("Restore purchases").font(.subheadline).foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
-                    Text("Subscription auto-renews unless cancelled at least 24 hours before renewal. Manage in Settings.")
+                    Text("Payment is charged to your Apple Account at confirmation. The subscription renews automatically at the price shown unless you cancel at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple Account → Subscriptions.")
                         .font(.caption2).foregroundStyle(.secondary)
                         .multilineTextAlignment(.center).padding(.horizontal)
+                    HStack(spacing: 18) {
+                        Link("Terms of Use", destination: LegalLinks.termsOfUse)
+                        NavigationLink("Privacy Policy") { PrivacyPolicyView() }
+                    }
+                    .font(.caption.weight(.semibold))
                 }
                 .padding(24)
             }
@@ -124,26 +134,33 @@ struct ProPaywallView: View {
                     .frame(width: 80, height: 80)
                 Image(systemName: "crown.fill").font(.system(size: 36)).foregroundStyle(.white)
             }
-            Text("Unlock everything").font(.system(.title, design: .rounded, weight: .bold))
-            Text("Go deeper with Pro tracks, remove all limits, and climb the leaderboard.")
+            Text("StackSprint Pro").font(.title.bold())
+            Text("Three extra lesson tracks, on top of everything that's already free.")
                 .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
         }
     }
 
     private var featureList: some View {
         VStack(spacing: 10) {
-            ProFeatureRow("Go & Rust language tracks", icon: "chevron.left.forwardslash.chevron.right", color: .mint)
+            ProFeatureRow("Go and Rust lesson tracks", icon: "chevron.left.forwardslash.chevron.right", color: .mint)
             ProFeatureRow("Interview Prep track", icon: "briefcase.fill", color: .blue)
-            ProFeatureRow("Bit AI Tutor (unlimited chats)", icon: "sparkles", color: .purple)
-            ProFeatureRow("Pro crown in Leaderboard", icon: "crown.fill", color: .yellow)
-            ProFeatureRow("2\u{D7} XP Weekend boosts", icon: "bolt.fill", color: .orange)
+            ProFeatureRow("Pro season collectibles", icon: "rosette", color: .orange)
         }
     }
 
     @ViewBuilder
     private var productSection: some View {
-        if premiumStore.products.isEmpty {
+        if premiumStore.products.isEmpty && !premiumStore.productsLoaded {
             ProgressView("Loading offers\u{2026}").padding(.vertical, 20)
+        } else if premiumStore.products.isEmpty {
+            VStack(spacing: 10) {
+                Text("Subscriptions aren't available right now.").font(.subheadline.weight(.semibold))
+                Text("Everything outside the Pro tracks stays free to use.").font(.caption).foregroundStyle(.secondary)
+                Button("Try again") { Task { await premiumStore.loadProducts() } }
+                    .buttonStyle(.bordered)
+            }
+            .multilineTextAlignment(.center)
+            .padding(.vertical, 12)
         } else {
             VStack(spacing: 12) {
                 ForEach(premiumStore.products, id: \.id) { product in
@@ -181,6 +198,20 @@ private struct PaywallProductButton: View {
 
     private var isYearly: Bool { product.id == ProProductID.yearly.rawValue }
 
+    /// The billing period as the App Store reports it, e.g. "per month".
+    private var periodLabel: String {
+        guard let period = product.subscription?.subscriptionPeriod else { return "" }
+        let unit: String
+        switch period.unit {
+        case .day: unit = "day"
+        case .week: unit = "week"
+        case .month: unit = "month"
+        case .year: unit = "year"
+        @unknown default: unit = "period"
+        }
+        return period.value == 1 ? "per \(unit)" : "every \(period.value) \(unit)s"
+    }
+
     var body: some View {
         Button {
             HapticManager.shared.impact(.medium)
@@ -197,13 +228,13 @@ private struct PaywallProductButton: View {
                                 .foregroundStyle(.mint)
                         }
                     }
-                    Text(isYearly ? "Save ~33% vs monthly" : "Cancel anytime")
+                    Text(product.description.isEmpty ? "Cancel anytime" : product.description)
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(product.displayPrice).font(.title3.bold())
-                    Text(isYearly ? "/year" : "/month").font(.caption).foregroundStyle(.secondary)
+                    Text(periodLabel).font(.caption).foregroundStyle(.secondary)
                 }
             }
             .padding(16)

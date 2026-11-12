@@ -76,7 +76,7 @@ struct EmptyTogetherState: View {
             Image(systemName: "person.2.wave.2.fill")
                 .font(.system(size: 52)).foregroundStyle(.blue.opacity(0.6))
             Text("Start your social journey").font(.title3.bold())
-            Text("Challenge friends, climb the leaderboard, and study together.")
+            Text("Challenge friends, race the pacers, and study together.")
                 .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
         }
         .padding(40).frame(maxWidth: .infinity)

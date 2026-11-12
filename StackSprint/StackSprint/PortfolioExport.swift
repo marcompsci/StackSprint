@@ -78,7 +78,7 @@ enum PortfolioGenerator {
             <div class="stat"><div class="value">\(data.xp)</div><div class="label">Total XP</div></div>
           </div>
           \(categorySections)
-          <div class="footer">Built with StackSprint — stacksprint.app</div>
+          <div class="footer">Built with StackSprint</div>
         </body>
         </html>
         """

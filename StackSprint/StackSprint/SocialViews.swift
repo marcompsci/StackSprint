@@ -18,7 +18,7 @@ struct SignInOptionsView: View {
         VStack(alignment: .leading, spacing: 22) {
             Text("Save your streak.")
                 .font(.largeTitle.bold())
-            Text("Sign in once and your progress syncs to all your devices. Or tap below to continue as a guest — you can connect an account later.")
+            Text("Sign in with Apple to put your name on your progress, or continue as a guest. Either way, your progress is saved on this device.")
                 .foregroundStyle(.secondary)
 
             VStack(spacing: 13) {
@@ -31,22 +31,26 @@ struct SignInOptionsView: View {
                         catch { }
                     }
                 }
-                ProviderButton(label: "Continue with Google",
-                               icon: "g.circle.fill",
-                               style: .google,
-                               busy: false) {
-                    Task {
-                        do { try await socialAuth.signInWithGoogle(); onComplete() }
-                        catch { }
+                if SocialAuthManager.isGoogleAvailable {
+                    ProviderButton(label: "Continue with Google",
+                                   icon: "g.circle.fill",
+                                   style: .google,
+                                   busy: false) {
+                        Task {
+                            do { try await socialAuth.signInWithGoogle(); onComplete() }
+                            catch { }
+                        }
                     }
                 }
-                ProviderButton(label: "Continue with GitHub",
-                               icon: "chevron.left.forwardslash.chevron.right",
-                               style: .github,
-                               busy: socialAuth.busy && socialAuth.authProvider == .none) {
-                    Task {
-                        do { try await socialAuth.signInWithGitHub(); onComplete() }
-                        catch { }
+                if SocialAuthManager.isGitHubAvailable {
+                    ProviderButton(label: "Continue with GitHub",
+                                   icon: "chevron.left.forwardslash.chevron.right",
+                                   style: .github,
+                                   busy: socialAuth.busy && socialAuth.authProvider == .none) {
+                        Task {
+                            do { try await socialAuth.signInWithGitHub(); onComplete() }
+                            catch { }
+                        }
                     }
                 }
             }
@@ -152,9 +156,9 @@ struct GitHubStudioPanel: View {
 
     var body: some View {
         Group {
-            if socialAuth.gitHubUser != nil || socialAuth.authProvider == .github {
+            if socialAuth.authProvider == .github && socialAuth.gitHubUser != nil {
                 connectedPanel
-            } else {
+            } else if SocialAuthManager.isGitHubAvailable {
                 inviteCard
             }
         }

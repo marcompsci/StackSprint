@@ -104,7 +104,20 @@ struct AppIconPickerSection: View {
     @ObservedObject var iconManager = AppIconManager.shared
     @State private var showingPaywall = false
 
+    /// Alternate icons only work when their assets ship in the bundle. Until the
+    /// AppIcon-Neon/-Midnight/-Minimal/-Season1 icon sets are added, the picker hides.
+    static var alternateIconsInstalled: Bool {
+        guard UIApplication.shared.supportsAlternateIcons,
+              let icons = Bundle.main.object(forInfoDictionaryKey: "CFBundleIcons") as? [String: Any],
+              let alternates = icons["CFBundleAlternateIcons"] as? [String: Any] else { return false }
+        return !alternates.isEmpty
+    }
+
     var body: some View {
+        if Self.alternateIconsInstalled { picker }
+    }
+
+    private var picker: some View {
         Section {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 12)], spacing: 16) {
                 ForEach(AppIconVariant.allCases) { variant in

@@ -183,7 +183,7 @@ struct AnalyticsDashboardView: View {
             HStack(spacing: 14) {
                 Image(systemName: "calendar.badge.clock").font(.title2).foregroundStyle(.yellow)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Weekly Rankings").font(.headline)
+                    Text("This week").font(.headline)
                     Text("\(WeeklyXPStore.shared.weeklyXP) XP this week · resets in \(WeeklyXPStore.shared.daysUntilReset)d")
                         .font(.caption).foregroundStyle(.secondary)
                 }
@@ -219,8 +219,8 @@ struct AnalyticsDashboardView: View {
             HStack(spacing: 14) {
                 Image(systemName: "trophy.fill").font(.title2).foregroundStyle(.yellow)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Leaderboard").font(.headline)
-                    Text("See how your XP ranks globally").font(.caption).foregroundStyle(.secondary)
+                    Text("Pacers").font(.headline)
+                    Text("Race computer pacers set around your level").font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Image(systemName: "chevron.right").foregroundStyle(.secondary)

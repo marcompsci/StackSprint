@@ -20,23 +20,22 @@ enum AppStoreCopy {
     • 104 bite-sized lessons across 9 programming tracks
     • Flip-card review with spaced repetition (SM-2 algorithm)
     • Interactive code editor with live run for JS and Python
-    • AI Tutor (Bit) powered by on-device FoundationModels
+    • AI Tutor (Bit) using Apple Intelligence on supported devices
+    • Studio: 10 guided CSS and JavaScript missions with live checks, \
+    plus free builds you can export as web pages
 
     STAY MOTIVATED
-    • Daily streaks and XP leaderboard
-    • Weekly challenges with XP Weekend double-boost events
-    • Celebration animations for milestones and streak records
-    • Home screen widgets: streak counter and next lesson
+    • Daily streaks, XP, and computer pacers to race
+    • Weekly challenges with XP Weekend double-XP events
+    • Head-to-head quiz races through Game Center
 
-    GO PRO
-    • Unlock Go, Rust, and Interview Prep tracks
-    • Unlimited AI Tutor sessions
-    • Pro crown on the global leaderboard
+    GO PRO (auto-renewing subscription)
+    • Unlock the Go, Rust, and Interview Prep tracks
+    • Pro season collectibles
 
-    SEAMLESS & PRIVATE
-    • iCloud sync across all your devices
-    • Full offline support — all content on device
-    • No ads, no tracking, no account required to start
+    PRIVATE BY DESIGN
+    • Lessons and progress stay on your device
+    • No ads, no tracking, no account required
     • VoiceOver, Dynamic Type, and Reduce Motion supported
     """
 
@@ -47,11 +46,13 @@ enum AppStoreCopy {
         "go lang", "rust programming", "daily streak", "xp"
     ].joined(separator: ", ")
 
-    static let promotionalText = "New: Go & Rust tracks, AI Tutor, and spaced repetition!"
+    static let promotionalText = "New: Studio missions with live checks, free builds, and HTML export."
 
-    static let supportURL = "https://stacksprint.app/support"
-    static let privacyURL = "https://stacksprint.app/privacy"
-    static let marketingURL = "https://stacksprint.app"
+    // Must be real, reachable pages before submission (stacksprint.app does not resolve).
+    // docs/privacy-policy.md is ready to host. scripts/compliance-check.sh fails while these are empty.
+    static let supportURL = ""
+    static let privacyURL = ""
+    static let marketingURL = ""
 }
 
 // MARK: - Screenshot Preview Views

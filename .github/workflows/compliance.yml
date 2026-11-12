@@ -1,0 +1,106 @@
+name: Apple compliance gate
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Run the release gate (also fails on missing support contact and privacy/support URLs)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  policy:
+    name: Policy, secrets and web tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history, so the secret scan sees every commit
+
+      - name: Compliance checks
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.release }}" = "true" ]; then
+            scripts/compliance-check.sh --release
+          else
+            scripts/compliance-check.sh
+          fi
+
+      - name: Secret scan (full history)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Web runtime tests
+        run: |
+          set -e
+          for t in tests/*.test.cjs; do echo "== $t"; node "$t"; done
+
+      - name: Dependency audit
+        run: |
+          # The app has no Swift Package, CocoaPods or npm dependencies. Fail loudly if one appears
+          # without an audit step being added here.
+          if ls StackSprint/StackSprint.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved Podfile package.json 2>/dev/null; then
+            echo "Dependencies found: add an audit step for them before merging." && exit 1
+          fi
+          echo "No third-party package dependencies."
+
+  ios:
+    name: iOS build, analyze and unit tests
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select the newest Xcode 26
+        run: |
+          XCODE="$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)"
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i iphone
+
+      - name: Release build (no signing)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project StackSprint/StackSprint.xcodeproj -scheme StackSprint \
+            -configuration Release -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO | tee build.log | grep -E "error:|warning:|BUILD" || true
+          grep -q "BUILD SUCCEEDED" build.log
+
+      - name: Static analysis
+        run: |
+          set -o pipefail
+          xcodebuild analyze \
+            -project StackSprint/StackSprint.xcodeproj -scheme StackSprint \
+            -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO \
+            | tee analyze.log | grep -E "error:|warning: .*(analyzer|Dereference|leak)|ANALYZE" || true
+          grep -q "ANALYZE SUCCEEDED" analyze.log
+
+      - name: Unit tests
+        run: |
+          set -o pipefail
+          DEST="$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys, re
+          d = json.load(sys.stdin)["devices"]
+          best = None
+          for rt, devs in d.items():
+              m = re.search(r"iOS-(\d+)-(\d+)", rt)
+              if not m: continue
+              ver = (int(m.group(1)), int(m.group(2)))
+              if ver < (26, 5): continue
+              for dev in devs:
+                  if dev["name"].startswith("iPhone") and (best is None or ver > best[0]):
+                      best = (ver, dev["udid"])
+          print(best[1] if best else "")
+          ')"
+          if [ -z "$DEST" ]; then echo "No iOS 26.5+ iPhone simulator on this runner: unit tests could not run." && exit 1; fi
+          xcodebuild test \
+            -project StackSprint/StackSprint.xcodeproj -scheme StackSprint \
+            -destination "id=$DEST" -only-testing:StackSprintTests CODE_SIGNING_ALLOWED=NO \
+            | tee test.log | grep -E "Test (Case|Suite)|✔|✘|error:|TEST" || true
+          grep -q "TEST SUCCEEDED" test.log

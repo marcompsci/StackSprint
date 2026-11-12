@@ -73,10 +73,14 @@ enum AuthProvider: String, Codable {
     @Published var busy = false
     @Published var message = ""
 
-    // Set your OAuth App credentials here before enabling live auth.
-    // Without credentials, demo mode simulates a real connection.
+    // OAuth client IDs. Both providers stay hidden until a client ID is set AND a
+    // server endpoint exchanges the authorization code for a token (the app must
+    // never hold a client secret). Until then nothing is simulated.
     static let gitHubClientID = ""
     static let googleClientID = ""
+    static let hasTokenExchangeBackend = false
+    static var isGitHubAvailable: Bool { !gitHubClientID.isEmpty && hasTokenExchangeBackend }
+    static var isGoogleAvailable: Bool { !googleClientID.isEmpty && hasTokenExchangeBackend }
     static let redirectScheme = "stacksprint"
 
     var isSignedIn: Bool { authProvider != .none }
@@ -103,6 +107,14 @@ enum AuthProvider: String, Codable {
     private func restore() {
         if let raw = UserDefaults.standard.string(forKey: "social.provider"),
            let p = AuthProvider(rawValue: raw) { authProvider = p }
+        // Earlier builds simulated GitHub and Google sign-in. Clear those demo
+        // identities so nobody is shown a profile that was never real.
+        if (authProvider == .github && !Self.isGitHubAvailable) || (authProvider == .google && !Self.isGoogleAvailable) {
+            ["social.provider", "social.github.user", "social.github.repos", "github.connectedRepos", "social.google.name"]
+                .forEach { UserDefaults.standard.removeObject(forKey: $0) }
+            authProvider = .none
+            return
+        }
         appleDisplayName = UserDefaults.standard.string(forKey: "social.apple.name")
         if let data = UserDefaults.standard.data(forKey: "social.github.user"),
            let u = try? JSONDecoder().decode(GitHubUser.self, from: data) { gitHubUser = u }
@@ -131,21 +143,8 @@ enum AuthProvider: String, Codable {
 
     func signInWithGitHub() async throws {
         busy = true; defer { busy = false }
-        if Self.gitHubClientID.isEmpty {
-            // Demo: simulate OAuth + API response
-            try await Task.sleep(nanoseconds: 1_400_000_000)
-            gitHubUser = GitHubUser(
-                login: "you",
-                name: "Your GitHub",
-                bio: "Learning to build with StackSprint",
-                publicRepos: 8,
-                followers: 3
-            )
-            gitHubRepos = Self.demoRepos
-            authProvider = .github
-            UserDefaults.standard.set("github", forKey: "social.provider")
-            persistGitHub()
-            return
+        guard Self.isGitHubAvailable else {
+            throw makeError("GitHub sign-in isn't available in this version.")
         }
         let redirect = (Self.redirectScheme + "://github/callback")
             .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
@@ -165,13 +164,8 @@ enum AuthProvider: String, Codable {
 
     func signInWithGoogle() async throws {
         busy = true; defer { busy = false }
-        if Self.googleClientID.isEmpty {
-            // Demo: simulate OAuth
-            try await Task.sleep(nanoseconds: 900_000_000)
-            authProvider = .google
-            UserDefaults.standard.set("google", forKey: "social.provider")
-            UserDefaults.standard.set("Coder", forKey: "social.google.name")
-            return
+        guard Self.isGoogleAvailable else {
+            throw makeError("Google sign-in isn't available in this version.")
         }
         let redirect = (Self.redirectScheme + "://google/callback")
             .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
@@ -244,24 +238,6 @@ enum AuthProvider: String, Codable {
         }
     }
 
-    private static var demoRepos: [GitHubRepo] { [
-        GitHubRepo(id: 101, name: "my-portfolio",
-                   fullName: "you/my-portfolio",
-                   description: "Personal portfolio site built with HTML & CSS",
-                   language: "HTML", stargazersCount: 0, isPrivate: false),
-        GitHubRepo(id: 102, name: "python-practice",
-                   fullName: "you/python-practice",
-                   description: "Python exercises from StackSprint daily sprints",
-                   language: "Python", stargazersCount: 2, isPrivate: false),
-        GitHubRepo(id: 103, name: "css-experiments",
-                   fullName: "you/css-experiments",
-                   description: "CSS animations, layouts, and mini-games",
-                   language: "CSS", stargazersCount: 1, isPrivate: false),
-        GitHubRepo(id: 104, name: "first-js-app",
-                   fullName: "you/first-js-app",
-                   description: "My first JavaScript web app",
-                   language: "JavaScript", stargazersCount: 0, isPrivate: false),
-    ] }
 }
 
 // MARK: - Live GitHub API (same-file extension — private access OK)
@@ -300,8 +276,7 @@ extension SocialAuthManager {
     // Returns a human-readable confirmation string on success.
     func pushPracticeCommit(to repoFullName: String, language: String, code: String) async throws -> String {
         guard let token = gitHubToken else {
-            // Demo mode: no real commit, just confirm locally
-            return "Demo: \(language) practice logged for \(repoFullName)"
+            throw makeError("Connect GitHub before pushing.")
         }
         let ext = langExt(language)
         let date = String(ISO8601DateFormatter().string(from: Date()).prefix(10))

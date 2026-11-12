@@ -130,22 +130,13 @@ struct WeeklyLeaderboardView: View {
         ScrollView {
             VStack(spacing: 20) {
                 weeklyHeader
-                rankUpBanner
                 leaderboardTabs
             }
             .padding(20)
         }
-        .navigationTitle("Leaderboard")
+        .navigationTitle("This week")
         .navigationBarTitleDisplayMode(.inline)
         .modifier(SprintTheme())
-        .overlay(alignment: .top) {
-            if weekly.showRankUpBanner {
-                RankUpBanner { weekly.showRankUpBanner = false }
-                    .padding(.top, 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
-        }
-        .animation(.spring(response: 0.4, dampingFraction: 1), value: weekly.showRankUpBanner)
     }
 
     // MARK: Weekly Header Card
@@ -161,9 +152,8 @@ struct WeeklyLeaderboardView: View {
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 4) {
-                    let topLabel = weekly.topPercentLabel(totalXP: store.practiceXP)
-                    Text(topLabel).font(.title3.bold()).foregroundStyle(.yellow)
-                    Text("this week").font(.caption).foregroundStyle(.secondary)
+                    Text("\(min(100, weekly.weeklyXP * 100 / 500))%").font(.title3.bold()).foregroundStyle(.yellow)
+                    Text("of goal").font(.caption).foregroundStyle(.secondary)
                 }
             }
             // Weekly XP progress bar (toward weekly goal of 500 XP)
@@ -189,8 +179,6 @@ struct WeeklyLeaderboardView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
-            Label("Rankings are estimated based on your XP", systemImage: "info.circle")
-                .font(.caption2).foregroundStyle(.tertiary)
         }
         .padding(18)
         .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
@@ -217,14 +205,11 @@ struct WeeklyLeaderboardView: View {
 
     private var leaderboardTabs: some View {
         VStack(spacing: 14) {
-            Picker("", selection: $tab) {
-                Text("Global").tag(0)
-                Text("Friends").tag(1)
-            }.pickerStyle(.segmented)
+            Label(LeaderboardStore.disclosure, systemImage: "info.circle")
+                .font(.caption).foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-            let entries = tab == 0
-                ? LeaderboardStore.globalEntries(playerXP: store.practiceXP)
-                : LeaderboardStore.friendEntries(playerXP: store.practiceXP)
+            let entries = LeaderboardStore.globalEntries(playerXP: store.practiceXP)
 
             ForEach(entries) { entry in
                 WeeklyLeaderRow(entry: entry)

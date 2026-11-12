@@ -11,33 +11,21 @@ struct LeaderboardEntry: Identifiable {
     var level: XPLevel { XPLevel.current(xp: xp) }
 }
 
-// MARK: - Leaderboard Store (mock data seeded around player XP)
+// MARK: - Pacers
+//
+// There is no online leaderboard yet. Instead of inventing players, the board
+// shows computer "pacers": XP marks set around your own level, clearly labelled
+// as not real people.
 
 enum LeaderboardStore {
-    private static let globalNames = [
-        "xX_dev_Xx", "byte_wizard", "codecraft", "nullpointer", "snackoverflow",
-        "async_alice", "gitpusher", "loopmaster", "devhero99", "pixelcoder",
-        "syntaxking", "patchwork", "debugmonk", "0xdeadbeef", "consoledotlog",
-    ]
-    private static let friendNames = [
-        "Alex C.", "Jordan L.", "Sam T.", "Riley M.", "Casey B.", "Drew H.", "Morgan P.",
-    ]
+    static let disclosure = "Pacers are computer-set XP marks around your level. They aren’t real players."
+    private static let globalNames = (1...15).map { "Pacer \($0)" }
 
     static func globalEntries(playerXP: Int) -> [LeaderboardEntry] {
         let base = max(playerXP, 20)
         var entries = globalNames.enumerated().map { i, name in
             let offset = (i * 23 + 7) % 180 - 60
             return LeaderboardEntry(id: "g-\(i)", name: name, xp: max(0, base + offset), isYou: false)
-        }
-        entries.append(LeaderboardEntry(id: "you", name: "You", xp: playerXP, isYou: true))
-        return ranked(entries)
-    }
-
-    static func friendEntries(playerXP: Int) -> [LeaderboardEntry] {
-        let base = max(playerXP, 20)
-        var entries = friendNames.prefix(6).enumerated().map { i, name in
-            let offset = (i * 31 + 11) % 140 - 50
-            return LeaderboardEntry(id: "f-\(i)", name: name, xp: max(0, base + offset), isYou: false)
         }
         entries.append(LeaderboardEntry(id: "you", name: "You", xp: playerXP, isYou: true))
         return ranked(entries)
@@ -54,23 +42,16 @@ enum LeaderboardStore {
 
 struct LeaderboardView: View {
     @EnvironmentObject var store: LearningStore
-    @State private var tab = 0
 
     var body: some View {
         let xp = store.practiceXP
-        let entries = tab == 0 ? LeaderboardStore.globalEntries(playerXP: xp)
-                                : LeaderboardStore.friendEntries(playerXP: xp)
+        let entries = LeaderboardStore.globalEntries(playerXP: xp)
         let myRank = entries.first(where: \.isYou)?.rank ?? 0
 
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 leaderboardHeader(xp: xp, rank: myRank)
 
-                Picker("Board", selection: $tab) {
-                    Text("Global").tag(0)
-                    Text("Friends").tag(1)
-                }
-                .pickerStyle(.segmented)
 
                 if entries.count >= 3 {
                     podiumView(Array(entries.prefix(3)))
@@ -82,7 +63,7 @@ struct LeaderboardView: View {
                     }
                 }
 
-                ShareLink(item: "I\u{2019}m ranked #\(myRank) with \(xp) XP in StackSprint! Think you can beat me?") {
+                ShareLink(item: "I\u{2019}ve earned \(xp) XP in StackSprint. Want to race me?") {
                     Label("Challenge a friend", systemImage: "person.badge.plus")
                         .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 14)
                 }
@@ -90,19 +71,19 @@ struct LeaderboardView: View {
             }
             .padding(20)
         }
-        .navigationTitle("Leaderboard")
+        .navigationTitle("Pacers")
         .modifier(SprintTheme())
     }
 
     private func leaderboardHeader(xp: Int, rank: Int) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Leaderboard").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
-            Text("How do you rank?").font(.system(.title2, design: .rounded, weight: .bold))
+            Text("Pacers").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+            Text("Race the pacers").font(.title2.bold())
             if rank > 0 {
-                Text("You\u{2019}re #\(rank) with \(xp) XP").font(.subheadline).foregroundStyle(.secondary)
+                Text("You\u{2019}re #\(rank) of 16 with \(xp) XP").font(.subheadline).foregroundStyle(.secondary)
             }
-            Label("Rankings are estimated based on your XP", systemImage: "info.circle")
-                .font(.caption).foregroundStyle(.tertiary)
+            Label(LeaderboardStore.disclosure, systemImage: "info.circle")
+                .font(.caption).foregroundStyle(.secondary)
         }
     }
 

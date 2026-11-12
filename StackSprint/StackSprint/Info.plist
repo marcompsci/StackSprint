@@ -10,24 +10,12 @@
 				<string>stacksprint</string>
 			</array>
 			<key>CFBundleURLName</key>
-			<string>com.example.StackSprint.oauth</string>
+			<string>phoronomicstudios.com.StackSprint</string>
 		</dict>
 	</array>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>remote-notification</string>
-	</array>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>StackSprint does not use the microphone. This key is required by the App Store for completeness.</string>
-	<key>NSCameraUsageDescription</key>
-	<string>StackSprint does not use the camera. This key is required by the App Store for completeness.</string>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>StackSprint does not track you. We do not share any data with advertisers or analytics providers.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSSupportsLiveActivities</key>
-	<true/>
-	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
 	<true/>
 	<key>UILaunchScreen</key>
 	<dict>
