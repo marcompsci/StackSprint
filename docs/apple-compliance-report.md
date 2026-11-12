@@ -18,7 +18,7 @@ Sources: [App Review Guidelines](https://developer.apple.com/app-store/review/gu
 | Payments | StoreKit 2 auto-renewing subscriptions `com.stacksprint.pro.monthly` / `.yearly`; unlocks Go, Rust and Interview Prep tracks (32 lessons) and Pro season collectibles. |
 | Sync | CloudKit sync code exists but is disabled (`SSCloudKitEnabled` not set). |
 | Notifications | Local notifications only. |
-| Tests | 7 unit-test suites (curriculum, store, adaptive engine, challenges, premium, **compliance**, **code editing**); 4 Node web-runtime tests; 10 Studio missions verified against reference solutions in headless Chromium. |
+| Tests | 7 unit-test suites, 40 tests (curriculum, store, adaptive engine, challenges, premium, **compliance**, **code editing**); 4 Node web-runtime tests; 10 Studio missions verified against reference solutions in headless Chromium. Before this audit the unit-test target had no `TEST_HOST`/`BUNDLE_LOADER` and could not link; fixed. |
 
 ## 2. Findings
 
@@ -73,7 +73,8 @@ Severity: BLOCKER (would very likely cause rejection), HIGH, MEDIUM, LOW.
 | Node web tests (4) | Pass |
 | Studio mission checks vs reference solutions (headless Chromium) | 10/10 solutions pass all checks; starters fail as expected |
 | Bundled fonts / external requests | Fonts load; 0 third-party requests on page load |
-| GitHub Actions (Release build, analyze, unit tests, secret scan) | See section 6 |
+| GitHub Actions run 43322718431 (macos-26, Xcode 26.6, iOS 26.5 SDK) | Release build **succeeded**; static analysis **succeeded**; unit tests **40 tests in 7 suites passed** on an iPhone 17 Pro simulator (iOS 26.5) |
+| Full-history secret scan (gitleaks 8.24.3) | 47 commits scanned, no leaks |
 | On-device build | Not run this session: another Claude session was installing a different app on the same iPhone. Run in Xcode before archiving. |
 
 ## 5. Remaining manual actions
