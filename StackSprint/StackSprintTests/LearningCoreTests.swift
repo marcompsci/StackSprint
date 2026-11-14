@@ -450,3 +450,84 @@ struct TutorPortfolioTests {
         #expect(pages > 1)
     }
 }
+
+// MARK: - Phases 41–55
+
+@Suite("Fair play and streak freezes")
+@MainActor
+struct FairPlayTests {
+    private var calendar: Calendar {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+        return c
+    }
+    private func day(_ d: Int) -> Date { calendar.date(from: DateComponents(year: 2026, month: 11, day: d, hour: 12))! }
+
+    @Test func challengeQuestionsExistForEveryFreeLesson() throws {
+        let lessons = try Curriculum.load().lessons
+        for lesson in lessons where !PremiumStore.proTracks.contains(lesson.category) {
+            let q = try #require(ChallengeQuiz.question(for: lesson, in: lessons), "\(lesson.id)")
+            #expect(q.choices[q.answer] == lesson.term)
+        }
+    }
+
+    @Test func studyRoomPlayersGetTheSameFreeQuestions() throws {
+        let lessons = try Curriculum.load().lessons
+        let a = StudyRoomManager.sharedQuestions(from: lessons.shuffled(), seed: "p1|p2|2026-11-13")
+        let b = StudyRoomManager.sharedQuestions(from: lessons.shuffled(), seed: "p1|p2|2026-11-13")
+        #expect(a.map(\.id) == b.map(\.id))
+        #expect(a.count == StudyRoomManager.questionsPerRound)
+        #expect(a.allSatisfy { !PremiumStore.proTracks.contains($0.category) })
+    }
+
+    @Test func freezeCoversOneMissedDay() {
+        // Practiced 10th–12th, missed the 13th, it's the 14th.
+        let days: Set<String> = ["2026-11-10", "2026-11-11", "2026-11-12"]
+        #expect(StreakMath.daysToFreeze(days: days, today: day(14), available: 1, calendar: calendar) == ["2026-11-13"])
+        #expect(StreakMath.daysToFreeze(days: days, today: day(14), available: 0, calendar: calendar).isEmpty)
+    }
+
+    @Test func freezeDoesNotBridgeLongGaps() {
+        let days: Set<String> = ["2026-11-08", "2026-11-09"]
+        // Missed 10th–13th: four days, only two freezes.
+        #expect(StreakMath.daysToFreeze(days: days, today: day(14), available: 2, calendar: calendar).isEmpty)
+        // Missed 12th–13th with two freezes: both covered.
+        let recent: Set<String> = ["2026-11-10", "2026-11-11"]
+        #expect(Set(StreakMath.daysToFreeze(days: recent, today: day(14), available: 2, calendar: calendar)) == ["2026-11-12", "2026-11-13"])
+    }
+
+    @Test func noFreezeWithoutAStreakOrAGap() {
+        #expect(StreakMath.daysToFreeze(days: [], today: day(14), available: 2, calendar: calendar).isEmpty)
+        #expect(StreakMath.daysToFreeze(days: ["2026-11-13"], today: day(14), available: 2, calendar: calendar).isEmpty)
+    }
+}
+
+@Suite("Targets, recaps and what's new")
+@MainActor
+struct TargetTests {
+    @Test func dailyTargetFromMinutes() {
+        #expect(DailyTarget.lessons(forMinutes: 3) == 1)
+        #expect(DailyTarget.lessons(forMinutes: 5) == 2)
+        #expect(DailyTarget.lessons(forMinutes: 10) == 4)
+    }
+
+    @Test func recapLandsOnTheLastEveningOfTheWeek() throws {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+        cal.firstWeekday = 1
+        let wednesday = cal.date(from: DateComponents(year: 2026, month: 11, day: 11, hour: 9))!
+        let fire = try #require(NotificationManager.weeklyRecapDate(now: wednesday, calendar: cal))
+        #expect(cal.component(.weekday, from: fire) == 7) // Saturday
+        #expect(cal.component(.hour, from: fire) == 18)
+        let saturdayNight = cal.date(from: DateComponents(year: 2026, month: 11, day: 14, hour: 20))!
+        #expect(NotificationManager.weeklyRecapDate(now: saturdayNight, calendar: cal) == nil)
+    }
+
+    @Test func whatsNewOnlyForReturningLearners() {
+        let defaults = UserDefaults(suiteName: "whatsnew-test-\(UUID().uuidString)")!
+        #expect(!WhatsNew.shouldShow(onboarded: false, defaults: defaults))
+        #expect(WhatsNew.shouldShow(onboarded: true, defaults: defaults))
+        WhatsNew.markSeen(defaults: defaults)
+        #expect(!WhatsNew.shouldShow(onboarded: true, defaults: defaults))
+    }
+}

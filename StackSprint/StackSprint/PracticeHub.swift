@@ -58,6 +58,7 @@ struct ReviewHubView: View {
     @EnvironmentObject var store: LearningStore
     @EnvironmentObject var premiumStore: PremiumStore
     @ObservedObject private var reviews = SM2Engine.shared
+    @ObservedObject private var adaptive = AdaptiveEngine.shared
     @State private var showingPaywall = false
     @State private var mixSeed = UUID().uuidString
 
@@ -82,6 +83,7 @@ struct ReviewHubView: View {
             VStack(alignment: .leading, spacing: 22) {
                 dueSection
                 weakSection
+                mistakesSection
                 quickSection
                 tracksSection
             }
@@ -118,6 +120,11 @@ struct ReviewHubView: View {
                 if due.count > 8 {
                     Text("+ \(due.count - 8) more after these").font(.caption).foregroundStyle(.secondary)
                 }
+                NavigationLink { ReviewSessionView(queue: due) } label: {
+                    Label(due.count == 1 ? "Review it now" : "Review all \(due.count) in a row", systemImage: "play.fill")
+                        .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12)
+                }
+                .buttonStyle(.borderedProminent).tint(.orange)
             }
         }
     }
@@ -142,6 +149,36 @@ struct ReviewHubView: View {
                     .buttonStyle(.bordered).tint(.orange)
                 }
             }
+        }
+    }
+
+    /// Questions the learner has got wrong more often than right, from every quiz.
+    private var mistakes: [Question] {
+        let counts = adaptive.wrongCounts
+        guard !counts.isEmpty else { return [] }
+        let pool = tracks.filter { !isLocked($0) }.flatMap { store.quiz(for: $0) }
+        return pool.filter { (counts[$0.id] ?? 0) > 0 }
+            .sorted { (counts[$0.id] ?? 0) > (counts[$1.id] ?? 0) }
+    }
+
+    @ViewBuilder
+    private var mistakesSection: some View {
+        let list = mistakes
+        if !list.isEmpty {
+            NavigationLink { MistakesView(questions: list) } label: {
+                HStack {
+                    Image(systemName: "exclamationmark.bubble.fill").foregroundStyle(.red.opacity(0.8))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Your mistakes").font(.headline)
+                        Text("\(list.count) \(list.count == 1 ? "question" : "questions") to look at again").font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").foregroundStyle(.secondary)
+                }
+                .padding(14)
+                .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -198,5 +235,34 @@ struct ReviewHubView: View {
         }
         .padding(14)
         .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+// MARK: - Mistakes
+
+struct MistakesView: View {
+    let questions: [Question]
+
+    var body: some View {
+        List {
+            Section {
+                NavigationLink { QuizView(questions: Array(questions.prefix(15)).shuffled(), title: "Mistakes quiz") } label: {
+                    Label("Quiz me on \(min(questions.count, 15)) of these", systemImage: "arrow.uturn.backward")
+                }
+            }
+            Section("Questions you've missed") {
+                ForEach(questions.prefix(40)) { q in
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(q.question).font(.subheadline.bold())
+                        Text("Answer: \(q.choices[q.answer])").font(.subheadline).foregroundStyle(.green)
+                        Text(q.explanation).font(.caption).foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 4)
+                    .accessibilityElement(children: .combine)
+                }
+            }
+        }
+        .navigationTitle("Your mistakes")
+        .modifier(SprintTheme())
     }
 }

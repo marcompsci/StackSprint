@@ -23,6 +23,7 @@ struct ProgressBackup: Codable, Equatable {
     var missionDrafts: [String: String]
     /// Added after version 1 shipped; older backups simply don't have it.
     var lessonActivity: [String]? = nil
+    var frozenDays: [String]? = nil
 
     enum BackupError: LocalizedError {
         case newerVersion, notABackup
@@ -75,7 +76,8 @@ struct ProgressBackup: Codable, Equatable {
             notes: bookmarks.notes,
             completedMissions: (defaults.stringArray(forKey: completedMissionsKey) ?? []).sorted(),
             missionDrafts: drafts,
-            lessonActivity: store.lessonActivity.sorted()
+            lessonActivity: store.lessonActivity.sorted(),
+            frozenDays: store.frozenDays.sorted()
         )
     }
 
@@ -84,7 +86,7 @@ struct ProgressBackup: Codable, Equatable {
         store.mergeFromCloud(completed: Set(backup.completedLessons),
                              practicedDays: Set(backup.practiceDays),
                              recallAnswers: Set(backup.quizAnswers))
-        store.mergeLessonActivity(Set(backup.lessonActivity ?? []))
+        store.mergeLessonActivity(Set(backup.lessonActivity ?? []), frozenDays: Set(backup.frozenDays ?? []))
         SM2Engine.shared.merge(backup.reviewCards)
         bookmarks.merge(bookmarks: Set(backup.bookmarks), notes: backup.notes)
         let defaults = UserDefaults.standard

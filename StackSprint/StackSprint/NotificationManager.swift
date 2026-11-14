@@ -49,6 +49,8 @@ import UserNotifications
 
     /// Whether today already counts as practiced; set by the app so reminders skip it.
     var practicedToday: () -> Bool = { false }
+    /// The lesson "Continue" would open, so the next reminder can name it.
+    var nextLessonTitle: () -> String? = { nil }
 
     /// One reminder a day for the next week at the chosen time, skipping today once
     /// you've practiced. (A repeating trigger can't skip a day, so it nagged even
@@ -61,7 +63,12 @@ import UserNotifications
                                                   skipToday: practicedToday()).enumerated() {
             let content = UNMutableNotificationContent()
             content.title = "Daily practice"
-            content.body = dailyMessages.randomElement() ?? dailyMessages[0]
+            // The first reminder names your actual next lesson; later ones may be out of date by then.
+            if offset == 0, let next = nextLessonTitle() {
+                content.body = "Next up: \(next). It takes about two minutes."
+            } else {
+                content.body = dailyMessages.randomElement() ?? dailyMessages[0]
+            }
             content.sound = .default
             let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
             let trigger = UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)
@@ -83,6 +90,33 @@ import UserNotifications
         }
         .prefix(reminderDays)
         .map { $0 }
+    }
+
+    // MARK: – Weekly recap
+
+    /// A short recap on the last evening of the week. It's rescheduled after every practice,
+    /// so the numbers are current as of your latest lesson.
+    func scheduleWeeklyRecap(lessons: Int, streak: Int) {
+        center.removePendingNotificationRequests(withIdentifiers: ["weekly.recap"])
+        guard enabled, permissionGranted, lessons > 0,
+              let fire = Self.weeklyRecapDate(now: Date()) else { return }
+        let content = UNMutableNotificationContent()
+        content.title = "Your week in StackSprint"
+        content.body = "\(lessons) \(lessons == 1 ? "lesson" : "lessons") this week"
+            + (streak > 1 ? " and a \(streak)-day streak." : ".") + " Nice work."
+        content.sound = .default
+        let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: fire)
+        center.add(UNNotificationRequest(identifier: "weekly.recap", content: content,
+                                         trigger: UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)))
+    }
+
+    /// 6 pm on the last day of the current week, if that's still ahead.
+    nonisolated static func weeklyRecapDate(now: Date, calendar: Calendar = .current) -> Date? {
+        guard let week = calendar.dateInterval(of: .weekOfYear, for: now),
+              let lastDay = calendar.date(byAdding: .day, value: -1, to: week.end),
+              let fire = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: lastDay),
+              fire > now else { return nil }
+        return fire
     }
 
     // MARK: – Comeback (one-shot, rescheduled after practice)

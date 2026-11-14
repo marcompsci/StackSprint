@@ -184,6 +184,13 @@ struct BookmarksSheet: View {
     private var pending: [Lesson] {
         bookmarks.reviewQueue(from: store.curriculum?.lessons ?? [], completed: store.completed)
     }
+    /// A term question for each bookmarked lesson (from tracks the learner can open).
+    private var bookmarkQuiz: [Question] {
+        let marked = bookmarks.allBookmarked(from: store.curriculum?.lessons ?? [])
+        let ids = Set(marked.map { TrackQuiz.termPrefix + $0.id })
+        return Set(marked.map(\.category)).flatMap { store.quiz(for: $0) }.filter { ids.contains($0.id) }
+    }
+
     private var done: [Lesson] {
         bookmarks.allBookmarked(from: store.curriculum?.lessons ?? []).filter { store.completed.contains($0.id) }
     }
@@ -196,6 +203,14 @@ struct BookmarksSheet: View {
                         systemImage: "bookmark",
                         description: Text("Tap the bookmark icon on any lesson card to add it to your review queue."))
                 } else {
+                    let quiz = bookmarkQuiz
+                    if quiz.count >= 2 {
+                        Section {
+                            NavigationLink { QuizView(questions: quiz.shuffled(), title: "Bookmarks quiz") } label: {
+                                Label("Quiz me on my \(quiz.count) bookmarks", systemImage: "gamecontroller.fill")
+                            }
+                        }
+                    }
                     if !pending.isEmpty {
                         Section("To review (\(pending.count))") {
                             ForEach(pending) { lesson in BookmarkRow(lesson: lesson) }

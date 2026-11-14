@@ -23,6 +23,7 @@ extension SharedDefaults.Key {
 }
 
 @MainActor func writeWatchData(store: LearningStore) {
+    guard AppExtensions.hasWidgetExtension else { return } // no watch app target reads this yet
     let ud = SharedDefaults.store
     let dueCards = SM2Engine.shared.dueCards(in: store.curriculum?.lessons ?? [])
     ud.set(dueCards.count, forKey: SharedDefaults.Key.watchDueCount)

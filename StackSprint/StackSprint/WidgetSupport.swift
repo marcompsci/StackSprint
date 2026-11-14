@@ -22,6 +22,7 @@ enum SharedDefaults {
 // MARK: - Widget Data Writer
 
 @MainActor func writeWidgetData(store: LearningStore) {
+    guard AppExtensions.hasWidgetExtension else { return } // nothing reads it yet
     let ud = SharedDefaults.store
     ud.set(store.currentStreak,   forKey: SharedDefaults.Key.streak)
     ud.set(store.practiceXP,      forKey: SharedDefaults.Key.xp)

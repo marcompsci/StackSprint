@@ -33,6 +33,43 @@ struct LearningGoal {
     ]
 }
 
+// MARK: - Daily target
+//
+// Onboarding asks "How much time a day?" but nothing used the answer. It now sets
+// a small daily lesson target (about two and a half minutes a lesson).
+
+enum DailyTarget {
+    static let minutesKey = "onboarding.minutes"
+    static let choices = [3, 5, 10]
+
+    static func lessons(forMinutes minutes: Int) -> Int { max(1, Int(Double(minutes) / 2.5)) }
+}
+
+struct DailyTargetRow: View {
+    @EnvironmentObject var store: LearningStore
+    @AppStorage(DailyTarget.minutesKey) private var minutes = 5
+
+    var body: some View {
+        let target = DailyTarget.lessons(forMinutes: minutes)
+        let done = store.lessonsToday
+        HStack(spacing: 10) {
+            ZStack {
+                Circle().stroke(Color.secondary.opacity(0.2), lineWidth: 4)
+                Circle().trim(from: 0, to: min(Double(done) / Double(target), 1))
+                    .stroke(done >= target ? Color.mint : Color.orange, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+            }
+            .frame(width: 22, height: 22)
+            Text(done >= target ? "Today's target done: \(done) \(done == 1 ? "lesson" : "lessons")"
+                 : "Today: \(done) of \(target) \(target == 1 ? "lesson" : "lessons") (\(minutes) min a day)")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(done >= target ? "Daily target done" : "Today, \(done) of \(target) lessons")
+    }
+}
+
 // MARK: - Goal Progress View (embed in LearnView hero)
 
 struct GoalProgressBanner: View {
@@ -76,8 +113,18 @@ struct GoalProgressBanner: View {
 
 struct GoalSettingsSection: View {
     @AppStorage("goal.weeklyLessons") private var weeklyGoal = 3
+    @AppStorage(DailyTarget.minutesKey) private var minutes = 5
 
     var body: some View {
+        Section {
+            Picker("Time a day", selection: $minutes) {
+                ForEach(DailyTarget.choices, id: \.self) { value in
+                    Text("\(value) min · \(DailyTarget.lessons(forMinutes: value)) \(DailyTarget.lessons(forMinutes: value) == 1 ? "lesson" : "lessons")").tag(value)
+                }
+            }
+        } header: {
+            Text("Daily target")
+        }
         Section {
             ForEach(LearningGoal.presets, id: \.lessonsPerWeek) { goal in
                 Button {

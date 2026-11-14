@@ -96,8 +96,9 @@ struct FriendChallenge: Identifiable, Codable {
         startTimer()
     }
 
-    func answerCorrect() { myScore += 1; advance() }
-    func answerWrong()   { advance() }
+    // An answer that lands after time ran out doesn't count.
+    func answerCorrect() { guard state == .racing else { return }; myScore += 1; advance() }
+    func answerWrong()   { guard state == .racing else { return }; advance() }
 
     private func advance() {
         currentIndex += 1
@@ -108,7 +109,7 @@ struct FriendChallenge: Identifiable, Codable {
         timerTask?.cancel()
         state = .finished
         challengeFinished = true
-        HapticManager.shared.notification(myScore >= (activeChallenge?.creatorScore ?? 0) ? .success : .warning)
+        HapticManager.shared.notification(myScore > (activeChallenge?.creatorScore ?? 0) ? .success : .warning)
     }
 
     func reset() {
@@ -145,13 +146,14 @@ struct CreateChallengeView: View {
     @State private var quizIndex = 0
     @State private var myScore = 0
     @State private var phase: Phase = .quiz
-    @State private var revealed = false
-    @AppStorage("username") private var username = "You"
+    @AppStorage("username") private var username = ""
 
     enum Phase { case quiz, share }
 
+    /// Lessons from free tracks only, so whoever gets the link can play it.
     private var questions: [Lesson] {
-        Array((store.curriculum?.lessons ?? []).shuffled().prefix(FriendChallengeStore.questionsPerChallenge))
+        let free = (store.curriculum?.lessons ?? []).filter { !PremiumStore.proTracks.contains($0.category) }
+        return Array(free.shuffled().prefix(FriendChallengeStore.questionsPerChallenge))
     }
     @State private var sessionQuestions: [Lesson] = []
 
@@ -174,41 +176,22 @@ struct CreateChallengeView: View {
     }
 
     @ViewBuilder private var quizPhase: some View {
-        if sessionQuestions.indices.contains(quizIndex) {
-            let lesson = sessionQuestions[quizIndex]
-            VStack(spacing: 22) {
-                Text("Q \(quizIndex + 1) of \(FriendChallengeStore.questionsPerChallenge)")
+        if sessionQuestions.indices.contains(quizIndex),
+           let question = ChallengeQuiz.question(for: sessionQuestions[quizIndex], in: store.curriculum?.lessons ?? []) {
+            VStack(spacing: 18) {
+                Text("Q \(quizIndex + 1) of \(sessionQuestions.count)")
                     .font(.caption.bold()).foregroundStyle(.secondary)
-                Spacer()
-                VStack(spacing: 14) {
-                    Text(lesson.term).font(.title2.bold()).multilineTextAlignment(.center)
-                    Text(lesson.clue).font(.body).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                    if revealed {
-                        Text(lesson.definition).font(.subheadline).padding(14)
-                            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    }
+                ChallengeQuestionCard(question: question) { correct in
+                    if correct { myScore += 1 }
+                    nextQuestion()
                 }
-                .padding(.horizontal, 24)
-                Spacer()
-                if !revealed {
-                    Button("Reveal") { revealed = true }.buttonStyle(.borderedProminent).tint(.blue)
-                } else {
-                    HStack(spacing: 16) {
-                        Button("Got it") {
-                            myScore += 1; nextQuestion()
-                        }.buttonStyle(.borderedProminent).tint(.mint).frame(maxWidth: .infinity)
-                        Button("Missed") {
-                            nextQuestion()
-                        }.buttonStyle(.borderedProminent).tint(.orange.opacity(0.8)).frame(maxWidth: .infinity)
-                    }.padding(.horizontal, 24)
-                }
+                .id(question.id)
             }
-            .padding(.vertical, 24)
+            .padding(24)
         }
     }
 
     private func nextQuestion() {
-        revealed = false
         quizIndex += 1
         if quizIndex >= sessionQuestions.count { phase = .share }
     }
@@ -225,8 +208,15 @@ struct CreateChallengeView: View {
             if let url = challengeStore.createChallengeURL(
                 lessons: sessionQuestions,
                 myScore: myScore,
-                creatorName: username
+                creatorName: FriendChallengeStore.cleanName(username)
             ) {
+                // The link used to always say "You challenged you!" because the name was fixed to "You".
+                TextField("Your first name (shown to your friend)", text: $username)
+                    .textContentType(.givenName)
+                    .multilineTextAlignment(.center)
+                    .padding(12)
+                    .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .padding(.horizontal, 32)
                 ShareLink(item: url, message: Text("Can you beat my score of \(myScore)/\(FriendChallengeStore.questionsPerChallenge)? Try this StackSprint challenge!")) {
                     Label("Share Challenge Link", systemImage: "square.and.arrow.up")
                         .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 14)
@@ -289,7 +279,9 @@ struct AcceptChallengeSheet: View {
 
 struct ChallengeRaceView: View {
     @ObservedObject var cs = FriendChallengeStore.shared
+    @EnvironmentObject var store: LearningStore
     @Environment(\.dismiss) private var dismiss
+    private var allLessons: [Lesson] { store.curriculum?.lessons ?? [] }
 
     var body: some View {
         Group {
@@ -320,38 +312,34 @@ struct ChallengeRaceView: View {
             .padding(.horizontal, 20).padding(.top, 16)
             .background(SprintPalette.card)
 
-            Spacer()
-            VStack(spacing: 16) {
-                Text("Q \(cs.currentIndex + 1)/\(cs.activeLessons.count)")
-                    .font(.caption.bold()).foregroundStyle(.secondary)
-                Text(lesson.term).font(.title2.bold()).multilineTextAlignment(.center)
-                Text(lesson.clue).font(.body).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            if let question = ChallengeQuiz.question(for: lesson, in: allLessons) {
+                VStack(spacing: 14) {
+                    Text("Q \(cs.currentIndex + 1)/\(cs.activeLessons.count)")
+                        .font(.caption.bold()).foregroundStyle(.secondary)
+                    ChallengeQuestionCard(question: question) { correct in
+                        correct ? cs.answerCorrect() : cs.answerWrong()
+                    }
+                    .id("\(cs.currentIndex)-\(question.id)")
+                }
+                .padding(24)
+            } else {
+                // A lesson this version can't quiz on: skip it rather than stall the race.
+                ProgressView().onAppear { cs.answerWrong() }
             }
-            .padding(.horizontal, 24)
-            Spacer()
-            HStack(spacing: 14) {
-                Button("Know it") {
-                    HapticManager.shared.impact()
-                    cs.answerCorrect()
-                }.buttonStyle(.borderedProminent).tint(.mint).font(.headline).frame(maxWidth: .infinity)
-                Button("Skip") {
-                    HapticManager.shared.impact()
-                    cs.answerWrong()
-                }.buttonStyle(.borderedProminent).tint(.orange.opacity(0.8)).font(.headline).frame(maxWidth: .infinity)
-            }
-            .padding(24)
+            Spacer(minLength: 0)
         }
     }
 
     private var finishedView: some View {
         let target = cs.activeChallenge?.creatorScore ?? 0
-        let won = cs.myScore >= target
+        let won = cs.myScore > target
+        let tied = cs.myScore == target
         return VStack(spacing: 24) {
             Spacer()
             Image(systemName: won ? "trophy.fill" : "star.fill")
                 .font(.system(size: 70)).foregroundStyle(won ? .yellow : .orange)
             VStack(spacing: 8) {
-                Text(won ? "You beat the challenge!" : "Close call!").font(.largeTitle.bold())
+                Text(won ? "You beat the challenge!" : tied ? "It's a tie!" : "Close call!").font(.largeTitle.bold())
                 Text("Your score: \(cs.myScore) · Target: \(target)")
                     .font(.subheadline).foregroundStyle(.secondary)
                 if won {
@@ -364,5 +352,66 @@ struct ChallengeRaceView: View {
             Spacer()
         }
         .padding(32)
+    }
+}
+
+// MARK: - Real questions for challenges
+//
+// Challenges used to be "Got it / Missed" and "Know it / Skip" buttons, so the
+// score was whatever you tapped. Both sides now answer the same multiple-choice
+// question for each lesson: the definition, and four terms from its track.
+
+enum ChallengeQuiz {
+    static func question(for lesson: Lesson, in lessons: [Lesson]) -> Question? {
+        TrackQuiz.termQuestions(track: lesson.category, lessons: lessons, seed: "challenge")
+            .first { $0.id == TrackQuiz.termPrefix + lesson.id }
+    }
+}
+
+struct ChallengeQuestionCard: View {
+    let question: Question
+    let onAnswer: (Bool) -> Void
+    @State private var picked: Int?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(question.question).font(.headline).fixedSize(horizontal: false, vertical: true)
+            ForEach(question.choices.indices, id: \.self) { index in
+                Button { pick(index) } label: {
+                    HStack {
+                        Text(question.choices[index]).multilineTextAlignment(.leading)
+                        Spacer()
+                        if picked != nil && index == question.answer {
+                            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                        } else if picked == index {
+                            Image(systemName: "xmark.circle.fill").foregroundStyle(.red)
+                        }
+                    }
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(background(index), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .disabled(picked != nil)
+            }
+        }
+    }
+
+    private func background(_ index: Int) -> Color {
+        guard let picked else { return SprintPalette.card }
+        if index == question.answer { return .green.opacity(0.16) }
+        if index == picked { return .red.opacity(0.14) }
+        return SprintPalette.card
+    }
+
+    private func pick(_ index: Int) {
+        picked = index
+        let correct = index == question.answer
+        HapticManager.shared.notification(correct ? .success : .warning)
+        AccessibilityNotification.Announcement(correct ? "Correct" : "The answer is \(question.choices[question.answer])").post()
+        Task {
+            try? await Task.sleep(for: .milliseconds(700))
+            onAnswer(correct)
+        }
     }
 }

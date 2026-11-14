@@ -21,10 +21,16 @@ private struct Particle: Identifiable {
 struct ConfettiView: View {
     @State private var particles: [Particle] = []
     @State private var running = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let colors: [Color] = [.mint, .orange, .yellow, .pink, .blue, .purple, .green]
 
     var body: some View {
+        // Falling confetti is exactly the motion Reduce Motion asks apps to skip.
+        if reduceMotion { Color.clear.accessibilityHidden(true) } else { confetti }
+    }
+
+    private var confetti: some View {
         TimelineView(.animation(minimumInterval: 1 / 60)) { timeline in
             Canvas { ctx, size in
                 for p in particles {

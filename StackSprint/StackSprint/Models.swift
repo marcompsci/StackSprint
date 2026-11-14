@@ -77,6 +77,11 @@ struct ProgressRow: Codable {
     /// "yyyy-MM-dd|lessonID" for every day a lesson was finished or practiced again.
     /// The weekly goal counts these, so it measures lessons rather than days.
     @Published private(set) var lessonActivity: Set<String> = []
+    /// Days a streak freeze covered: they keep the streak alive but aren't practice.
+    @Published private(set) var frozenDays: Set<String> = []
+    /// Freezes in reserve. One is earned for every 7 days of streak, up to `maxFreezes`.
+    @Published private(set) var freezesAvailable = 0
+    static let maxFreezes = 2
     @Published var curriculum: Curriculum? { didSet { rebuildIndex() } }
     /// Track names in curriculum order, and each track's lessons, built once per curriculum
     /// instead of being re-filtered on every screen refresh.
@@ -143,12 +148,15 @@ struct ProgressRow: Codable {
         practicedDays = Set(UserDefaults.standard.stringArray(forKey: "native.practiceDays.\(namespace)") ?? [])
         correctRecallAnswers = Set(UserDefaults.standard.stringArray(forKey: "native.dailyRecall.\(namespace)") ?? [])
         lessonActivity = Set(UserDefaults.standard.stringArray(forKey: "native.lessonActivity.\(namespace)") ?? [])
+        frozenDays = Set(UserDefaults.standard.stringArray(forKey: "native.frozenDays.\(namespace)") ?? [])
+        freezesAvailable = UserDefaults.standard.integer(forKey: "native.freezes.\(namespace)")
+        applyStreakFreezeIfNeeded()
     }
 
     func complete(_ id: String) {
         guard !completed.contains(id) else { return }
         completed.insert(id)
-        practicedDays.insert(Self.dayKey(Date()))
+        markPracticed(Self.dayKey(Date()))
         lessonActivity.insert("\(Self.dayKey(Date()))|\(id)")
         persist()
         onPractice?(10)
@@ -160,7 +168,7 @@ struct ProgressRow: Codable {
     func recordPractice() {
         let today = Self.dayKey(Date())
         guard !practicedDays.contains(today) else { return }
-        practicedDays.insert(today)
+        markPracticed(today)
         persist()
         onActivity?()
     }
@@ -170,7 +178,7 @@ struct ProgressRow: Codable {
     func recordLessonReplay(_ id: String) {
         let today = Self.dayKey(Date())
         let inserted = lessonActivity.insert("\(today)|\(id)").inserted
-        let newDay = practicedDays.insert(today).inserted
+        let newDay = markPracticed(today)
         guard inserted || newDay else { return }
         persist()
         onActivity?()
@@ -189,7 +197,7 @@ struct ProgressRow: Codable {
         let key = "\(Self.dayKey(Date()))|\(questionID)"
         guard !correctRecallAnswers.contains(key) else { return }
         correctRecallAnswers.insert(key)
-        practicedDays.insert(Self.dayKey(Date()))
+        markPracticed(Self.dayKey(Date()))
         persist()
         onPractice?(5)
         onActivity?()
@@ -206,13 +214,15 @@ struct ProgressRow: Codable {
     /// Clears lessons, practice days, quiz answers and lesson activity for this profile.
     func eraseProgress() {
         completed = []; practicedDays = []; correctRecallAnswers = []; lessonActivity = []
+        frozenDays = []; freezesAvailable = 0
         persist()
         UserDefaults.standard.removeObject(forKey: "stats.bestStreak")
         onActivity?()
     }
 
-    func mergeLessonActivity(_ activity: Set<String>) {
+    func mergeLessonActivity(_ activity: Set<String>, frozenDays frozen: Set<String> = []) {
         lessonActivity.formUnion(activity)
+        frozenDays.formUnion(frozen)
         persist()
     }
 
@@ -228,6 +238,8 @@ struct ProgressRow: Codable {
         UserDefaults.standard.set(Array(practicedDays), forKey: "native.practiceDays.\(namespace)")
         UserDefaults.standard.set(Array(correctRecallAnswers), forKey: "native.dailyRecall.\(namespace)")
         UserDefaults.standard.set(Array(lessonActivity), forKey: "native.lessonActivity.\(namespace)")
+        UserDefaults.standard.set(Array(frozenDays), forKey: "native.frozenDays.\(namespace)")
+        UserDefaults.standard.set(freezesAvailable, forKey: "native.freezes.\(namespace)")
     }
 
     var lastPracticedDate: Date? {
@@ -239,8 +251,29 @@ struct ProgressRow: Codable {
 
     /// A streak stays alive until the end of today: if you practiced yesterday
     /// but not yet today, it still shows (and today is when you keep it).
-    var currentStreak: Int { StreakMath.current(days: practicedDays, today: Date()) }
-    var streakAtRisk: Bool { StreakMath.atRisk(days: practicedDays, today: Date()) }
+    /// Practice days plus days a freeze covered.
+    private var streakDays: Set<String> { practicedDays.union(frozenDays) }
+    var currentStreak: Int { StreakMath.current(days: streakDays, today: Date()) }
+    var streakAtRisk: Bool { StreakMath.atRisk(days: streakDays, today: Date()) }
+
+    /// Adds a practice day; every 7th day of a streak earns a freeze.
+    @discardableResult
+    private func markPracticed(_ day: String) -> Bool {
+        guard practicedDays.insert(day).inserted else { return false }
+        let streak = StreakMath.current(days: streakDays, today: Date())
+        if streak > 0 && streak % 7 == 0 && freezesAvailable < Self.maxFreezes { freezesAvailable += 1 }
+        return true
+    }
+
+    /// Covers missed days right before today with saved freezes, so one off day doesn't
+    /// wipe out a long streak. Call on launch and when the app comes back.
+    func applyStreakFreezeIfNeeded(today: Date = Date()) {
+        let cover = StreakMath.daysToFreeze(days: streakDays, today: today, available: freezesAvailable)
+        guard !cover.isEmpty else { return }
+        frozenDays.formUnion(cover)
+        freezesAvailable -= cover.count
+        persist()
+    }
 
     /// The longest run of consecutive practice days in the learner's history.
     var bestStreak: Int {
@@ -276,6 +309,27 @@ enum StreakMath {
     /// True when there's a streak to keep and today hasn't been practiced yet.
     static func atRisk(days: Set<String>, today: Date, calendar: Calendar = .current) -> Bool {
         !days.contains(key(today, calendar)) && current(days: days, today: today, calendar: calendar) > 0
+    }
+
+    /// The missed days just before today that freezes can cover: only when the gap is no
+    /// longer than the freezes available and there was a streak before it.
+    static func daysToFreeze(days: Set<String>, today: Date, available: Int, calendar: Calendar = .current) -> [String] {
+        guard available > 0 else { return [] }
+        let start = calendar.startOfDay(for: today)
+        var gap: [String] = []
+        var offset = 1
+        while offset <= available + 1 {
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: start) else { return [] }
+            let dayKey = key(day, calendar)
+            if days.contains(dayKey) { break }
+            gap.append(dayKey)
+            offset += 1
+        }
+        // No gap, a gap too long to bridge, or nothing before it worth keeping.
+        guard !gap.isEmpty, gap.count <= available,
+              let before = calendar.date(byAdding: .day, value: -(gap.count + 1), to: start),
+              days.contains(key(before, calendar)) else { return [] }
+        return gap
     }
 
     /// The longest run of consecutive days anywhere in the history.

@@ -142,7 +142,14 @@ struct StudyLiveActivityModifier: ViewModifier {
     let lesson: Lesson
     @EnvironmentObject var store: LearningStore
 
+    @ViewBuilder
     func body(content: Content) -> some View {
+        // There's no widget extension to draw a Live Activity, so requesting one for every
+        // lesson (and updating it every second) only cost battery. Off until an extension exists.
+        if AppExtensions.hasWidgetExtension { tracked(content) } else { content }
+    }
+
+    private func tracked(_ content: Content) -> some View {
         content
             .onAppear {
                 Task { await StudyActivityManager.shared.start(lesson: lesson) }
@@ -156,6 +163,11 @@ struct StudyLiveActivityModifier: ViewModifier {
                 }
             }
     }
+}
+
+enum AppExtensions {
+    /// Flip to true once a widget extension target (widgets + Live Activity UI) is added.
+    static let hasWidgetExtension = false
 }
 
 extension View {

@@ -81,7 +81,10 @@ struct RoomPacket: Codable {
                 guard let foundMatch else { self.state = .idle; return }
                 foundMatch.delegate = self
                 self.match = foundMatch
-                self.raceQuestions = Array(lessons.shuffled().prefix(Self.questionsPerRound))
+                // Both phones pick the same questions from a seed they share (the players' IDs and
+                // today's date). They used to shuffle separately, so each player got different questions.
+                let ids = ([GKLocalPlayer.local] + foundMatch.players).map(\.gamePlayerID).sorted()
+                self.raceQuestions = Self.sharedQuestions(from: lessons, seed: ids.joined(separator: "|") + StreakMath.key(Date(), .current))
                 self.myScore = 0
                 self.opponentScore = 0
                 self.opponentDone = false
@@ -91,6 +94,13 @@ struct RoomPacket: Codable {
                 self.sendPacket(RoomPacket(kind: .ready, score: 0, displayName: self.myDisplayName))
             }
         }
+    }
+
+    /// Free-track lessons in a deterministic order for a given seed.
+    static func sharedQuestions(from lessons: [Lesson], seed: String) -> [Lesson] {
+        var rng = SeededGenerator(seed: seed)
+        let free = lessons.filter { !PremiumStore.proTracks.contains($0.category) }.sorted { $0.id < $1.id }
+        return Array(free.shuffled(using: &rng).prefix(questionsPerRound))
     }
 
     func cancelMatchmaking() {
@@ -103,12 +113,14 @@ struct RoomPacket: Codable {
     // MARK: Race Actions
 
     func answerCorrect() {
+        guard state == .racing, currentIndex < Self.questionsPerRound else { return }
         myScore += 1
         sendPacket(RoomPacket(kind: .score, score: myScore, displayName: myDisplayName))
         advance()
     }
 
     func answerWrong() {
+        guard state == .racing, currentIndex < Self.questionsPerRound else { return }
         advance()
     }
 
@@ -165,9 +177,9 @@ extension StudyRoomManager: GKMatchDelegate {
             case .ready:
                 break
             case .score:
-                opponentScore = packet.score
+                opponentScore = min(max(packet.score, 0), Self.questionsPerRound)
             case .finish:
-                opponentScore = packet.score
+                opponentScore = min(max(packet.score, 0), Self.questionsPerRound)
                 opponentDone = true
                 tryResolveWinner()
             }
@@ -290,35 +302,21 @@ struct StudyRoomView: View {
             VStack(spacing: 0) {
                 scoreHeader
                     .padding([.horizontal, .top], 20)
-                Spacer()
-                VStack(spacing: 16) {
-                    Text("Question \(room.currentIndex + 1) of \(StudyRoomManager.questionsPerRound)")
-                        .font(.caption.bold()).foregroundStyle(.secondary)
-                    Text(lesson.term)
-                        .font(.title.bold()).multilineTextAlignment(.center)
-                    Text(lesson.clue)
-                        .font(.body).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                }
-                .padding(24)
-                .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                .padding(.horizontal, 24)
-                Spacer()
-                HStack(spacing: 14) {
-                    Button("I knew it") {
-                        HapticManager.shared.impact()
-                        room.answerCorrect()
+                if let question = ChallengeQuiz.question(for: lesson, in: store.curriculum?.lessons ?? []) {
+                    VStack(spacing: 12) {
+                        Text("Question \(room.currentIndex + 1) of \(StudyRoomManager.questionsPerRound)")
+                            .font(.caption.bold()).foregroundStyle(.secondary)
+                        // Real multiple choice instead of "I knew it / Not yet".
+                        ChallengeQuestionCard(question: question) { correct in
+                            correct ? room.answerCorrect() : room.answerWrong()
+                        }
+                        .id("\(room.currentIndex)-\(question.id)")
                     }
-                    .buttonStyle(.borderedProminent).tint(.mint).font(.headline)
-                    .frame(maxWidth: .infinity)
-
-                    Button("Not yet") {
-                        HapticManager.shared.impact()
-                        room.answerWrong()
-                    }
-                    .buttonStyle(.borderedProminent).tint(.orange.opacity(0.8)).font(.headline)
-                    .frame(maxWidth: .infinity)
+                    .padding(24)
+                } else {
+                    ProgressView().onAppear { room.answerWrong() }
                 }
-                .padding(24)
+                Spacer(minLength: 0)
             }
         } else {
             VStack { ProgressView(); Text("Waiting for results…").font(.subheadline).foregroundStyle(.secondary) }

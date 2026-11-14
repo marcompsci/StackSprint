@@ -92,10 +92,18 @@ import WebKit
                         }
                     }
                     notifications.practicedToday = { [weak store] in store?.practicedToday ?? false }
+                    notifications.nextLessonTitle = { [weak store, weak premiumStore] in
+                        guard let store else { return nil }
+                        let locked = (premiumStore?.isPro ?? false) ? [] : PremiumStore.proTracks
+                        return LessonFlow.continueLesson(in: store.curriculum?.lessons ?? [], completed: store.completed,
+                                                         preferredTrack: UserDefaults.standard.string(forKey: "goal.startingTrack") ?? "Web development",
+                                                         locked: locked)?.term
+                    }
                     // Learn the permission state first: scheduling while it's unknown would clear reminders.
                     Task { await notifications.checkStatus(); notifications.scheduleDailyReminder() }
                     store.onActivity = { [weak notifications, weak store] in
                         notifications?.refreshAfterPractice()
+                        if let s = store { notifications?.scheduleWeeklyRecap(lessons: s.lessonsThisWeek, streak: s.currentStreak) }
                         if let s = store { writeWidgetData(store: s) }
                     }
                     // Fetch remote curriculum update without blocking startup
@@ -134,6 +142,7 @@ struct RootView: View {
     @State private var showingBite = false
     @State private var showingMenu = false
     @State private var showingChallenge = false
+    @State private var showingWhatsNew = false
     @AppStorage("onboarding.finished") private var welcomed = false
     @AppStorage("appearance.mode") private var appearance = "dark"
     /// The phone is sideways only on the Studio tab (everything else is locked
@@ -192,6 +201,15 @@ struct RootView: View {
             .padding(.top, 8).padding(.trailing, 16) }
         }
         .sheet(isPresented: $showingBite) { BiteAssistantView() }
+        .sheet(isPresented: $showingWhatsNew) { WhatsNewSheet() }
+        .task {
+            // New installs see onboarding instead; they don't need a list of changes.
+            if !welcomed { WhatsNew.markSeen() }
+            else if WhatsNew.shouldShow(onboarded: true) {
+                try? await Task.sleep(for: .seconds(1.2)) // after the splash
+                showingWhatsNew = true
+            }
+        }
         .sheet(item: $router.request) { request in
             RoutedLessonSheet(request: request, isPro: premiumStore.isPro, preferredTrack: startingTrack)
         }
@@ -207,7 +225,10 @@ struct RootView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             // Start a fresh week if one began while the app was in the background.
-            if phase == .active { WeeklyXPStore.shared.checkWeekReset() }
+            if phase == .active {
+                WeeklyXPStore.shared.checkWeekReset()
+                store.applyStreakFreezeIfNeeded()
+            }
         }
         .overlay {
             if let achievement = achievementStore.latestUnlock {
@@ -1217,6 +1238,7 @@ struct ProjectPlaygroundView: View {
     private var studioToolbar: some View {
         StudioFlowLayout(spacing: 10, rowSpacing: 6) {
             Button { runChecks() } label: { runChecksLabel }
+                .keyboardShortcut("r", modifiers: .command)
                 .buttonStyle(.studioPrimary).disabled(checking)
             if track == .build {
                 Button { previewing = true; showingFullPreview = true } label: { Label("Play my game", systemImage: "gamecontroller.fill") }
@@ -1698,6 +1720,11 @@ struct LearnView: View {
                     Circle().fill(color).frame(width: 11, height: 11)
                     Text(String(format: "%02d", number + 1)).font(.system(.caption, design: .monospaced).bold()).foregroundStyle(.secondary)
                     Spacer()
+                    if reviews.card(for: lesson.id)?.isDueToday == true {
+                        Text("Due").font(.caption2.bold())
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(Color.orange.opacity(0.2), in: Capsule()).foregroundStyle(.orange)
+                    }
                     Image(systemName: done ? "checkmark.seal.fill" : "arrow.up.right").foregroundStyle(done ? .green : color)
                 }
                 Spacer(minLength: 8)
@@ -1750,6 +1777,7 @@ struct LearnView: View {
                 ProgressView(value: Double(store.completed.count), total: Double(total)).tint(.mint)
                 Text("\(store.completed.count) of \(total)").font(.caption.weight(.semibold).monospacedDigit()).foregroundStyle(.secondary)
             }
+            DailyTargetRow()
             continueButton
         }
         .padding(22)
@@ -1800,7 +1828,7 @@ struct LearnView: View {
         let lessons = store.curriculum?.lessons ?? []
         let due = reviews.dueCards(in: lessons)
         if let first = due.first {
-            NavigationLink { LessonView(lesson: first) } label: {
+            NavigationLink { ReviewSessionView(queue: due) } label: {
                 Label(due.count == 1 ? "Review \(first.term)" : "Review \(due.count) due lessons, starting with \(first.term)",
                       systemImage: "arrow.clockwise")
                     .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12)
@@ -1950,6 +1978,11 @@ struct LearnView: View {
                     .background(.orange.opacity(0.14), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             }
             Text(streakMessage).font(.title3)
+            Label(store.freezesAvailable == 0
+                  ? "Every 7 days in a row earns a streak freeze that covers a missed day."
+                  : "\(store.freezesAvailable) streak \(store.freezesAvailable == 1 ? "freeze" : "freezes") saved. One covers a missed day automatically.",
+                  systemImage: "snowflake")
+                .font(.footnote).foregroundStyle(.secondary)
             HStack(spacing: 9) {
                 ForEach(0..<7, id: \.self) { day in
                     ZStack {
@@ -2070,6 +2103,9 @@ struct LearnView: View {
 }
 struct LessonView: View {
     let lesson: Lesson
+    /// Set when the lesson is one step of a review session: "Next" goes to the next due lesson.
+    var sessionNext: (() -> Void)? = nil
+    var sessionLabel: String? = nil
     @EnvironmentObject var store: LearningStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var revealed = false
@@ -2080,6 +2116,14 @@ struct LessonView: View {
     @State private var showingTutor = false
 
     private var language: CodeLanguage { .forLessonCategory(lesson.category) }
+
+    /// Where this lesson sits in spaced review, so the schedule isn't a mystery.
+    private var reviewSchedule: String? {
+        guard let card = SM2Engine.shared.card(for: lesson.id) else { return nil }
+        if card.isDueToday { return "Due for review today" }
+        let days = card.daysUntilDue
+        return "Next review in \(days) \(days == 1 ? "day" : "days")"
+    }
     private var solved: Bool { result == .match || (lesson.code.isEmpty && graded) }
     /// The next unfinished lesson in this track, so finishing one flows into the next.
     /// It stays in the same track, which the learner already has access to.
@@ -2091,6 +2135,10 @@ struct LessonView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 Text(lesson.clue).font(.title2.bold())
+                if let schedule = reviewSchedule {
+                    Label(schedule, systemImage: "calendar.badge.clock")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
                 Button(revealed ? "Hide explanation" : "Reveal explanation", systemImage: "sparkles") {
                     withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { revealed.toggle() }
                 }.buttonStyle(.borderedProminent)
@@ -2141,6 +2189,7 @@ struct LessonView: View {
             Text("Spacing at the ends of lines, blank lines and curly quotes don't count\(CodeCheck.indentationMatters(for: lesson.category) ? "; indentation does in Python" : "").")
                 .font(.caption).foregroundStyle(.secondary)
             Button("Check my example", systemImage: "checkmark.circle") { check() }
+                .keyboardShortcut(.return, modifiers: .command) // ⌘↩ on iPad keyboards
                 .buttonStyle(.borderedProminent)
                 .disabled(result == .match)
             if let result {
@@ -2170,7 +2219,13 @@ struct LessonView: View {
 
     @ViewBuilder
     private var nextStep: some View {
-        if let next = nextLesson {
+        if let sessionNext {
+            Button(action: sessionNext) {
+                Label(sessionLabel ?? "Next review", systemImage: "arrow.right")
+                    .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12)
+            }
+            .buttonStyle(.borderedProminent).tint(.orange)
+        } else if let next = nextLesson {
             NavigationLink { LessonView(lesson: next) } label: {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Next in \(next.category)").font(.caption.bold()).foregroundStyle(.secondary)
@@ -2261,7 +2316,8 @@ struct QuizView: View {
         Text("Question \(index + 1) of \(round.count)").font(.caption.bold()).foregroundStyle(.secondary)
         ProgressView(value: Double(index), total: Double(round.count)).tint(.mint)
         Text(q.question).font(.title3.bold()).fixedSize(horizontal: false, vertical: true)
-        ForEach(order[q.id] ?? Array(q.choices.indices), id: \.self) { i in
+        let shown = order[q.id] ?? Array(q.choices.indices)
+        ForEach(Array(shown.enumerated()), id: \.element) { position, i in
             Button { answer(q, i) } label: {
                 HStack(alignment: .firstTextBaseline) {
                     Text(q.choices[i]).multilineTextAlignment(.leading)
@@ -2274,6 +2330,7 @@ struct QuizView: View {
             }
             .buttonStyle(.plain)
             .disabled(selected != nil)
+            .keyboardShortcut(KeyEquivalent(Character("\(position + 1)")), modifiers: []) // 1–4 on a keyboard
             .accessibilityLabel(choiceLabel(i, in: q))
         }
         if let selected {
@@ -2283,6 +2340,7 @@ struct QuizView: View {
                 withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { index += 1; self.selected = nil }
                 if index >= round.count { store.recordPractice() }
             }
+            .keyboardShortcut(.defaultAction)
             .buttonStyle(.borderedProminent)
         }
     }
@@ -2480,6 +2538,7 @@ struct AccountView: View {
             NotificationSettingsSection(notifications: notifications)
             VoiceSpeedSection()
             HapticsSettingsSection()
+            CodeTextSizeSection()
             if CloudKitSyncManager.isAvailable { CloudSyncSection() }
             Section {
                 if premiumStore.isPro {
@@ -2845,5 +2904,45 @@ struct BiteCoreMLClassifier {
         let model = try MLModel(contentsOf: url, configuration: configuration)
         let input = try MLDictionaryFeatureProvider(dictionary: ["text": MLFeatureValue(string: String(text.prefix(1600)))])
         return try model.prediction(from: input).featureValue(for: "label")?.stringValue
+    }
+}
+
+// MARK: - Review session
+//
+// "Review 6 due lessons" used to open only the first one. A session walks through
+// every due lesson in turn and ends with a short summary.
+
+struct ReviewSessionView: View {
+    let queue: [Lesson]
+    @State private var index = 0
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        Group {
+            if queue.indices.contains(index) {
+                LessonView(lesson: queue[index],
+                           sessionNext: { withAnimation(.smooth(duration: 0.2)) { index += 1 } },
+                           sessionLabel: index + 1 < queue.count ? "Next review (\(index + 2) of \(queue.count))" : "Finish review")
+                    .id(queue[index].id)
+                    .safeAreaInset(edge: .top) {
+                        HStack {
+                            ProgressView(value: Double(index), total: Double(max(queue.count, 1))).tint(.orange)
+                            Text("\(index + 1) of \(queue.count)").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                            Button("Skip") { index += 1 }.font(.caption.bold())
+                        }
+                        .padding(.horizontal, 20).padding(.vertical, 8)
+                        .background(.bar)
+                    }
+            } else {
+                ContentUnavailableView {
+                    Label("Review done", systemImage: "checkmark.seal.fill")
+                } description: {
+                    Text("You went through \(queue.count) \(queue.count == 1 ? "lesson" : "lessons"). Each comes back when it's due again.")
+                } actions: {
+                    Button("Done") { dismiss() }.buttonStyle(.borderedProminent)
+                }
+                .modifier(SprintTheme())
+            }
+        }
     }
 }

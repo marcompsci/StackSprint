@@ -38,6 +38,10 @@ struct CodeEditor: UIViewRepresentable {
     var language: CodeLanguage
     var accessibilityLabel: String
     var fontSize: CGFloat = 15
+    /// The learner's own size adjustment from Account, added to every editor's base size.
+    @AppStorage(CodeEditor.sizeAdjustmentKey) private var sizeAdjustment = 0.0
+    static let sizeAdjustmentKey = "editor.sizeAdjustment"
+    var effectiveSize: CGFloat { max(10, min(30, fontSize + sizeAdjustment)) }
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -85,6 +89,12 @@ struct CodeEditor: UIViewRepresentable {
         let coordinator = context.coordinator
         coordinator.parent = self
         tv.accessibilityLabel = accessibilityLabel
+        if coordinator.fontSize != effectiveSize {
+            coordinator.fontSize = effectiveSize
+            coordinator.font = Coordinator.makeFont(effectiveSize)
+            tv.font = coordinator.font
+            coordinator.highlight(tv)
+        }
         if tv.text != text {
             // The code changed from outside (a project was loaded, the track switched).
             let previous = tv.selectedRange
@@ -100,13 +110,18 @@ struct CodeEditor: UIViewRepresentable {
     final class Coordinator: NSObject, UITextViewDelegate {
         var parent: CodeEditor
         var language: CodeLanguage?
-        let font: UIFont
+        var font: UIFont
+        var fontSize: CGFloat
         private var applyingEdit = false
 
         init(_ parent: CodeEditor) {
             self.parent = parent
-            font = UIFontMetrics(forTextStyle: .body)
-                .scaledFont(for: .monospacedSystemFont(ofSize: parent.fontSize, weight: .regular))
+            fontSize = parent.effectiveSize
+            font = Self.makeFont(parent.effectiveSize)
+        }
+
+        static func makeFont(_ size: CGFloat) -> UIFont {
+            UIFontMetrics(forTextStyle: .body).scaledFont(for: .monospacedSystemFont(ofSize: size, weight: .regular))
         }
 
         func highlight(_ tv: UITextView) {
@@ -456,4 +471,29 @@ final class CodeKeyBar: UIInputView, UIInputViewAudioFeedback {
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+}
+
+// MARK: - Code text size setting
+
+struct CodeTextSizeSection: View {
+    @AppStorage(CodeEditor.sizeAdjustmentKey) private var adjustment = 0.0
+
+    var body: some View {
+        Section {
+            Stepper(value: $adjustment, in: -3...8, step: 1) {
+                HStack {
+                    Text("Code text size")
+                    Spacer()
+                    Text(adjustment == 0 ? "Default" : (adjustment > 0 ? "+\(Int(adjustment))" : "\(Int(adjustment))"))
+                        .foregroundStyle(.secondary).monospacedDigit()
+                }
+            }
+            Text("let score = 0;")
+                .font(.system(size: 15 + adjustment, design: .monospaced))
+                .foregroundStyle(.secondary)
+                .accessibilityLabel("Preview of code text")
+        } footer: {
+            Text("Changes the lesson, Studio and Free build editors. Your iPhone's text size setting also applies.")
+        }
+    }
 }

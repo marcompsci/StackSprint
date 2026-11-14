@@ -262,7 +262,7 @@ struct SocialHubView: View {
         VStack(alignment: .leading, spacing: 6) {
             Label("Private by default", systemImage: "lock.fill")
                 .font(.caption.bold()).foregroundStyle(.secondary)
-            Text("We do not upload contacts. All sharing goes through your device's share sheet. In-app friend accounts, live chat, and leaderboards are not included in this version.")
+            Text("We don't upload contacts. Sharing goes through your device's share sheet, and Study Room races go through Game Center. There are no in-app friend accounts or chat, and the pacers on the leaderboard are computer-set marks, not people.")
                 .font(.caption).foregroundStyle(.secondary)
         }
         .padding(14)
