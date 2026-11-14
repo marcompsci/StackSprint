@@ -40,6 +40,8 @@ import SwiftUI
         lessons.filter { bookmarks.contains($0.id) }
     }
 
+    func eraseAll() { bookmarks = []; notes = [:]; persist() }
+
     /// Adds bookmarks and notes from a backup. Notes already on this device win.
     func merge(bookmarks incoming: Set<String>, notes incomingNotes: [String: String]) {
         bookmarks.formUnion(incoming)

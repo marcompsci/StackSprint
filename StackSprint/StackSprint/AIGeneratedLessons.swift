@@ -78,7 +78,7 @@ struct GeneratedLesson {
 
         if session == nil {
             session = LanguageModelSession(instructions: """
-                You are Bit, a coding tutor assistant inside StackSprint. \
+                You are Bite, a coding tutor assistant inside StackSprint. \
                 Generate concise, beginner-friendly coding lessons. \
                 Always use clear language and practical code examples. \
                 Category context: \(category).
@@ -93,7 +93,7 @@ struct GeneratedLesson {
             let response = try await session!.respond(to: prompt, generating: GeneratedLesson.self)
             preview = response.content
         } catch LanguageModelSession.GenerationError.refusal(let refusal, _) {
-            error = (try? await refusal.explanation.content) ?? "Bit couldn't generate a lesson for that topic."
+            error = (try? await refusal.explanation.content) ?? "Bite couldn't generate a lesson for that topic."
         } catch {
             self.error = error.localizedDescription
         }
@@ -183,7 +183,7 @@ struct GenerateLessonView: View {
 
     private var promptSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Label("Ask Bit to teach you anything", systemImage: "sparkles")
+            Label("Ask Bite to teach you anything", systemImage: "sparkles")
                 .font(.headline).foregroundStyle(.purple)
 
             TextField("e.g. async/await, closures, REST APIs…", text: $vm.topic)
@@ -200,7 +200,7 @@ struct GenerateLessonView: View {
                 HapticManager.shared.impact()
                 Task { await vm.generate() }
             } label: {
-                Label("Generate with Bit", systemImage: "sparkles")
+                Label("Generate with Bite", systemImage: "sparkles")
                     .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12)
             }
             .buttonStyle(.borderedProminent).tint(.purple)
@@ -214,7 +214,7 @@ struct GenerateLessonView: View {
     private var generatingIndicator: some View {
         HStack(spacing: 12) {
             ProgressView().tint(.purple)
-            Text("Bit is crafting your lesson…").font(.subheadline).foregroundStyle(.secondary)
+            Text("Bite is crafting your lesson…").font(.subheadline).foregroundStyle(.secondary)
         }
         .padding()
     }

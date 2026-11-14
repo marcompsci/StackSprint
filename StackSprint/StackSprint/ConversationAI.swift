@@ -20,20 +20,20 @@ enum PracticeMode: String, CaseIterable, Identifiable {
         switch self {
         case .general:
             return """
-                You are Bit, an expert coding tutor in StackSprint. \
+                You are Bite, an expert coding tutor in StackSprint. \
                 Answer questions clearly and concisely. Use code examples where helpful. \
                 Format code blocks with triple backticks and the language name.
                 """
         case .interview:
             return """
-                You are Bit, acting as a technical interviewer in StackSprint. \
+                You are Bite, acting as a technical interviewer in StackSprint. \
                 Ask coding interview questions, evaluate answers, give constructive feedback. \
                 Start with a medium-difficulty question about data structures or algorithms. \
                 When the user answers, give detailed feedback and then ask a follow-up question.
                 """
         case .codeReview:
             return """
-                You are Bit, a senior code reviewer in StackSprint. \
+                You are Bite, a senior code reviewer in StackSprint. \
                 When given code, analyze it for bugs, performance, style, and best practices. \
                 Be specific and constructive. Suggest improvements with corrected code snippets. \
                 If no code is provided yet, ask the user to paste their code.
@@ -42,7 +42,7 @@ enum PracticeMode: String, CaseIterable, Identifiable {
     }
     var firstMessage: String {
         switch self {
-        case .general:    return "Hi, I’m Bit. Ask me about a concept, some syntax, or a bug you’re stuck on."
+        case .general:    return "Hi, I’m Bite. Ask me about a concept, some syntax, or a bug you’re stuck on."
         case .interview:  return "Welcome to Interview Practice! I'll act as your technical interviewer. Ready? Let's start with a classic: **What's the difference between a stack and a queue? When would you use each?**"
         case .codeReview: return "Hello! Paste your code and I'll review it for bugs, style, performance, and best practices. I'll also suggest improvements."
         }
@@ -155,7 +155,7 @@ struct PracticeMessage: Identifiable, Codable {
     }
 }
 
-// MARK: - Bit Practice View
+// MARK: - Bite Practice View
 
 struct BitPracticeView: View {
     @ObservedObject private var conv = BitConversationStore.shared
@@ -178,7 +178,7 @@ struct BitPracticeView: View {
                 quickActions
                 inputBar
             }
-            .navigationTitle("Practice with Bit")
+            .navigationTitle("Practice with Bite")
             .navigationBarTitleDisplayMode(.inline)
             .modifier(SprintTheme())
             .toolbar {
@@ -284,7 +284,7 @@ struct BitPracticeView: View {
 
     private var inputBar: some View {
         HStack(spacing: 10) {
-            TextField("Ask Bit anything…", text: $input, axis: .vertical)
+            TextField("Ask Bite anything…", text: $input, axis: .vertical)
                 .textFieldStyle(.plain)
                 .lineLimit(1...5)
                 .focused($focused)
@@ -346,7 +346,7 @@ struct PracticeBubble: View {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(isUser ? "You" : "Bit"): \(message.content)")
+        .accessibilityLabel("\(isUser ? "You" : "Bite"): \(message.content)")
     }
 }
 
@@ -398,7 +398,7 @@ private struct CodeSegmentView: View {
         VStack(alignment: .leading, spacing: 0) {
             if !language.isEmpty {
                 HStack {
-                    Text(language).font(.system(size: 10, weight: .bold, design: .monospaced))
+                    Text(language).font(.system(.caption2, design: .monospaced, weight: .bold))
                         .foregroundStyle(.secondary)
                     Spacer()
                     Button(copied ? "Copied!" : "Copy") {
@@ -406,7 +406,7 @@ private struct CodeSegmentView: View {
                         copied = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
                     }
-                    .font(.system(size: 10, weight: .bold)).foregroundStyle(Color.purple)
+                    .font(.caption2.bold()).foregroundStyle(Color.purple)
                 }
                 .padding(.horizontal, 12).padding(.vertical, 6)
                 .background(Color.purple.opacity(0.12))

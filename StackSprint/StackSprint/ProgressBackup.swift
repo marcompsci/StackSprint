@@ -21,6 +21,8 @@ struct ProgressBackup: Codable, Equatable {
     var notes: [String: String]
     var completedMissions: [String]
     var missionDrafts: [String: String]
+    /// Added after version 1 shipped; older backups simply don't have it.
+    var lessonActivity: [String]? = nil
 
     enum BackupError: LocalizedError {
         case newerVersion, notABackup
@@ -72,7 +74,8 @@ struct ProgressBackup: Codable, Equatable {
             bookmarks: bookmarks.bookmarks.sorted(),
             notes: bookmarks.notes,
             completedMissions: (defaults.stringArray(forKey: completedMissionsKey) ?? []).sorted(),
-            missionDrafts: drafts
+            missionDrafts: drafts,
+            lessonActivity: store.lessonActivity.sorted()
         )
     }
 
@@ -81,6 +84,7 @@ struct ProgressBackup: Codable, Equatable {
         store.mergeFromCloud(completed: Set(backup.completedLessons),
                              practicedDays: Set(backup.practiceDays),
                              recallAnswers: Set(backup.quizAnswers))
+        store.mergeLessonActivity(Set(backup.lessonActivity ?? []))
         SM2Engine.shared.merge(backup.reviewCards)
         bookmarks.merge(bookmarks: Set(backup.bookmarks), notes: backup.notes)
         let defaults = UserDefaults.standard
@@ -89,6 +93,26 @@ struct ProgressBackup: Codable, Equatable {
         let allowed = Set(missionDraftKeys())
         for (key, draft) in backup.missionDrafts where allowed.contains(key) && defaults.string(forKey: key) == nil {
             defaults.set(draft, forKey: key)
+        }
+    }
+}
+
+extension ProgressBackupService {
+    /// Erases learning progress on this device. Free-build projects, settings, earned
+    /// achievements and season badges are kept.
+    static func erase(store: LearningStore, bookmarks: BookmarkStore) {
+        store.eraseProgress()
+        SM2Engine.shared.eraseAll()
+        bookmarks.eraseAll()
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: completedMissionsKey)
+        for key in missionDraftKeys() { defaults.removeObject(forKey: key) }
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("draft.") || key.hasPrefix("celebrated.track.") {
+            defaults.removeObject(forKey: key)
+        }
+        for track in [ProjectTrack.design, .build] {
+            MissionProgress.setCurrentIndex(0, for: track)
+            for mission in StudioMission.missions(for: track) { defaults.removeObject(forKey: MissionProgress.passingKey(mission)) }
         }
     }
 }
@@ -115,6 +139,7 @@ struct ProgressBackupSection: View {
     @State private var document: ProgressBackupDocument?
     @State private var pending: ProgressBackup?
     @State private var message: String?
+    @State private var confirmingErase = false
 
     private var fileName: String {
         "StackSprint-progress-\(Date().formatted(.iso8601.year().month().day()))"
@@ -131,9 +156,10 @@ struct ProgressBackupSection: View {
                 }
             }
             Button("Restore from a backup", systemImage: "square.and.arrow.down") { importing = true }
+            Button("Erase progress on this device", systemImage: "trash", role: .destructive) { confirmingErase = true }
             if let message { Text(message).font(.footnote).foregroundStyle(.secondary) }
         } header: {
-            Text("Backup")
+            Text("Your progress")
         } footer: {
             Text("Your progress is saved only on this device. A backup file keeps lessons, streak days, reviews, bookmarks and Studio missions safe when you change phones. Restoring adds to what's here and never deletes anything.")
         }
@@ -156,6 +182,14 @@ struct ProgressBackupSection: View {
             case .failure(let error):
                 message = "Couldn't open the file: \(error.localizedDescription)"
             }
+        }
+        .confirmationDialog("Erase your progress on this device?", isPresented: $confirmingErase, titleVisibility: .visible) {
+            Button("Erase progress", role: .destructive) {
+                ProgressBackupService.erase(store: store, bookmarks: bookmarks)
+                message = "Progress erased. Lessons, streak, reviews, bookmarks and Studio missions start fresh."
+            }
+        } message: {
+            Text("Lessons, streak days, quiz answers, reviews, bookmarks, notes and Studio mission code are deleted. This can't be undone, so save a backup file first if you might want them back. Free-build projects and earned badges stay.")
         }
         .alert("Restore this backup?", isPresented: Binding(get: { pending != nil }, set: { if !$0 { pending = nil } }),
                presenting: pending) { backup in

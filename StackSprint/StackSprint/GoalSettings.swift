@@ -39,19 +39,7 @@ struct GoalProgressBanner: View {
     @EnvironmentObject var store: LearningStore
     @AppStorage("goal.weeklyLessons") private var weeklyGoal = 3
 
-    private var lessonsThisWeek: Int {
-        let calendar = Calendar.current
-        guard let weekStart = calendar.date(
-            from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
-        ) else { return 0 }
-        let thisWeekKeys = (0..<7).compactMap {
-            calendar.date(byAdding: .day, value: $0, to: weekStart)
-        }.map { date -> String in
-            let c = calendar.dateComponents([.year, .month, .day], from: date)
-            return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
-        }
-        return store.practicedDays.filter { thisWeekKeys.contains($0) }.count
-    }
+    private var lessonsThisWeek: Int { store.lessonsThisWeek }
 
     var body: some View {
         let done = lessonsThisWeek
@@ -67,7 +55,7 @@ struct GoalProgressBanner: View {
                     Text(met ? "Weekly goal met!" : "Weekly goal")
                         .font(.subheadline.bold())
                     Spacer()
-                    Text("\(done) / \(goal) days")
+                    Text("\(done) / \(goal) lessons")
                         .font(.caption.bold().monospaced())
                         .foregroundStyle(met ? .mint : .secondary)
                 }
@@ -109,7 +97,7 @@ struct GoalSettingsSection: View {
         } header: {
             Text("Weekly learning goal")
         } footer: {
-            Text("Tracks how many days per week you practice — not lesson count. A practice day counts when you complete at least one lesson or recall card.")
+            Text("Counts lessons you finish or practice again this week. Practicing the same lesson on two different days counts twice.")
         }
     }
 }

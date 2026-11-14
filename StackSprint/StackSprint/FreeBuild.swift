@@ -105,6 +105,23 @@ import UniformTypeIdentifiers
         persist()
     }
 
+    /// Copies the open project so you can experiment without losing the original.
+    func duplicateCurrent() {
+        guard let source = projects.first(where: { $0.id == currentID }) else { return }
+        let copy = Project(id: UUID().uuidString, name: Self.copyName(for: source.name, taken: Set(projects.map(\.name))),
+                           html: source.html, css: source.css, js: source.js, updated: Date())
+        projects.append(copy)
+        select(copy.id)
+        persist()
+    }
+
+    nonisolated static func copyName(for name: String, taken: Set<String>) -> String {
+        var candidate = "\(name) copy"
+        var n = 2
+        while taken.contains(candidate) { candidate = "\(name) copy \(n)"; n += 1 }
+        return candidate
+    }
+
     func select(_ id: String) {
         guard projects.contains(where: { $0.id == id }) else { return }
         currentID = id
@@ -520,6 +537,9 @@ struct FreeBuildHeader: View {
                 Section {
                     Button { draftName = session.current.name; renaming = true } label: {
                         Label("Rename", systemImage: "pencil")
+                    }
+                    Button { session.duplicateCurrent() } label: {
+                        Label("Duplicate", systemImage: "plus.square.on.square")
                     }
                     Button(role: .destructive) { confirmingDelete = true } label: {
                         Label("Delete", systemImage: "trash")

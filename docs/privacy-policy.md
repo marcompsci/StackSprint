@@ -14,7 +14,7 @@ This is the hostable copy of the policy shown in the app (Account → Privacy Po
 
 **Game Center.** Study Room races use Apple's Game Center. Game Center shows your Game Center name to the player you race and sends only your race score. Apple's privacy policy covers Game Center.
 
-**On-device AI.** Bit the tutor and generated lessons use Apple Intelligence on your device. Your questions are processed on the device and aren't sent to us.
+**On-device AI.** Bite the tutor and generated lessons use Apple Intelligence on your device. Your questions are processed on the device and aren't sent to us.
 
 **Python lessons.** The first time you run Python, the app downloads the open-source Pyodide runtime from the jsDelivr network. Like any web request, this shares your IP address with jsDelivr. Your code runs on your device and isn't uploaded.
 

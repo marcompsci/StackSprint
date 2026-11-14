@@ -20,7 +20,7 @@
 
 - iPhone or iPad running **iOS / iPadOS 26.5 or later** (the build's deployment target).
 - The TestFlight app from the App Store, signed in with the tester's Apple Account.
-- Bit the AI tutor needs a device with Apple Intelligence turned on; everything else works without it.
+- Bite the AI tutor needs a device with Apple Intelligence turned on; everything else works without it.
 - Python lessons need an internet connection the first time.
 - Study Room races need Game Center and a second tester.
 - Subscriptions in TestFlight use the sandbox: testers are not charged, and sandbox subscriptions renew on an accelerated schedule.

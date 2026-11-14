@@ -61,6 +61,22 @@ struct SM2Card: Codable, Equatable {
 
     func card(for lessonID: String) -> SM2Card? { cards[lessonID] }
 
+    /// Lessons that keep getting missed: their ease has dropped below the starting 2.5.
+    func weakest(in lessons: [Lesson], limit: Int = 8) -> [Lesson] {
+        Self.weakest(cards: cards, in: lessons, limit: limit)
+    }
+
+    static func weakest(cards: [String: SM2Card], in lessons: [Lesson], limit: Int) -> [Lesson] {
+        lessons
+            .compactMap { lesson in cards[lesson.id].map { (lesson, $0.easeFactor) } }
+            .filter { $0.1 < 2.4 }
+            .sorted { $0.1 < $1.1 }
+            .prefix(limit)
+            .map(\.0)
+    }
+
+    func eraseAll() { cards = [:]; persist() }
+
     /// Adds review cards from a backup, keeping whichever copy has more progress.
     func merge(_ incoming: [String: SM2Card]) {
         cards = Self.merged(cards, incoming)

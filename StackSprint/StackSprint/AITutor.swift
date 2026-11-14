@@ -23,7 +23,7 @@ struct ChatMessage: Identifiable {
 
     func resetSession() {
         session = LanguageModelSession(instructions: """
-            You are Bit, a friendly AI coding tutor inside StackSprint. \
+            You are Bite, a friendly AI coding tutor inside StackSprint. \
             Help learners understand coding concepts concisely and encouragingly. \
             Keep answers under 120 words. Use simple language. \
             Show a short code snippet when helpful. \
@@ -72,7 +72,7 @@ struct AITutorView: View {
     var body: some View {
         NavigationStack {
             modelBody
-                .navigationTitle("Bit AI Tutor")
+                .navigationTitle("Bite AI Tutor")
                 .navigationBarTitleDisplayMode(.inline)
                 .modifier(SprintTheme())
                 .toolbar {
@@ -94,7 +94,7 @@ struct AITutorView: View {
                 icon: "brain.head.profile")
         case .unavailable(.deviceNotEligible):
             unavailableView("Device not supported",
-                detail: "Bit AI Tutor requires a device that supports Apple Intelligence.",
+                detail: "Bite AI Tutor requires a device that supports Apple Intelligence.",
                 icon: "iphone.slash")
         case .unavailable(.modelNotReady):
             unavailableView("Model downloading",
@@ -102,7 +102,7 @@ struct AITutorView: View {
                 icon: "arrow.down.circle")
         case .unavailable:
             unavailableView("Not available",
-                detail: "Bit AI Tutor is not available right now.",
+                detail: "Bite AI Tutor is not available right now.",
                 icon: "exclamationmark.triangle")
         }
     }
@@ -176,7 +176,7 @@ struct AITutorView: View {
                 Circle().fill(Color.mint.opacity(0.12)).frame(width: 80, height: 80)
                 BiteAvatar().frame(width: 56, height: 80)
             }
-            Text("Hi! I\u{2019}m Bit.").font(.system(.title2, design: .rounded, weight: .bold))
+            Text("Hi! I\u{2019}m Bite.").font(.system(.title2, design: .rounded, weight: .bold))
             Text("Ask me anything about code \u{2014} concepts, syntax, errors, or what to learn next.")
                 .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 .padding(.horizontal)

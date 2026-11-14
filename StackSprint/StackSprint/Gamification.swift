@@ -94,7 +94,8 @@ struct XPBreakdownRow: View {
         HStack(spacing: 20) {
             xpPill(value: store.completed.count * 10, label: "lessons", icon: "book.fill", color: .mint)
             xpPill(value: store.correctRecallAnswers.count * 5, label: "recall", icon: "brain.head.profile", color: .purple)
-            xpPill(value: store.currentStreak * 2, label: "streak", icon: "flame.fill", color: .orange)
+            // The streak earns no XP, so it's shown as days, not points.
+            xpPill(value: store.currentStreak, label: "day streak", icon: "flame.fill", color: .orange)
             Spacer()
         }
     }

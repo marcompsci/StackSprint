@@ -178,7 +178,7 @@ struct IncomingChallengeBanner: View {
 
 // MARK: - Splash Screen
 //
-// A short hand-off from the launch screen: Bit and the wordmark settle in once,
+// A short hand-off from the launch screen: Bite and the wordmark settle in once,
 // then the app appears. No loops, about 0.9s total, tap anywhere to skip, and a
 // plain cross-fade when Reduce Motion is on.
 

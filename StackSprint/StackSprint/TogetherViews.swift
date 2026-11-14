@@ -56,7 +56,7 @@ struct SocialHubView: View {
             HStack(spacing: 20) {
                 VStack(spacing: 2) {
                     Text("\(store.currentStreak)")
-                        .font(.system(size: 52, weight: .bold, design: .rounded))
+                        .font(.system(.largeTitle, design: .rounded, weight: .bold))
                         .foregroundStyle(.orange)
                     Text("days").font(.caption).foregroundStyle(.secondary)
                 }

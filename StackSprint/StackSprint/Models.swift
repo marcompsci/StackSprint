@@ -74,7 +74,15 @@ struct ProgressRow: Codable {
     @Published var completed: Set<String> = []
     @Published private(set) var practicedDays: Set<String> = []
     @Published private(set) var correctRecallAnswers: Set<String> = []
-    @Published var curriculum: Curriculum?
+    /// "yyyy-MM-dd|lessonID" for every day a lesson was finished or practiced again.
+    /// The weekly goal counts these, so it measures lessons rather than days.
+    @Published private(set) var lessonActivity: Set<String> = []
+    @Published var curriculum: Curriculum? { didSet { rebuildIndex() } }
+    /// Track names in curriculum order, and each track's lessons, built once per curriculum
+    /// instead of being re-filtered on every screen refresh.
+    private(set) var tracks: [String] = []
+    private(set) var lessonsByTrack: [String: [Lesson]] = [:]
+    private var quizCache: [String: [Question]] = [:]
     @Published var error: String?
     private var namespace = "guest"
     var onPractice: (() -> Void)?
@@ -87,6 +95,7 @@ struct ProgressRow: Codable {
         do { curriculum = try Curriculum.load() } catch { self.error = "Lesson content could not load: \(error.localizedDescription)" }
         // Override with a cached remote version if one exists (it's more up to date)
         if let cached = CurriculumLoader.cachedCurriculum() { curriculum = cached }
+        rebuildIndex() // property observers don't run inside init
         switchUser(nil)
     }
 
@@ -99,17 +108,47 @@ struct ProgressRow: Codable {
         }
     }
 
+    private func rebuildIndex() {
+        let lessons = curriculum?.lessons ?? []
+        var order: [String] = []
+        var grouped: [String: [Lesson]] = [:]
+        for lesson in lessons {
+            if grouped[lesson.category] == nil { order.append(lesson.category) }
+            grouped[lesson.category, default: []].append(lesson)
+        }
+        tracks = order
+        lessonsByTrack = grouped
+        quizCache = [:]
+    }
+
+    /// Handwritten questions for the track plus a term question for each of its lessons.
+    func quiz(for track: String) -> [Question] {
+        if let cached = quizCache[track] { return cached }
+        let questions = TrackQuiz.curated(track: track, questions: curriculum?.questions ?? [])
+            + TrackQuiz.termQuestions(track: track, lessons: lessonsByTrack[track] ?? [])
+        quizCache[track] = questions
+        return questions
+    }
+
+    /// Lessons finished in a track, and how many it has.
+    func progress(in track: String) -> (done: Int, total: Int) {
+        let lessons = lessonsByTrack[track] ?? []
+        return (lessons.filter { completed.contains($0.id) }.count, lessons.count)
+    }
+
     func switchUser(_ id: String?) {
         namespace = id ?? "guest"
         completed = Set(UserDefaults.standard.stringArray(forKey: "native.completed.\(namespace)") ?? [])
         practicedDays = Set(UserDefaults.standard.stringArray(forKey: "native.practiceDays.\(namespace)") ?? [])
         correctRecallAnswers = Set(UserDefaults.standard.stringArray(forKey: "native.dailyRecall.\(namespace)") ?? [])
+        lessonActivity = Set(UserDefaults.standard.stringArray(forKey: "native.lessonActivity.\(namespace)") ?? [])
     }
 
     func complete(_ id: String) {
         guard !completed.contains(id) else { return }
         completed.insert(id)
         practicedDays.insert(Self.dayKey(Date()))
+        lessonActivity.insert("\(Self.dayKey(Date()))|\(id)")
         persist()
         onPractice?()
         onActivity?()
@@ -124,6 +163,20 @@ struct ProgressRow: Codable {
         persist()
         onActivity?()
     }
+
+    /// Practicing an already-finished lesson again: counts toward the streak and
+    /// the weekly lesson goal, but earns no new XP.
+    func recordLessonReplay(_ id: String) {
+        let today = Self.dayKey(Date())
+        let inserted = lessonActivity.insert("\(today)|\(id)").inserted
+        let newDay = practicedDays.insert(today).inserted
+        guard inserted || newDay else { return }
+        persist()
+        onActivity?()
+    }
+
+    /// Lessons finished or practiced this week (Monday or Sunday start, per the user's calendar).
+    var lessonsThisWeek: Int { WeeklyGoalMath.lessons(in: lessonActivity, weekOf: Date()) }
 
     var practicedToday: Bool { practicedDays.contains(Self.dayKey(Date())) }
 
@@ -145,6 +198,19 @@ struct ProgressRow: Codable {
 
     func merge(_ rows: [ProgressRow]) { completed.formUnion(rows.map(\.lesson_id)); persist() }
 
+    /// Clears lessons, practice days, quiz answers and lesson activity for this profile.
+    func eraseProgress() {
+        completed = []; practicedDays = []; correctRecallAnswers = []; lessonActivity = []
+        persist()
+        UserDefaults.standard.removeObject(forKey: "stats.bestStreak")
+        onActivity?()
+    }
+
+    func mergeLessonActivity(_ activity: Set<String>) {
+        lessonActivity.formUnion(activity)
+        persist()
+    }
+
     func mergeFromCloud(completed: Set<String>, practicedDays: Set<String>, recallAnswers: Set<String>) {
         self.completed.formUnion(completed)
         self.practicedDays.formUnion(practicedDays)
@@ -156,6 +222,7 @@ struct ProgressRow: Codable {
         UserDefaults.standard.set(Array(completed), forKey: "native.completed.\(namespace)")
         UserDefaults.standard.set(Array(practicedDays), forKey: "native.practiceDays.\(namespace)")
         UserDefaults.standard.set(Array(correctRecallAnswers), forKey: "native.dailyRecall.\(namespace)")
+        UserDefaults.standard.set(Array(lessonActivity), forKey: "native.lessonActivity.\(namespace)")
     }
 
     var lastPracticedDate: Date? {
@@ -232,5 +299,26 @@ enum StreakMath {
     static func key(_ date: Date, _ calendar: Calendar) -> String {
         let parts = calendar.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+    }
+}
+
+// MARK: - Weekly goal maths
+
+enum WeeklyGoalMath {
+    /// Day keys for the calendar week containing `date`.
+    static func weekKeys(containing date: Date, calendar: Calendar = .current) -> Set<String> {
+        guard let start = calendar.dateInterval(of: .weekOfYear, for: date)?.start else { return [] }
+        return Set((0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: start) }
+            .map { StreakMath.key($0, calendar) })
+    }
+
+    /// Distinct lessons with activity this week (the same lesson on two days counts twice,
+    /// the same lesson twice in one day counts once).
+    static func lessons(in activity: Set<String>, weekOf date: Date, calendar: Calendar = .current) -> Int {
+        let week = weekKeys(containing: date, calendar: calendar)
+        return activity.filter { entry in
+            guard let day = entry.split(separator: "|", maxSplits: 1).first else { return false }
+            return week.contains(String(day))
+        }.count
     }
 }

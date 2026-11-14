@@ -179,7 +179,7 @@ private struct ThemeChip: View {
                     Circle().fill(preset.accent).frame(width: 14, height: 14)
                 }
                 Text(preset.displayName)
-                    .font(.system(size: 10, weight: isSelected ? .bold : .regular))
+                    .font(.caption2.weight(isSelected ? .bold : .regular))
                     .foregroundStyle(isSelected ? preset.accent : .secondary)
             }
         }

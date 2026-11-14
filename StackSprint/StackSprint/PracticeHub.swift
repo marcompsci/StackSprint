@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - Practice tab
 //
-// The Practice tab used to be only the Bit chat, which needs Apple Intelligence,
+// The Practice tab used to be only the Bite chat, which needs Apple Intelligence,
 // so on most devices the whole tab was a dead end. Review works everywhere and
 // is the default; the chat stays one tap away where the device supports it.
 
@@ -13,7 +13,7 @@ struct PracticeTabView: View {
     enum Pane: String, CaseIterable, Identifiable {
         case review, chat
         var id: String { rawValue }
-        var label: String { self == .review ? "Review" : "Chat with Bit" }
+        var label: String { self == .review ? "Review" : "Chat with Bite" }
     }
 
     private var aiAvailable: Bool {
@@ -34,9 +34,9 @@ struct PracticeTabView: View {
                     BitPracticeView()
                 } else {
                     ContentUnavailableView {
-                        Label("Bit needs Apple Intelligence", systemImage: "sparkles")
+                        Label("Bite needs Apple Intelligence", systemImage: "sparkles")
                     } description: {
-                        Text("Chatting with Bit runs on device and needs Apple Intelligence turned on in Settings. Review works on every device.")
+                        Text("Chatting with Bite runs on device and needs Apple Intelligence turned on in Settings. Review works on every device.")
                     } actions: {
                         Button("Go to Review") { pane = Pane.review.rawValue }.buttonStyle(.borderedProminent)
                     }
@@ -62,17 +62,11 @@ struct ReviewHubView: View {
     @State private var mixSeed = UUID().uuidString
 
     private var lessons: [Lesson] { store.curriculum?.lessons ?? [] }
-    private var tracks: [String] {
-        var seen = Set<String>()
-        return lessons.compactMap { seen.insert($0.category).inserted ? $0.category : nil }
-    }
+    private var tracks: [String] { store.tracks }
     private func isLocked(_ track: String) -> Bool { PremiumStore.proTracks.contains(track) && !premiumStore.isPro }
     private var due: [Lesson] { reviews.dueCards(in: lessons).filter { !isLocked($0.category) } }
 
-    private func questions(for track: String) -> [Question] {
-        TrackQuiz.curated(track: track, questions: store.curriculum?.questions ?? [])
-            + TrackQuiz.termQuestions(track: track, lessons: lessons)
-    }
+    private func questions(for track: String) -> [Question] { store.quiz(for: track) }
 
     /// Ten questions drawn from tracks the learner has started (or every unlocked track if none).
     private var quickMix: [Question] {
@@ -87,6 +81,7 @@ struct ReviewHubView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 dueSection
+                weakSection
                 quickSection
                 tracksSection
             }
@@ -122,6 +117,29 @@ struct ReviewHubView: View {
                 }
                 if due.count > 8 {
                     Text("+ \(due.count - 8) more after these").font(.caption).foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    /// Terms the learner keeps missing, as a focused quiz.
+    @ViewBuilder
+    private var weakSection: some View {
+        let weak = reviews.weakest(in: lessons.filter { !isLocked($0.category) })
+        if weak.count >= 2 {
+            let ids = Set(weak.map(\.id))
+            let tracks = Set(weak.map(\.category))
+            let qs = tracks.flatMap { TrackQuiz.termQuestions(track: $0, lessons: lessons) }
+                .filter { TrackQuiz.lessonID(forQuestion: $0.id).map(ids.contains) ?? false }
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Tricky ones").font(.title3.bold())
+                Text(weak.map(\.term).joined(separator: " · ")).font(.subheadline).foregroundStyle(.secondary)
+                if !qs.isEmpty {
+                    NavigationLink { QuizView(questions: qs.shuffled(), title: "Tricky ones") } label: {
+                        Label("Quiz me on these \(qs.count)", systemImage: "scope")
+                            .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12)
+                    }
+                    .buttonStyle(.bordered).tint(.orange)
                 }
             }
         }

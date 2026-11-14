@@ -14,7 +14,7 @@ Run this before **every** TestFlight upload. Don't tick an item you didn't check
 - [ ] Privacy policy hosted at a public HTTPS URL, identical to the in-app policy (`docs/privacy-policy.md`); URL in `AppStoreCopy.privacyURL` and in App Store Connect.
 - [ ] Support URL set in `AppStoreCopy.supportURL` and App Store Connect.
 - [ ] App Privacy answers in App Store Connect match `docs/privacy-security-audit.md` (Data Not Collected while cloud accounts are off).
-- [ ] Age-rating questionnaire answered (AI assistant: yes, Bit tutor; Game Center: yes).
+- [ ] Age-rating questionnaire answered (AI assistant: yes, Bite tutor; Game Center: yes).
 - [ ] Subscriptions `com.stacksprint.pro.monthly` and `com.stacksprint.pro.yearly` exist in one subscription group, with display names, descriptions, prices and a review screenshot, and are "Ready to Submit".
 - [ ] Game Center enabled for the app version in App Store Connect.
 

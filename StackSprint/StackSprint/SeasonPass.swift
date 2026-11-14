@@ -71,13 +71,13 @@ struct SeasonReward: Identifiable, Codable {
         SeasonReward(id: "s1-t2-pro",   tier: 2,  name: "Neon Streak Badge", icon: "wand.and.stars", description: "A collectible for your season shelf",               isPro: true),
         SeasonReward(id: "s1-t3-free",  tier: 3,  name: "Coder Title", icon: "rosette", description: "\"Code Sprinter\" title for your collection",    isPro: false),
         SeasonReward(id: "s1-t3-pro",   tier: 3,  name: "Multiplier Badge", icon: "multiply.circle.fill", description: "A collectible for your season shelf",                  isPro: true),
-        SeasonReward(id: "s1-t4-free",  tier: 4,  name: "Bit Sticker", icon: "cpu", description: "Bit mascot badge",              isPro: false),
+        SeasonReward(id: "s1-t4-free",  tier: 4,  name: "Bite Sticker", icon: "cpu", description: "Bite mascot badge",              isPro: false),
         SeasonReward(id: "s1-t4-pro",   tier: 4,  name: "Galaxy Badge", icon: "sparkles", description: "A collectible for your season shelf",               isPro: true),
         SeasonReward(id: "s1-t5-free",  tier: 5,  name: "Halfway Badge", icon: "circle.circle.fill", description: "A collectible for your season shelf",                   isPro: false),
         SeasonReward(id: "s1-t5-pro",   tier: 5,  name: "Gold Crown Badge", icon: "crown.fill", description: "A collectible for your season shelf",          isPro: true),
         SeasonReward(id: "s1-t6-free",  tier: 6,  name: "Recall Champion", icon: "brain.head.profile", description: "\"Recall Champion\" title",              isPro: false),
-        SeasonReward(id: "s1-t6-pro",   tier: 6,  name: "Bit Brain Badge", icon: "sparkles", description: "A collectible for your season shelf",            isPro: true),
-        SeasonReward(id: "s1-t7-free",  tier: 7,  name: "Bit Hoodie", icon: "tshirt.fill", description: "Bit mascot in hoodie sticker",           isPro: false),
+        SeasonReward(id: "s1-t6-pro",   tier: 6,  name: "Bite Brain Badge", icon: "sparkles", description: "A collectible for your season shelf",            isPro: true),
+        SeasonReward(id: "s1-t7-free",  tier: 7,  name: "Bite Hoodie", icon: "tshirt.fill", description: "Bite mascot in hoodie sticker",           isPro: false),
         SeasonReward(id: "s1-t7-pro",   tier: 7,  name: "Deep Ocean Badge", icon: "water.waves", description: "A collectible for your season shelf",             isPro: true),
         SeasonReward(id: "s1-t8-free",  tier: 8,  name: "Thousand Badge", icon: "banknote.fill", description: "A collectible for your season shelf",                    isPro: false),
         SeasonReward(id: "s1-t8-pro",   tier: 8,  name: "Portfolio Badge", icon: "doc.richtext.fill", description: "A collectible for your season shelf",          isPro: true),
@@ -92,13 +92,13 @@ struct SeasonReward: Identifiable, Codable {
         SeasonReward(id: "s2-t2-pro",   tier: 2,  name: "Ice Streak Badge", icon: "circle.fill", description: "A collectible for your season shelf",                isPro: true),
         SeasonReward(id: "s2-t3-free",  tier: 3,  name: "Dev Title", icon: "rosette", description: "\"Winter Dev\" title for your collection",       isPro: false),
         SeasonReward(id: "s2-t3-pro",   tier: 3,  name: "Multiplier Badge", icon: "multiply.circle.fill", description: "A collectible for your season shelf",                  isPro: true),
-        SeasonReward(id: "s2-t4-free",  tier: 4,  name: "Bit Scarf", icon: "gift.fill", description: "Bit mascot with scarf",         isPro: false),
+        SeasonReward(id: "s2-t4-free",  tier: 4,  name: "Bite Scarf", icon: "gift.fill", description: "Bite mascot with scarf",         isPro: false),
         SeasonReward(id: "s2-t4-pro",   tier: 4,  name: "Aurora Badge", icon: "sparkles", description: "A collectible for your season shelf",            isPro: true),
         SeasonReward(id: "s2-t5-free",  tier: 5,  name: "Halfway Badge", icon: "circle.circle.fill", description: "A collectible for your season shelf",                   isPro: false),
         SeasonReward(id: "s2-t5-pro",   tier: 5,  name: "Silver Crown Badge", icon: "medal", description: "A collectible for your season shelf",        isPro: true),
         SeasonReward(id: "s2-t6-free",  tier: 6,  name: "Code Frost", icon: "snowflake", description: "\"Code Frost\" title",                   isPro: false),
-        SeasonReward(id: "s2-t6-pro",   tier: 6,  name: "Bit Brain Badge", icon: "sparkles", description: "A collectible for your season shelf",            isPro: true),
-        SeasonReward(id: "s2-t7-free",  tier: 7,  name: "Bit Coat", icon: "gift.fill", description: "Bit mascot in winter coat sticker",      isPro: false),
+        SeasonReward(id: "s2-t6-pro",   tier: 6,  name: "Bite Brain Badge", icon: "sparkles", description: "A collectible for your season shelf",            isPro: true),
+        SeasonReward(id: "s2-t7-free",  tier: 7,  name: "Bite Coat", icon: "gift.fill", description: "Bite mascot in winter coat sticker",      isPro: false),
         SeasonReward(id: "s2-t7-pro",   tier: 7,  name: "Night Sky Badge", icon: "moon.fill", description: "A collectible for your season shelf",            isPro: true),
         SeasonReward(id: "s2-t8-free",  tier: 8,  name: "Thousand Badge", icon: "banknote.fill", description: "A collectible for your season shelf",                    isPro: false),
         SeasonReward(id: "s2-t8-pro",   tier: 8,  name: "Portfolio Badge", icon: "doc.richtext.fill", description: "A collectible for your season shelf",          isPro: true),
@@ -455,7 +455,7 @@ private struct TierRow: View {
         let locked = !unlocked || (isPro && !self.isPro)
         VStack(spacing: 4) {
             Image(systemName: reward.icon).font(.title3).symbolRenderingMode(.hierarchical).foregroundStyle(.tint)
-            Text(reward.name).font(.system(size: 10, weight: .medium)).multilineTextAlignment(.center).lineLimit(2)
+            Text(reward.name).font(.caption2.weight(.medium)).multilineTextAlignment(.center).lineLimit(2)
             if claimed {
                 Text("Claimed").font(.system(size: 9)).foregroundStyle(.mint)
             } else if locked {
@@ -463,7 +463,7 @@ private struct TierRow: View {
                     .font(.system(size: 10)).foregroundStyle(isPro ? .yellow.opacity(0.6) : .secondary)
             } else {
                 Button("Claim") { action() }
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.caption2.bold())
                     .buttonStyle(.borderedProminent).tint(isPro ? .purple : .orange).controlSize(.mini)
             }
         }

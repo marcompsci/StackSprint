@@ -2,6 +2,7 @@ import AppIntents
 import AVFoundation
 import Combine
 import CoreML
+import CoreSpotlight
 import FoundationModels
 import SwiftUI
 import UIKit
@@ -43,6 +44,11 @@ import WebKit
                 .environmentObject(seasonStore)
                 .tint(themeStore.preset.accent)
                 .onOpenURL { url in FriendChallengeStore.shared.parseURL(url) }
+                .onContinueUserActivity(CSSearchableItemActionType) { activity in
+                    if let id = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String {
+                        LessonRouter.shared.open(spotlightIdentifier: id)
+                    }
+                }
                 .preferredColorScheme(appearance == "light" ? .light : .dark)
                 .modifier(SprintTheme())
                 .onAppear {
@@ -85,6 +91,9 @@ import WebKit
                             Task { try? await backend?.sync(store!) }
                         }
                     }
+                    notifications.practicedToday = { [weak store] in store?.practicedToday ?? false }
+                    // Learn the permission state first: scheduling while it's unknown would clear reminders.
+                    Task { await notifications.checkStatus(); notifications.scheduleDailyReminder() }
                     store.onActivity = { [weak notifications, weak store] in
                         notifications?.refreshAfterPractice()
                         if let s = store { writeWidgetData(store: s) }
@@ -118,6 +127,9 @@ struct RootView: View {
     @ObservedObject private var challengeStore = FriendChallengeStore.shared
     @ObservedObject private var achievementStore = AchievementStore.shared
     @ObservedObject private var studioLayout = StudioLayoutState.shared
+    @ObservedObject private var router = LessonRouter.shared
+    @EnvironmentObject var premiumStore: PremiumStore
+    @AppStorage("goal.startingTrack") private var startingTrack = "Web development"
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @State private var showingBite = false
     @State private var showingMenu = false
@@ -180,6 +192,9 @@ struct RootView: View {
             .padding(.top, 8).padding(.trailing, 16) }
         }
         .sheet(isPresented: $showingBite) { BiteAssistantView() }
+        .sheet(item: $router.request) { request in
+            RoutedLessonSheet(request: request, isPro: premiumStore.isPro, preferredTrack: startingTrack)
+        }
         .sheet(isPresented: $showingMenu) { CourseMenuView() }
         .sheet(isPresented: $showingChallenge, onDismiss: { challengeStore.reset() }) {
             if let challenge = challengeStore.incomingChallenge ?? challengeStore.activeChallenge {
@@ -319,7 +334,7 @@ struct RapidLearningDeck: View {
                             Text(filter == "All cards" ? deckLabel(for: lesson) : filter.uppercased()).font(.caption.bold()).tracking(0.4)
                                 .padding(.horizontal, 14).padding(.vertical, 8).overlay(Capsule().stroke(.white.opacity(0.5)))
                             Spacer()
-                            Text(revealed ? lesson.definition : lesson.term).font(.system(size: 42, weight: .bold, design: .rounded))
+                            Text(revealed ? lesson.definition : lesson.term).font(.system(revealed ? .title2 : .largeTitle, design: .rounded, weight: .bold))
                             if !revealed { Text(lesson.clue).font(.title3.weight(.semibold)) }
                             else if !lesson.code.isEmpty { Text(lesson.code).font(.system(.body, design: .monospaced)).lineLimit(5) }
                             Spacer()
@@ -843,7 +858,7 @@ struct DailyPracticeView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Streak").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                     Text("\(store.currentStreak) \(store.currentStreak == 1 ? "day" : "days")")
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                        .font(.system(.largeTitle, design: .rounded, weight: .bold))
                 }
                 Spacer()
                 Image(systemName: "flame.fill").font(.system(size: 30)).foregroundStyle(.orange)
@@ -948,7 +963,7 @@ struct DailyPracticeView: View {
     private var firstSparkBite: some View {
         VStack(spacing: 5) {
             BiteAvatar().frame(width: 150, height: 180)
-            Text("Hey, I’m Bit.").font(.headline)
+            Text("Hey, I’m Bite.").font(.headline)
             Text("Let’s figure it out together.").font(.subheadline.bold()).multilineTextAlignment(.center)
                 .foregroundStyle(.white.opacity(0.78))
         }.frame(maxWidth: .infinity)
@@ -1575,16 +1590,13 @@ struct LearnView: View {
     @State private var searchText = ""
     private let myLessonsCategory = "My Lessons"
     private var categories: [String] {
-        var seen = Set<String>()
-        var result = (store.curriculum?.lessons ?? []).compactMap {
-            seen.insert($0.category).inserted ? $0.category : nil
-        }
+        var result = store.tracks
         if !customLessons.lessons.isEmpty { result.append(myLessonsCategory) }
         return result
     }
     private var lessons: [Lesson] {
         if category == myLessonsCategory { return customLessons.lessons }
-        let byCategory = store.curriculum?.lessons.filter { $0.category == category } ?? []
+        let byCategory = store.lessonsByTrack[category] ?? []
         guard let filter = difficultyFilter else { return byCategory }
         return byCategory.filter { $0.difficulty == filter }
     }
@@ -1618,7 +1630,6 @@ struct LearnView: View {
                     GamificationHeader()
                     LearningPathSection()
                     challengeButton
-                    DueTodaySectionView()
                     categoryTabBar
                     difficultyFilterBar
                     trackHeader
@@ -1643,12 +1654,12 @@ struct LearnView: View {
                     Image(systemName: "wand.and.sparkles")
                         .foregroundStyle(.purple)
                 }
-                .accessibilityLabel("Generate a lesson with Bit AI")
+                .accessibilityLabel("Generate a lesson with Bite AI")
                 Button { showingTutor = true } label: {
                     Image(systemName: "sparkles")
                         .foregroundStyle(.mint)
                 }
-                .accessibilityLabel("Ask Bit AI Tutor")
+                .accessibilityLabel("Ask Bite AI Tutor")
                 Button { showingBookmarks = true } label: {
                     Image(systemName: bookmarks.bookmarks.isEmpty ? "bookmark" : "bookmark.fill")
                         .foregroundStyle(bookmarks.bookmarks.isEmpty ? Color.secondary : Color.yellow)
@@ -1666,12 +1677,13 @@ struct LearnView: View {
         .sheet(isPresented: $showingPaywall) { ProPaywallView() }
         .sheet(isPresented: $showingBookmarks) { BookmarksSheet() }
         .safeAreaInset(edge: .top) { OfflineBanner() }
-        .fileExporter(isPresented: $exporting, document: FlashcardDocument(lessons: store.curriculum?.lessons ?? []), contentType: .commaSeparatedText, defaultFilename: "StackSprint-flashcards") { result in
+        .fileExporter(isPresented: $exporting, document: FlashcardDocument(lessons: exportableLessons), contentType: .commaSeparatedText, defaultFilename: "StackSprint-\(shortName(category))-flashcards") { result in
             if case .failure(let error) = result { exportError = error.localizedDescription }
         }
         .onAppear {
             // Apply starting track from goal-setting onboarding step
-            if categories.contains(startingTrack) { category = startingTrack }
+            // Never open on a Pro track the learner hasn't unlocked.
+            if categories.contains(startingTrack) && !isLockedTrack(startingTrack) { category = startingTrack }
         }
     }
     @ViewBuilder
@@ -1850,8 +1862,15 @@ struct LearnView: View {
                             HapticManager.shared.selection()
                             withAnimation(.smooth(duration: 0.2)) { category = name; selectedID = nil; difficultyFilter = nil }
                         } label: {
-                            Label(shortName(name), systemImage: categoryIcon(name))
-                                .font(.subheadline.bold()).padding(.horizontal, 15).padding(.vertical, 11)
+                            HStack(spacing: 6) {
+                                Label(shortName(name), systemImage: categoryIcon(name))
+                                if let progress = trackProgress(name) {
+                                    Text("\(progress.done)/\(progress.total)")
+                                        .font(.caption.monospacedDigit())
+                                        .opacity(0.75)
+                                }
+                            }
+                            .font(.subheadline.bold()).padding(.horizontal, 15).padding(.vertical, 11)
                         }
                         .buttonStyle(.plain)
                         .foregroundStyle(category == name ? Color(red: 0.05, green: 0.12, blue: 0.22) : .primary)
@@ -1907,7 +1926,7 @@ struct LearnView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Streak").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                     Text("\(store.currentStreak) \(store.currentStreak == 1 ? "day" : "days")")
-                        .font(.system(size: 46, weight: .bold, design: .rounded))
+                        .font(.system(.largeTitle, design: .rounded, weight: .bold))
                 }
                 Spacer()
                 Image(systemName: "flame.fill").font(.system(size: 34)).foregroundStyle(.orange)
@@ -1958,20 +1977,37 @@ struct LearnView: View {
             }
             Text("Every track has a quiz now. Switch tracks above, or open Practice \u{2192} Review.")
                 .font(.caption).foregroundStyle(.secondary)
-            Button("Export flashcards (CSV)", systemImage: "square.and.arrow.up") { exporting = true }
-                .buttonStyle(.bordered)
+            if !exportableLessons.isEmpty {
+                Button("Export \(shortName(category)) flashcards (CSV)", systemImage: "square.and.arrow.up") { exporting = true }
+                    .buttonStyle(.bordered)
+            }
             if let exportError { Text(exportError).foregroundStyle(.red) }
         }
         .padding(20)
         .background(Color.orange.opacity(0.09), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
+    private func trackProgress(_ track: String) -> (done: Int, total: Int)? {
+        guard track != myLessonsCategory else { return nil }
+        let progress = store.progress(in: track)
+        return progress.total > 0 ? progress : nil
+    }
+
+    private func isLockedTrack(_ track: String) -> Bool {
+        PremiumStore.proTracks.contains(track) && !premiumStore.isPro
+    }
+
+    /// Flashcards for the track on screen; Pro tracks only for Pro members.
+    private var exportableLessons: [Lesson] {
+        if isLockedTrack(category) { return [] }
+        if category == myLessonsCategory { return customLessons.lessons }
+        return store.lessonsByTrack[category] ?? []
+    }
+
     private func quizQuestions(for track: String) -> [Question] {
         guard track != myLessonsCategory else { return [] }
         if PremiumStore.proTracks.contains(track) && !premiumStore.isPro { return [] }
-        let lessons = store.curriculum?.lessons ?? []
-        return TrackQuiz.curated(track: track, questions: store.curriculum?.questions ?? [])
-            + TrackQuiz.termQuestions(track: track, lessons: lessons)
+        return store.quiz(for: track)
     }
 
     private func shortName(_ value: String) -> String {
@@ -2043,12 +2079,16 @@ struct LessonView: View {
                 }.buttonStyle(.borderedProminent)
                 if revealed {
                     Text(lesson.definition).font(.title3)
+                    LessonNoteEditor(lessonID: lesson.id)
+                        .padding(12)
+                        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     if !lesson.code.isEmpty { practiceArea } else { conceptArea }
                     if solved { nextStep }
                     NavigationLink("Open hands-on studio \u{2192}") { StudioView() }
                 }
             }.padding(24).frame(maxWidth: 700)
         }.modifier(SprintTheme()).navigationTitle(lesson.term)
+        .toolbar { ToolbarItem(placement: .topBarTrailing) { BookmarkButton(lessonID: lesson.id) } }
         .onAppear { code = UserDefaults.standard.string(forKey: "draft.\(lesson.id)") ?? "" }
         .onChange(of: code) { _, value in
             UserDefaults.standard.set(value, forKey: "draft.\(lesson.id)")
@@ -2095,7 +2135,7 @@ struct LessonView: View {
                 guard !graded else { return }
                 graded = true
                 SM2Engine.shared.recordReview(lessonID: lesson.id, quality: ReviewGrade.reviewedConcept)
-                if store.completed.contains(lesson.id) { store.recordPractice() } else { store.complete(lesson.id) }
+                if store.completed.contains(lesson.id) { store.recordLessonReplay(lesson.id) } else { store.complete(lesson.id) }
                 HapticManager.shared.notification(.success)
                 announce("Reviewed. Test your recall in a quiz.")
             }
@@ -2139,7 +2179,7 @@ struct LessonView: View {
                 graded = true
                 SM2Engine.shared.recordReview(lessonID: lesson.id, quality: ReviewGrade.solved(failedAttempts: failedAttempts))
             }
-            if store.completed.contains(lesson.id) { store.recordPractice() } else { store.complete(lesson.id) }
+            if store.completed.contains(lesson.id) { store.recordLessonReplay(lesson.id) } else { store.complete(lesson.id) }
             announce("Correct. \(CodeCheck.hint(for: outcome))")
         case .mismatch:
             failedAttempts += 1
@@ -2165,28 +2205,37 @@ struct QuizView: View {
     @State private var missed: [Question] = []
     /// Display order for each question's choices, so the answer isn't always in the same spot.
     @State private var order: [String: [Int]] = [:]
+    /// The questions in play: all of them, or just the ones missed last round.
+    @State private var round: [Question]
+    @State private var retrying = false
+
+    init(questions: [Question], title: String = "Quiz") {
+        self.questions = questions
+        self.title = title
+        _round = State(initialValue: questions)
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                if questions.isEmpty {
+                if round.isEmpty {
                     ContentUnavailableView("No questions available", systemImage: "questionmark.circle")
-                } else if index >= questions.count {
+                } else if index >= round.count {
                     summary
                 } else {
-                    questionCard(questions[index])
+                    questionCard(round[index])
                 }
             }.padding(24).frame(maxWidth: 700)
         }
         .modifier(SprintTheme())
         .navigationTitle(title)
-        .onAppear { shuffleChoices() }
+        .onAppear { if order.isEmpty { shuffleChoices() } }
     }
 
     @ViewBuilder
     private func questionCard(_ q: Question) -> some View {
-        Text("Question \(index + 1) of \(questions.count)").font(.caption.bold()).foregroundStyle(.secondary)
-        ProgressView(value: Double(index), total: Double(questions.count)).tint(.mint)
+        Text("Question \(index + 1) of \(round.count)").font(.caption.bold()).foregroundStyle(.secondary)
+        ProgressView(value: Double(index), total: Double(round.count)).tint(.mint)
         Text(q.question).font(.title3.bold()).fixedSize(horizontal: false, vertical: true)
         ForEach(order[q.id] ?? Array(q.choices.indices), id: \.self) { i in
             Button { answer(q, i) } label: {
@@ -2206,9 +2255,9 @@ struct QuizView: View {
         if let selected {
             Text(selected == q.answer ? "You got it!" : "Not quite. Here's why.").font(.headline)
             Text(q.explanation).fixedSize(horizontal: false, vertical: true)
-            Button(index + 1 == questions.count ? "See results" : "Continue") {
+            Button(index + 1 == round.count ? "See results" : "Continue") {
                 withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { index += 1; self.selected = nil }
-                if index >= questions.count { store.recordPractice() }
+                if index >= round.count { store.recordPractice() }
             }
             .buttonStyle(.borderedProminent)
         }
@@ -2217,7 +2266,7 @@ struct QuizView: View {
     private var summary: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Round complete").font(.largeTitle.bold())
-            Text("\(score) of \(questions.count) correct").font(.title3)
+            Text("\(score) of \(round.count) correct").font(.title3)
             if !missed.isEmpty {
                 Text("Worth another look").font(.headline)
                 ForEach(missed) { q in
@@ -2228,9 +2277,14 @@ struct QuizView: View {
                     Text("Missed terms are now in your review list for tomorrow.").font(.caption).foregroundStyle(.secondary)
                 }
             }
-            Button("Play again") {
-                index = 0; score = 0; selected = nil; missed = []; shuffleChoices()
-            }.buttonStyle(.borderedProminent)
+            if !missed.isEmpty {
+                Button("Retry the \(missed.count) I missed", systemImage: "arrow.uturn.backward") {
+                    start(with: missed.shuffled(), retry: true)
+                }.buttonStyle(.borderedProminent)
+            }
+            Button(retrying ? "Play the full round" : "Play again") {
+                start(with: questions, retry: false)
+            }.buttonStyle(.bordered)
         }
         .accessibilityElement(children: .contain)
     }
@@ -2273,8 +2327,14 @@ struct QuizView: View {
         return q.choices[i]
     }
 
+    private func start(with set: [Question], retry: Bool) {
+        round = set; retrying = retry
+        index = 0; score = 0; selected = nil; missed = []
+        shuffleChoices()
+    }
+
     private func shuffleChoices() {
-        order = Dictionary(questions.map { ($0.id, Array($0.choices.indices).shuffled()) }, uniquingKeysWith: { first, _ in first })
+        order = Dictionary(round.map { ($0.id, Array($0.choices.indices).shuffled()) }, uniquingKeysWith: { first, _ in first })
     }
 }
 struct StudioView: View {
@@ -2361,7 +2421,7 @@ struct AccountView: View {
                     Label("Trophy Room", systemImage: "trophy.fill")
                 }
                 NavigationLink { BitPracticeView() } label: {
-                    Label("Practice with Bit", systemImage: "brain.head.profile")
+                    Label("Practice with Bite", systemImage: "brain.head.profile")
                 }
             } header: {
                 Text("Features")
@@ -2577,18 +2637,18 @@ struct WelcomeAdventure: View {
                 VStack(alignment: .leading, spacing: 22) {
                     if step == 0 {
                         VStack(spacing: 20) {
-                            Text("Hello, I’m Bit! **Let’s figure it out together.**")
-                                .font(.system(size: 42, weight: .regular, design: .rounded))
+                            Text("Let’s figure it out **together.**")
+                                .font(.system(.largeTitle, design: .rounded))
                                 .multilineTextAlignment(.center)
                             BiteAvatar().frame(width: 132, height: 180)
-                            Text("Hello, I’m Bit! **Let’s figure it out together.**")
+                            Text("Hi, I’m Bite! Want to build something small today?")
                                 .font(.title3)
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal, 24)
                                 .padding(.vertical, 14)
                                 .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                                 .overlay(alignment: .bottom) { Triangle().fill(SprintPalette.card).frame(width: 22, height: 12).offset(y: 10) }
-                            Text("I’m Bit, your coding buddy. We’ll learn a small idea, type it ourselves, and turn it into something you can play.").multilineTextAlignment(.center).foregroundStyle(.secondary)
+                            Text("I’m Bite, your coding buddy. We’ll learn a small idea, type it ourselves, and turn it into something you can play.").multilineTextAlignment(.center).foregroundStyle(.secondary)
                         }.frame(maxWidth: .infinity).padding(.top, 20)
                     } else if step == 1 {
                         SignInOptionsView(onComplete: { step += 1 })

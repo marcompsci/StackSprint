@@ -68,7 +68,7 @@ struct AnalyticsDashboardView: View {
     private func statBlock(value: Int, label: String, icon: String, color: Color) -> some View {
         VStack(spacing: 6) {
             Image(systemName: icon).font(.title3).foregroundStyle(color)
-            Text("\(value)").font(.system(size: 32, weight: .bold, design: .rounded))
+            Text("\(value)").font(.system(.title, design: .rounded, weight: .bold))
             Text(label).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -138,28 +138,27 @@ struct AnalyticsDashboardView: View {
 
     // MARK: – XP Breakdown chart
 
+    /// The parts always add up to the total: XP comes only from lessons (10 each)
+    /// and correct quiz answers (5 each). The streak used to appear here as XP it never gave.
     private var xpBreakdownChart: some View {
-        let lessonXP   = store.completed.count * 10
-        let recallXP   = store.correctRecallAnswers.count * 5
-        let streakXP   = store.currentStreak * 2
-        let data: [(String, Int, Color)] = [
-            ("Lessons", lessonXP, .mint),
-            ("Recall",  recallXP, .purple),
-            ("Streak",  streakXP, .orange),
-        ]
+        let lessonXP = store.completed.count * 10
+        let quizXP   = store.correctRecallAnswers.count * 5
+        let data: [(String, Int, Color)] = [("Lessons", lessonXP, .mint), ("Quiz answers", quizXP, .purple)]
+        let tallest = max(data.map(\.1).max() ?? 0, 1)
 
         return VStack(alignment: .leading, spacing: 12) {
             Label("XP BREAKDOWN", systemImage: "bolt.fill").font(.caption.bold()).foregroundStyle(.yellow)
-            HStack(alignment: .bottom, spacing: 12) {
+            HStack(alignment: .bottom, spacing: 16) {
                 ForEach(data, id: \.0) { item in
                     VStack(spacing: 6) {
                         Text("\(item.1)").font(.title3.bold()).foregroundStyle(item.2)
-                        Text("XP").font(.caption2).foregroundStyle(.secondary)
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .fill(item.2.opacity(0.3))
-                            .frame(width: 44, height: max(CGFloat(item.1) / 4, 8))
-                        Text(item.0).font(.caption2).foregroundStyle(.secondary)
+                            .frame(width: 44, height: max(80 * CGFloat(item.1) / CGFloat(tallest), 6))
+                        Text(item.0).font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.center)
                     }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("\(item.0): \(item.1) XP")
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 4) {
@@ -171,6 +170,8 @@ struct AnalyticsDashboardView: View {
                         .font(.caption.bold()).foregroundStyle(level.color)
                 }
             }
+            Text("10 XP per lesson finished, 5 XP per quiz question answered right (once a day each).")
+                .font(.caption).foregroundStyle(.secondary)
         }
         .padding(16)
         .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))

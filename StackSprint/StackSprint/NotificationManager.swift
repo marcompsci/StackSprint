@@ -47,18 +47,42 @@ import UserNotifications
 
     // MARK: – Daily reminder (repeating calendar trigger)
 
+    /// Whether today already counts as practiced; set by the app so reminders skip it.
+    var practicedToday: () -> Bool = { false }
+
+    /// One reminder a day for the next week at the chosen time, skipping today once
+    /// you've practiced. (A repeating trigger can't skip a day, so it nagged even
+    /// after you'd done your lesson.) Rescheduled on launch and after every practice.
     func scheduleDailyReminder() {
-        center.removePendingNotificationRequests(withIdentifiers: ["daily.reminder"])
+        let ids = ["daily.reminder"] + (0..<Self.reminderDays).map { "daily.reminder.\($0)" }
+        center.removePendingNotificationRequests(withIdentifiers: ids)
         guard enabled, permissionGranted else { return }
-        var components = DateComponents()
-        components.hour = dailyHour
-        components.minute = dailyMinute
-        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
-        let content = UNMutableNotificationContent()
-        content.title = "Daily practice"
-        content.body = dailyMessages.randomElement() ?? dailyMessages[0]
-        content.sound = .default
-        center.add(UNNotificationRequest(identifier: "daily.reminder", content: content, trigger: trigger))
+        for (offset, date) in Self.reminderDates(hour: dailyHour, minute: dailyMinute, now: Date(),
+                                                  skipToday: practicedToday()).enumerated() {
+            let content = UNMutableNotificationContent()
+            content.title = "Daily practice"
+            content.body = dailyMessages.randomElement() ?? dailyMessages[0]
+            content.sound = .default
+            let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+            let trigger = UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)
+            center.add(UNNotificationRequest(identifier: "daily.reminder.\(offset)", content: content, trigger: trigger))
+        }
+    }
+
+    nonisolated static let reminderDays = 7
+
+    /// The next reminder times, today included only if it's still ahead and not yet practiced.
+    nonisolated static func reminderDates(hour: Int, minute: Int, now: Date, skipToday: Bool,
+                                          calendar: Calendar = .current) -> [Date] {
+        let today = calendar.startOfDay(for: now)
+        return (0...reminderDays).compactMap { offset -> Date? in
+            guard let day = calendar.date(byAdding: .day, value: offset, to: today),
+                  let time = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day) else { return nil }
+            if offset == 0 && (skipToday || time <= now) { return nil }
+            return time
+        }
+        .prefix(reminderDays)
+        .map { $0 }
     }
 
     // MARK: – Comeback (one-shot, rescheduled after practice)
@@ -77,6 +101,7 @@ import UserNotifications
 
     func refreshAfterPractice() {
         guard enabled, permissionGranted else { return }
+        scheduleDailyReminder()
         // Reset comeback timers so they count from NOW
         center.removePendingNotificationRequests(withIdentifiers: ["comeback.48h"])
         scheduleComeback(afterHours: 23, id: "comeback.24h",

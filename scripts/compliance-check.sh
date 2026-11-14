@@ -159,7 +159,7 @@ fam="$(grep -m1 -oE 'TARGETED_DEVICE_FAMILY = "[^"]+"' "$PROJ" | cut -d'"' -f2)"
 
 echo "== Needs macOS, Xcode or App Store Connect"
 manual "Release archive: Product → Archive in Xcode, then Validate App in the Organizer"
-manual "Answer the age rating questions (AI chatbot: Bit tutor; Game Center races) in App Store Connect"
+manual "Answer the age rating questions (AI chatbot: Bite tutor; Game Center races) in App Store Connect"
 manual "App Privacy answers in App Store Connect must match docs/privacy-security-audit.md"
 manual "Game Center enabled for the app in App Store Connect"
 

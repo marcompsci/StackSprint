@@ -230,7 +230,7 @@ private struct WeeklyLeaderRow: View {
                 Circle()
                     .fill(rankColor(entry.rank).opacity(0.15))
                     .frame(width: 38, height: 38)
-                Text("#\(entry.rank)").font(.system(size: 13, weight: .bold, design: .rounded))
+                Text("#\(entry.rank)").font(.system(.footnote, design: .rounded, weight: .bold))
                     .foregroundStyle(rankColor(entry.rank))
             }
 

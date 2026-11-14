@@ -20,7 +20,7 @@ enum AppStoreCopy {
     • 104 bite-sized lessons across 9 programming tracks
     • Flip-card review with spaced repetition (SM-2 algorithm)
     • Interactive code editor with live run for JS and Python
-    • AI Tutor (Bit) using Apple Intelligence on supported devices
+    • AI Tutor (Bite) using Apple Intelligence on supported devices
     • Studio: 10 guided CSS and JavaScript missions with live checks, \
     plus free builds you can export as web pages
 

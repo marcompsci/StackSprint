@@ -263,3 +263,111 @@ struct ProgressBackupTests {
         #expect(SM2Engine.merged(["a": ahead], ["a": fresh])["a"]?.repetitions == 2)
     }
 }
+
+// MARK: - Phases 11–25
+
+@Suite("WeeklyGoal")
+@MainActor
+struct WeeklyGoalTests {
+    private var calendar: Calendar {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+        c.firstWeekday = 1 // Sunday
+        return c
+    }
+    private func date(_ s: String) -> Date {
+        var parts = DateComponents()
+        let p = s.split(separator: "-").compactMap { Int($0) }
+        parts.year = p[0]; parts.month = p[1]; parts.day = p[2]; parts.hour = 12
+        return calendar.date(from: parts)!
+    }
+
+    @Test func countsLessonsNotDays() {
+        // Week of Sun 8 Nov – Sat 14 Nov 2026: three lessons on one day count three times.
+        let activity: Set<String> = ["2026-11-09|a", "2026-11-09|b", "2026-11-09|c", "2026-11-13|a", "2026-11-07|z"]
+        #expect(WeeklyGoalMath.lessons(in: activity, weekOf: date("2026-11-13"), calendar: calendar) == 4)
+    }
+
+    @Test func tenAWeekIsReachable() {
+        let activity = Set((1...10).map { "2026-11-10|lesson\($0)" })
+        #expect(WeeklyGoalMath.lessons(in: activity, weekOf: date("2026-11-12"), calendar: calendar) == 10)
+    }
+}
+
+@Suite("Reminders")
+@MainActor
+struct ReminderTests {
+    private var calendar: Calendar {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+        return c
+    }
+    private func at(_ day: Int, _ hour: Int) -> Date {
+        calendar.date(from: DateComponents(year: 2026, month: 11, day: day, hour: hour))!
+    }
+
+    @Test func skipsTodayOncePracticed() {
+        let dates = NotificationManager.reminderDates(hour: 19, minute: 0, now: at(13, 9), skipToday: true, calendar: calendar)
+        #expect(dates.count == NotificationManager.reminderDays)
+        #expect(!calendar.isDate(dates[0], inSameDayAs: at(13, 9)))
+        #expect(calendar.isDate(dates[0], inSameDayAs: at(14, 9)))
+    }
+
+    @Test func keepsTodayWhenNotPracticedAndStillAhead() {
+        let dates = NotificationManager.reminderDates(hour: 19, minute: 0, now: at(13, 9), skipToday: false, calendar: calendar)
+        #expect(calendar.isDate(dates[0], inSameDayAs: at(13, 9)))
+        #expect(calendar.component(.hour, from: dates[0]) == 19)
+    }
+
+    @Test func dropsTodayWhenTimeHasPassed() {
+        let dates = NotificationManager.reminderDates(hour: 8, minute: 0, now: at(13, 9), skipToday: false, calendar: calendar)
+        #expect(calendar.isDate(dates[0], inSameDayAs: at(14, 9)))
+    }
+}
+
+@Suite("Polish")
+@MainActor
+struct PolishTests {
+    @Test func spotlightIdentifierOpensLesson() {
+        let router = LessonRouter.shared
+        router.request = nil
+        router.open(spotlightIdentifier: LessonRouter.spotlightPrefix + "web-html")
+        #expect(router.request == .lesson("web-html"))
+        router.request = nil
+        router.open(spotlightIdentifier: "something-else")
+        #expect(router.request == nil)
+    }
+
+    @Test func copyNamesDontCollide() {
+        #expect(FreeBuildSession.copyName(for: "Page", taken: ["Page"]) == "Page copy")
+        #expect(FreeBuildSession.copyName(for: "Page", taken: ["Page", "Page copy"]) == "Page copy 2")
+    }
+
+    @Test func weakestAreLowEaseFirst() {
+        let lessons = ["a", "b", "c"].map { Lesson(id: $0, term: $0, category: "T", clue: "", definition: "", code: "", difficulty: nil) }
+        var hard = SM2Card.initial(lessonID: "a"); hard.easeFactor = 1.5
+        var medium = SM2Card.initial(lessonID: "b"); medium.easeFactor = 2.0
+        let easy = SM2Card.initial(lessonID: "c")
+        let weak = SM2Engine.weakest(cards: ["a": hard, "b": medium, "c": easy], in: lessons, limit: 5)
+        #expect(weak.map(\.id) == ["a", "b"])
+    }
+
+    @Test func storeIndexesTracksAndQuizzes() {
+        let store = LearningStore()
+        #expect(store.tracks.count == 9)
+        #expect(store.tracks.first == "Web development")
+        #expect(store.quiz(for: "Web development").count == 25 + 12)
+        #expect(store.quiz(for: "Go").count == 10)
+        #expect(store.progress(in: "Rust").total == 10)
+    }
+
+    @Test func versionOneBackupsStillRestore() throws {
+        let json = """
+        {"version":1,"exportedAt":"2026-11-13T00:00:00Z","completedLessons":["web-html"],"practiceDays":[],
+         "quizAnswers":[],"reviewCards":{},"bookmarks":[],"notes":{},"completedMissions":[],"missionDrafts":{}}
+        """
+        let backup = try ProgressBackup.decode(Data(json.utf8))
+        #expect(backup.lessonActivity == nil)
+        #expect(backup.completedLessons == ["web-html"])
+    }
+}
