@@ -1,4 +1,5 @@
 import AppIntents
+import Combine
 import CoreSpotlight
 import SwiftUI
 
