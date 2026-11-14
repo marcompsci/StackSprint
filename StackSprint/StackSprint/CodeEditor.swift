@@ -11,13 +11,24 @@ import UIKit
 // - CSS, JavaScript and HTML are coloured as you type.
 
 enum CodeLanguage: String {
-    case css, javascript, html
+    case css, javascript, html, python, swift
 
     var displayName: String {
         switch self {
         case .css: return "CSS"
         case .javascript: return "JavaScript"
         case .html: return "HTML"
+        case .python: return "Python"
+        case .swift: return "Swift"
+        }
+    }
+
+    /// The editor language for a lesson track.
+    static func forLessonCategory(_ category: String) -> CodeLanguage {
+        switch category {
+        case "Python": return .python
+        case "Swift": return .swift
+        default: return .javascript
         }
     }
 }
@@ -259,6 +270,20 @@ enum CodeHighlighter {
         rule(#"\b\d+(?:\.\d+)?\b"#, CodeTheme.number),
     ].compactMap { $0 }
 
+    private static let pythonRules: [Rule] = [
+        rule(#"\b([A-Za-z_]\w*)\s*(?=\()"#, CodeTheme.function, group: 1),
+        rule(#"\b(?:def|return|if|elif|else|for|while|in|not|and|or|import|from|as|class|try|except|finally|raise|with|lambda|pass|break|continue|yield|None|True|False|self)\b"#, CodeTheme.keyword),
+        rule(#"\b\d+(?:\.\d+)?\b"#, CodeTheme.number),
+    ].compactMap { $0 }
+
+    private static let swiftRules: [Rule] = [
+        rule(#"\.([A-Za-z_]\w*)"#, CodeTheme.property, group: 1),
+        rule(#"\b([A-Za-z_]\w*)\s*(?=\()"#, CodeTheme.function, group: 1),
+        rule(#"\b(?:let|var|func|return|if|else|guard|for|in|while|switch|case|default|struct|class|enum|protocol|extension|import|some|any|self|Self|nil|true|false|async|await|throws|try|private|static|init)\b"#, CodeTheme.keyword),
+        rule(#"@\w+"#, CodeTheme.keyword),
+        rule(#"\b\d+(?:\.\d+)?\b"#, CodeTheme.number),
+    ].compactMap { $0 }
+
     private static let htmlRules: [Rule] = [
         rule(#"</?([A-Za-z][\w-]*)"#, CodeTheme.selector, group: 1),
         rule(#"\s([A-Za-z_:@][\w:.-]*)(?=\s*=)"#, CodeTheme.property, group: 1),
@@ -271,6 +296,10 @@ enum CodeHighlighter {
         pattern: #"(/\*[\s\S]*?(?:\*/|\z))|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)"#)
     private static let jsStringsAndComments = try? NSRegularExpression(
         pattern: #"(//[^\n]*|/\*[\s\S]*?(?:\*/|\z))|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?|`(?:[^`\\]|\\.)*`?)"#)
+    private static let pythonStringsAndComments = try? NSRegularExpression(
+        pattern: #"(#[^\n]*)|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)"#)
+    private static let swiftStringsAndComments = try? NSRegularExpression(
+        pattern: #"(//[^\n]*|/\*[\s\S]*?(?:\*/|\z))|("(?:[^"\\\n]|\\.)*"?)"#)
     private static let htmlStringsAndComments = try? NSRegularExpression(
         pattern: #"(<!--[\s\S]*?(?:-->|\z))|("[^"\n]*"?|'[^'\n]*'?)"#)
 
@@ -283,6 +312,8 @@ enum CodeHighlighter {
         case .css: rules = cssRules; stringsAndComments = cssStringsAndComments
         case .javascript: rules = jsRules; stringsAndComments = jsStringsAndComments
         case .html: rules = htmlRules; stringsAndComments = htmlStringsAndComments
+        case .python: rules = pythonRules; stringsAndComments = pythonStringsAndComments
+        case .swift: rules = swiftRules; stringsAndComments = swiftStringsAndComments
         }
         storage.beginEditing()
         storage.setAttributes([.font: font, .foregroundColor: CodeTheme.text], range: full)

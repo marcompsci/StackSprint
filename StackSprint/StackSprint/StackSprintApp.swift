@@ -85,6 +85,10 @@ import WebKit
                             Task { try? await backend?.sync(store!) }
                         }
                     }
+                    store.onActivity = { [weak notifications, weak store] in
+                        notifications?.refreshAfterPractice()
+                        if let s = store { writeWidgetData(store: s) }
+                    }
                     // Fetch remote curriculum update without blocking startup
                     Task { await store.refreshCurriculumIfNeeded() }
                     // Write initial widget data
@@ -845,7 +849,9 @@ struct DailyPracticeView: View {
                 Image(systemName: "flame.fill").font(.system(size: 30)).foregroundStyle(.orange)
                     .frame(width: 62, height: 62).background(.orange.opacity(0.14), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             }
-            Text(store.currentStreak == 0 ? "Your first tiny win starts today. You belong here." : "Every small practice session counts. Keep your spark going tomorrow.")
+            Text(store.currentStreak == 0 ? "Your first tiny win starts today. You belong here."
+                 : store.streakAtRisk ? "Practice today to keep your \(store.currentStreak)-day streak going."
+                 : "Every small practice session counts. Keep your spark going tomorrow.")
                 .font(.title3).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 8) {
                 ForEach(0..<7, id: \.self) { day in
@@ -1544,6 +1550,7 @@ struct LearnView: View {
     @State private var showingPaywall = false
     @State private var showingGenerator = false
     @ObservedObject private var challengeStore = FriendChallengeStore.shared
+    @ObservedObject private var reviews = SM2Engine.shared
     @State private var difficultyFilter: String? = nil
     private let myLessonsCategory = "My Lessons"
     private var categories: [String] {
@@ -1689,9 +1696,33 @@ struct LearnView: View {
                 ProgressView(value: Double(store.completed.count), total: Double(total)).tint(.mint)
                 Text("\(store.completed.count) of \(total)").font(.caption.weight(.semibold).monospacedDigit()).foregroundStyle(.secondary)
             }
+            continueButton
         }
         .padding(22)
         .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+
+    /// One clear next step: reviews that are due come first, then the next new lesson.
+    @ViewBuilder
+    private var continueButton: some View {
+        let lessons = store.curriculum?.lessons ?? []
+        let due = reviews.dueCards(in: lessons)
+        if let first = due.first {
+            NavigationLink { LessonView(lesson: first) } label: {
+                Label(due.count == 1 ? "Review \(first.term)" : "Review \(due.count) due lessons, starting with \(first.term)",
+                      systemImage: "arrow.clockwise")
+                    .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12)
+            }
+            .buttonStyle(.borderedProminent).tint(.orange)
+        } else if let next = LessonFlow.continueLesson(in: lessons, completed: store.completed,
+                                                       preferredTrack: category,
+                                                       locked: premiumStore.isPro ? [] : PremiumStore.proTracks) {
+            NavigationLink { LessonView(lesson: next) } label: {
+                Label("Continue: \(next.term)", systemImage: "play.fill")
+                    .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12)
+            }
+            .buttonStyle(.borderedProminent).tint(.mint)
+        }
     }
 
     private var challengeButton: some View {
@@ -1819,10 +1850,7 @@ struct LearnView: View {
                     .frame(width: 64, height: 64)
                     .background(.orange.opacity(0.14), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             }
-            Text(store.currentStreak == 0
-                 ? "Your first tiny win starts today. You belong here."
-                 : "You showed up today. Keep the spark going with one small lesson tomorrow.")
-                .font(.title3)
+            Text(streakMessage).font(.title3)
             HStack(spacing: 9) {
                 ForEach(0..<7, id: \.self) { day in
                     ZStack {
@@ -1843,28 +1871,41 @@ struct LearnView: View {
         .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color.orange.opacity(0.35), lineWidth: 1.5))
     }
 
+    private var streakMessage: String {
+        if store.currentStreak == 0 { return "Your first tiny win starts today. You belong here." }
+        if store.streakAtRisk { return "Do one small lesson or review today to keep your \(store.currentStreak)-day streak." }
+        return "You showed up today. Keep the spark going with one small lesson tomorrow."
+    }
+
     private var recallArcadeSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Review").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
             Text("Quizzes").font(.title2.bold())
-            NavigationLink {
-                QuizView(questions: store.curriculum?.questions.filter { $0.id.hasPrefix("web-") } ?? [])
-            } label: {
-                Label("Web quiz \u{B7} 25 questions", systemImage: "gamecontroller.fill")
-                    .frame(maxWidth: .infinity, alignment: .leading).padding(14)
-            }.buttonStyle(.bordered)
-            NavigationLink {
-                QuizView(questions: store.curriculum?.questions.filter { $0.id.hasPrefix("cyber-") } ?? [])
-            } label: {
-                Label("Cybersecurity quiz \u{B7} 25 questions", systemImage: "shield.checkered")
-                    .frame(maxWidth: .infinity, alignment: .leading).padding(14)
-            }.buttonStyle(.bordered)
+            let trackQuestions = quizQuestions(for: category)
+            if !trackQuestions.isEmpty {
+                NavigationLink {
+                    QuizView(questions: trackQuestions, title: "\(shortName(category)) quiz")
+                } label: {
+                    Label("\(shortName(category)) quiz \u{B7} \(trackQuestions.count) questions", systemImage: "gamecontroller.fill")
+                        .frame(maxWidth: .infinity, alignment: .leading).padding(14)
+                }.buttonStyle(.bordered)
+            }
+            Text("Every track has a quiz now. Switch tracks above, or open Practice \u{2192} Review.")
+                .font(.caption).foregroundStyle(.secondary)
             Button("Export flashcards (CSV)", systemImage: "square.and.arrow.up") { exporting = true }
                 .buttonStyle(.bordered)
             if let exportError { Text(exportError).foregroundStyle(.red) }
         }
         .padding(20)
         .background(Color.orange.opacity(0.09), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+
+    private func quizQuestions(for track: String) -> [Question] {
+        guard track != myLessonsCategory else { return [] }
+        if PremiumStore.proTracks.contains(track) && !premiumStore.isPro { return [] }
+        let lessons = store.curriculum?.lessons ?? []
+        return TrackQuiz.curated(track: track, questions: store.curriculum?.questions ?? [])
+            + TrackQuiz.termQuestions(track: track, lessons: lessons)
     }
 
     private func shortName(_ value: String) -> String {
@@ -1912,85 +1953,262 @@ struct LearnView: View {
 struct LessonView: View {
     let lesson: Lesson
     @EnvironmentObject var store: LearningStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var revealed = false
     @State private var code = ""
-    @State private var feedback = ""
+    @State private var result: CodeCheck.Result?
+    @State private var failedAttempts = 0
+    @State private var graded = false
+
+    private var language: CodeLanguage { .forLessonCategory(lesson.category) }
+    private var solved: Bool { result == .match || (lesson.code.isEmpty && graded) }
+    /// The next unfinished lesson in this track, so finishing one flows into the next.
+    /// It stays in the same track, which the learner already has access to.
+    private var nextLesson: Lesson? {
+        LessonFlow.next(after: lesson, in: store.curriculum?.lessons ?? [], completed: store.completed)
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 Text(lesson.clue).font(.title2.bold())
-                Button(revealed ? "Hide explanation" : "Reveal explanation", systemImage: "sparkles") { revealed.toggle() }.buttonStyle(.borderedProminent)
+                Button(revealed ? "Hide explanation" : "Reveal explanation", systemImage: "sparkles") {
+                    withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { revealed.toggle() }
+                }.buttonStyle(.borderedProminent)
                 if revealed {
                     Text(lesson.definition).font(.title3)
-                    if !lesson.code.isEmpty {
-                        Text("Recreate this example").font(.headline)
-                        Text(lesson.code).font(.system(.body, design: .monospaced)).textSelection(.enabled).padding().frame(maxWidth: .infinity, alignment: .leading).background(.indigo.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        TextEditor(text: $code).font(.system(.body, design: .monospaced)).autocorrectionDisabled().textInputAutocapitalization(.never).frame(minHeight: 170).padding(8).overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(.secondary.opacity(0.3))).accessibilityLabel("Type the lesson code")
-                        CodeRunnerView(code: $code, language: codeLanguage(lesson))
-                        Text("Check your transcription or tap Run ▶ to execute it.").font(.caption).foregroundStyle(.secondary)
-                        Button("Check my example") {
-                            let correct = code.trimmingCharacters(in: .whitespacesAndNewlines) == lesson.code
-                            SM2Engine.shared.recordReview(lessonID: lesson.id, quality: correct ? 5 : 1)
-                            if correct { store.complete(lesson.id); feedback = "Nicely done! Make your own version in Studio next." }
-                            else { feedback = "Check spelling, quotes, spacing, and line breaks against the example." }
-                        }.buttonStyle(.borderedProminent)
-                    } else {
-                        Button("I reviewed this concept") {
-                            SM2Engine.shared.recordReview(lessonID: lesson.id, quality: 4)
-                            store.complete(lesson.id)
-                            feedback = "Reviewed! Test your recall in the course quiz."
-                        }.buttonStyle(.borderedProminent)
-                    }
-                    Text(feedback).foregroundStyle(.indigo).accessibilityAddTraits(.updatesFrequently)
-                    NavigationLink("Open hands-on studio →") { StudioView() }
+                    if !lesson.code.isEmpty { practiceArea } else { conceptArea }
+                    if solved { nextStep }
+                    NavigationLink("Open hands-on studio \u{2192}") { StudioView() }
                 }
             }.padding(24).frame(maxWidth: 700)
         }.modifier(SprintTheme()).navigationTitle(lesson.term)
         .onAppear { code = UserDefaults.standard.string(forKey: "draft.\(lesson.id)") ?? "" }
-        .onChange(of: code) { _, value in UserDefaults.standard.set(value, forKey: "draft.\(lesson.id)") }
+        .onChange(of: code) { _, value in
+            UserDefaults.standard.set(value, forKey: "draft.\(lesson.id)")
+            if result != nil && result != .match { result = nil }
+        }
+        .onDisappear {
+            // Tried and didn't solve it: schedule it again for tomorrow (one grade per visit).
+            if !graded && failedAttempts > 0 {
+                SM2Engine.shared.recordReview(lessonID: lesson.id, quality: ReviewGrade.unsolved)
+            }
+        }
         .trackedWithLiveActivity(lesson: lesson)
     }
 
-    private func codeLanguage(_ lesson: Lesson) -> String {
-        switch lesson.category {
-        case "Swift":              return "swift"
-        case "Python":             return "python"
-        case "TypeScript", "React":return "javascript"
-        default:                   return "javascript"
+    private var practiceArea: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Recreate this example").font(.headline)
+            Text(lesson.code).font(.system(.body, design: .monospaced)).textSelection(.enabled)
+                .padding().frame(maxWidth: .infinity, alignment: .leading)
+                .background(.indigo.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            CodeEditor(text: $code, language: language,
+                       accessibilityLabel: "Type the \(language.displayName) example")
+                .frame(minHeight: 170)
+                .background(Color(red: 0.055, green: 0.09, blue: 0.15), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            Text("Spacing at the ends of lines, blank lines and curly quotes don't count\(CodeCheck.indentationMatters(for: lesson.category) ? "; indentation does in Python" : "").")
+                .font(.caption).foregroundStyle(.secondary)
+            Button("Check my example", systemImage: "checkmark.circle") { check() }
+                .buttonStyle(.borderedProminent)
+                .disabled(result == .match)
+            if let result {
+                Label(CodeCheck.hint(for: result), systemImage: result == .match ? "checkmark.seal.fill" : "exclamationmark.circle")
+                    .font(.subheadline)
+                    .foregroundStyle(result == .match ? Color.green : Color.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
         }
+    }
+
+    private var conceptArea: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button(graded ? "Reviewed" : "I reviewed this concept", systemImage: graded ? "checkmark.seal.fill" : "checkmark") {
+                guard !graded else { return }
+                graded = true
+                SM2Engine.shared.recordReview(lessonID: lesson.id, quality: ReviewGrade.reviewedConcept)
+                if store.completed.contains(lesson.id) { store.recordPractice() } else { store.complete(lesson.id) }
+                HapticManager.shared.notification(.success)
+                announce("Reviewed. Test your recall in a quiz.")
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(graded)
+        }
+    }
+
+    @ViewBuilder
+    private var nextStep: some View {
+        if let next = nextLesson {
+            NavigationLink { LessonView(lesson: next) } label: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Next in \(next.category)").font(.caption.bold()).foregroundStyle(.secondary)
+                    HStack {
+                        Text(next.term).font(.headline)
+                        Spacer()
+                        Image(systemName: "arrow.right")
+                    }
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.mint.opacity(0.14), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Next lesson: \(next.term)")
+        } else {
+            Label("You've finished every lesson in \(lesson.category).", systemImage: "flag.checkered")
+                .font(.subheadline.bold()).foregroundStyle(.mint)
+        }
+    }
+
+    private func check() {
+        let outcome = CodeCheck.compare(typed: code, expected: lesson.code,
+                                        keepIndentation: CodeCheck.indentationMatters(for: lesson.category))
+        result = outcome
+        switch outcome {
+        case .match:
+            HapticManager.shared.notification(.success)
+            if !graded {
+                graded = true
+                SM2Engine.shared.recordReview(lessonID: lesson.id, quality: ReviewGrade.solved(failedAttempts: failedAttempts))
+            }
+            if store.completed.contains(lesson.id) { store.recordPractice() } else { store.complete(lesson.id) }
+            announce("Correct. \(CodeCheck.hint(for: outcome))")
+        case .mismatch:
+            failedAttempts += 1
+            HapticManager.shared.notification(.warning)
+            announce(CodeCheck.hint(for: outcome))
+        case .empty:
+            announce(CodeCheck.hint(for: outcome))
+        }
+    }
+
+    private func announce(_ message: String) {
+        AccessibilityNotification.Announcement(message).post()
     }
 }
 struct QuizView: View {
     let questions: [Question]
+    var title = "Quiz"
+    @EnvironmentObject var store: LearningStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var index = 0
     @State private var selected: Int?
     @State private var score = 0
+    @State private var missed: [Question] = []
+    /// Display order for each question's choices, so the answer isn't always in the same spot.
+    @State private var order: [String: [Int]] = [:]
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                if questions.isEmpty { ContentUnavailableView("No questions available", systemImage: "questionmark.circle") }
-                else if index >= questions.count {
-                    Text("Round complete").font(.largeTitle.bold())
-                    Text("\(score) of \(questions.count) correct")
-                    Button("Play again") { index = 0; score = 0; selected = nil }.buttonStyle(.borderedProminent)
+            VStack(alignment: .leading, spacing: 20) {
+                if questions.isEmpty {
+                    ContentUnavailableView("No questions available", systemImage: "questionmark.circle")
+                } else if index >= questions.count {
+                    summary
                 } else {
-                    let q = questions[index]
-                    Text("Question \(index + 1) of \(questions.count)").font(.caption.bold())
-                    ProgressView(value: Double(index), total: Double(questions.count))
-                    Text(q.question).font(.title2.bold())
-                    ForEach(q.choices.indices, id: \.self) { i in
-                        Button { selected = i; if i == q.answer { score += 1 } } label: {
-                            HStack { Text(q.choices[i]); Spacer(); if selected != nil && i == q.answer { Image(systemName: "checkmark.circle.fill") } }.padding().frame(maxWidth: .infinity, alignment: .leading)
-                        }.buttonStyle(.bordered).disabled(selected != nil)
-                    }
-                    if let selected {
-                        Text(selected == q.answer ? "You got it!" : "A useful mistake — here’s why.").font(.headline)
-                        Text(q.explanation)
-                        Button("Continue") { index += 1; self.selected = nil }.buttonStyle(.borderedProminent)
-                    }
+                    questionCard(questions[index])
                 }
             }.padding(24).frame(maxWidth: 700)
-        }.modifier(SprintTheme()).navigationTitle("Recall arcade")
+        }
+        .modifier(SprintTheme())
+        .navigationTitle(title)
+        .onAppear { shuffleChoices() }
+    }
+
+    @ViewBuilder
+    private func questionCard(_ q: Question) -> some View {
+        Text("Question \(index + 1) of \(questions.count)").font(.caption.bold()).foregroundStyle(.secondary)
+        ProgressView(value: Double(index), total: Double(questions.count)).tint(.mint)
+        Text(q.question).font(.title3.bold()).fixedSize(horizontal: false, vertical: true)
+        ForEach(order[q.id] ?? Array(q.choices.indices), id: \.self) { i in
+            Button { answer(q, i) } label: {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(q.choices[i]).multilineTextAlignment(.leading)
+                    Spacer()
+                    if let mark = mark(for: i, in: q) { Image(systemName: mark.icon).foregroundStyle(mark.color) }
+                }
+                .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                .background(fill(for: i, in: q), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.secondary.opacity(0.22)))
+            }
+            .buttonStyle(.plain)
+            .disabled(selected != nil)
+            .accessibilityLabel(choiceLabel(i, in: q))
+        }
+        if let selected {
+            Text(selected == q.answer ? "You got it!" : "Not quite. Here's why.").font(.headline)
+            Text(q.explanation).fixedSize(horizontal: false, vertical: true)
+            Button(index + 1 == questions.count ? "See results" : "Continue") {
+                withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { index += 1; self.selected = nil }
+                if index >= questions.count { store.recordPractice() }
+            }
+            .buttonStyle(.borderedProminent)
+        }
+    }
+
+    private var summary: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Round complete").font(.largeTitle.bold())
+            Text("\(score) of \(questions.count) correct").font(.title3)
+            if !missed.isEmpty {
+                Text("Worth another look").font(.headline)
+                ForEach(missed) { q in
+                    Text(q.explanation).font(.subheadline).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if missed.contains(where: { TrackQuiz.lessonID(forQuestion: $0.id) != nil }) {
+                    Text("Missed terms are now in your review list for tomorrow.").font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            Button("Play again") {
+                index = 0; score = 0; selected = nil; missed = []; shuffleChoices()
+            }.buttonStyle(.borderedProminent)
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    private func answer(_ q: Question, _ choice: Int) {
+        selected = choice
+        if choice == q.answer {
+            score += 1
+            store.recordDailyRecall(q.id)
+            HapticManager.shared.notification(.success)
+            AccessibilityNotification.Announcement("Correct").post()
+        } else {
+            missed.append(q)
+            if let lessonID = TrackQuiz.lessonID(forQuestion: q.id) {
+                SM2Engine.shared.recordReview(lessonID: lessonID, quality: ReviewGrade.unsolved)
+            }
+            HapticManager.shared.notification(.warning)
+            AccessibilityNotification.Announcement("Not quite. The answer is \(q.choices[q.answer]).").post()
+        }
+    }
+
+    private func mark(for i: Int, in q: Question) -> (icon: String, color: Color)? {
+        guard let selected else { return nil }
+        if i == q.answer { return ("checkmark.circle.fill", .green) }
+        if i == selected { return ("xmark.circle.fill", .red) }
+        return nil
+    }
+
+    private func fill(for i: Int, in q: Question) -> Color {
+        guard let selected else { return SprintPalette.card }
+        if i == q.answer { return Color.green.opacity(0.16) }
+        if i == selected { return Color.red.opacity(0.14) }
+        return SprintPalette.card
+    }
+
+    private func choiceLabel(_ i: Int, in q: Question) -> String {
+        guard let selected else { return q.choices[i] }
+        if i == q.answer { return "\(q.choices[i]), correct answer" }
+        if i == selected { return "\(q.choices[i]), your answer, incorrect" }
+        return q.choices[i]
+    }
+
+    private func shuffleChoices() {
+        order = Dictionary(questions.map { ($0.id, Array($0.choices.indices).shuffled()) }, uniquingKeysWith: { first, _ in first })
     }
 }
 struct StudioView: View {

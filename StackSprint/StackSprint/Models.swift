@@ -78,6 +78,9 @@ struct ProgressRow: Codable {
     @Published var error: String?
     private var namespace = "guest"
     var onPractice: (() -> Void)?
+    /// Runs whenever today counts as practiced, including replays that earn no new XP,
+    /// so reminders and widgets know the learner showed up.
+    var onActivity: (() -> Void)?
 
     init() {
         // Bundled JSON is always the safety net
@@ -109,7 +112,20 @@ struct ProgressRow: Codable {
         practicedDays.insert(Self.dayKey(Date()))
         persist()
         onPractice?()
+        onActivity?()
     }
+
+    /// Counts today as a practice day without awarding XP: replaying a mastered
+    /// lesson, finishing a review or a quiz round keeps the streak alive.
+    func recordPractice() {
+        let today = Self.dayKey(Date())
+        guard !practicedDays.contains(today) else { return }
+        practicedDays.insert(today)
+        persist()
+        onActivity?()
+    }
+
+    var practicedToday: Bool { practicedDays.contains(Self.dayKey(Date())) }
 
     func recordDailyRecall(_ questionID: String) {
         let key = "\(Self.dayKey(Date()))|\(questionID)"
@@ -118,6 +134,7 @@ struct ProgressRow: Codable {
         practicedDays.insert(Self.dayKey(Date()))
         persist()
         onPractice?()
+        onActivity?()
     }
 
     func recalledToday(_ questionID: String) -> Bool {
@@ -148,11 +165,35 @@ struct ProgressRow: Codable {
         return f.date(from: latest)
     }
 
-    var currentStreak: Int {
-        let calendar = Calendar.current
-        var date = calendar.startOfDay(for: Date())
+    /// A streak stays alive until the end of today: if you practiced yesterday
+    /// but not yet today, it still shows (and today is when you keep it).
+    var currentStreak: Int { StreakMath.current(days: practicedDays, today: Date()) }
+    var streakAtRisk: Bool { StreakMath.atRisk(days: practicedDays, today: Date()) }
+
+    /// The longest run of consecutive practice days in the learner's history.
+    var bestStreak: Int {
+        max(StreakMath.best(days: practicedDays), UserDefaults.standard.integer(forKey: "stats.bestStreak"))
+    }
+
+    static func dayKey(_ date: Date) -> String {
+        let parts = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+    }
+}
+
+// MARK: - Streak maths (pure, unit-tested)
+
+enum StreakMath {
+    /// Consecutive practice days ending today, or ending yesterday when today
+    /// hasn't been practiced yet (the streak is at risk, not lost).
+    static func current(days: Set<String>, today: Date, calendar: Calendar = .current) -> Int {
+        var date = calendar.startOfDay(for: today)
+        if !days.contains(key(date, calendar)) {
+            guard let yesterday = calendar.date(byAdding: .day, value: -1, to: date) else { return 0 }
+            date = yesterday
+        }
         var count = 0
-        while practicedDays.contains(Self.dayKey(date)) {
+        while days.contains(key(date, calendar)) {
             count += 1
             guard let previous = calendar.date(byAdding: .day, value: -1, to: date) else { break }
             date = previous
@@ -160,8 +201,36 @@ struct ProgressRow: Codable {
         return count
     }
 
-    private static func dayKey(_ date: Date) -> String {
-        let parts = Calendar.current.dateComponents([.year, .month, .day], from: date)
+    /// True when there's a streak to keep and today hasn't been practiced yet.
+    static func atRisk(days: Set<String>, today: Date, calendar: Calendar = .current) -> Bool {
+        !days.contains(key(today, calendar)) && current(days: days, today: today, calendar: calendar) > 0
+    }
+
+    /// The longest run of consecutive days anywhere in the history.
+    static func best(days: Set<String>, calendar: Calendar = .current) -> Int {
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = calendar.timeZone
+        formatter.dateFormat = "yyyy-MM-dd"
+        let dates = days.compactMap { formatter.date(from: $0) }.map { calendar.startOfDay(for: $0) }.sorted()
+        var best = 0, run = 0
+        var previous: Date?
+        for date in dates {
+            if let previous, let next = calendar.date(byAdding: .day, value: 1, to: previous),
+               calendar.isDate(next, inSameDayAs: date) {
+                run += 1
+            } else {
+                run = 1
+            }
+            best = max(best, run)
+            previous = date
+        }
+        return best
+    }
+
+    static func key(_ date: Date, _ calendar: Calendar) -> String {
+        let parts = calendar.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
     }
 }

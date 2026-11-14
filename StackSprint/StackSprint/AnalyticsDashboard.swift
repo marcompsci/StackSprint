@@ -53,7 +53,7 @@ struct AnalyticsDashboardView: View {
     // MARK: – Streak stats
 
     private var streakStatsCard: some View {
-        let best = UserDefaults.standard.integer(forKey: "stats.bestStreak")
+        let best = store.bestStreak
         return HStack(spacing: 0) {
             statBlock(value: store.currentStreak, label: "Current streak", icon: "flame.fill", color: .orange)
             Divider().padding(.vertical, 12)

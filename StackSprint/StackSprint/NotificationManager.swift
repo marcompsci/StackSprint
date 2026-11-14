@@ -34,9 +34,12 @@ import UserNotifications
     func scheduleAll() {
         guard enabled, permissionGranted else { return }
         scheduleDailyReminder()
-        scheduleComeback(afterHours: 48, id: "comeback.48h",
-                         title: "Your streak ends tomorrow",
-                         body: "One lesson today keeps it going.")
+        // A streak lasts until the end of the day after you practice, so the nudge
+        // comes a day later, while there's still time to keep it.
+        center.removePendingNotificationRequests(withIdentifiers: ["comeback.48h"])
+        scheduleComeback(afterHours: 23, id: "comeback.24h",
+                         title: "Keep your streak going",
+                         body: "One small lesson or review before midnight keeps it alive.")
         scheduleComeback(afterHours: 168, id: "comeback.7d",
                          title: "Pick up where you left off",
                          body: "Your next lesson takes about two minutes.")
@@ -75,9 +78,10 @@ import UserNotifications
     func refreshAfterPractice() {
         guard enabled, permissionGranted else { return }
         // Reset comeback timers so they count from NOW
-        scheduleComeback(afterHours: 48, id: "comeback.48h",
-                         title: "Your streak ends tomorrow",
-                         body: "One lesson today keeps it going.")
+        center.removePendingNotificationRequests(withIdentifiers: ["comeback.48h"])
+        scheduleComeback(afterHours: 23, id: "comeback.24h",
+                         title: "Keep your streak going",
+                         body: "One small lesson or review before midnight keeps it alive.")
         scheduleComeback(afterHours: 168, id: "comeback.7d",
                          title: "Pick up where you left off",
                          body: "Your next lesson takes about two minutes.")

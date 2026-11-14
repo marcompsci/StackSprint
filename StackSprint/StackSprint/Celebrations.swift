@@ -268,6 +268,13 @@ struct StreakRecordBanner: View {
         // Streak record
         let streak = store.currentStreak
         let best   = UserDefaults.standard.integer(forKey: bestStreakKey)
+        // Seed the record from history the first time, so a returning learner
+        // isn't congratulated for beating a record that was never saved.
+        if best == 0 {
+            let history = StreakMath.best(days: store.practicedDays)
+            if history > 0 { UserDefaults.standard.set(history, forKey: bestStreakKey) }
+            if history >= streak { return }
+        }
         if streak > best && streak > 0 {
             UserDefaults.standard.set(streak, forKey: bestStreakKey)
             if best > 0 {
