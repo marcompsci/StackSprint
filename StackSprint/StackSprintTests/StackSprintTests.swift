@@ -212,12 +212,9 @@ struct ChallengeStoreTests {
         #expect(types.contains(.recall))
     }
 
-    @Test func xpMultiplierIsOneOnWeekday() {
+    @Test func resetCountdownIsWithinAWeek() {
         let store = ChallengeStore()
-        let weekday = Calendar.current.component(.weekday, from: Date())
-        if weekday != 1 && weekday != 7 {
-            #expect(store.xpMultiplier == 1.0)
-        }
+        #expect(store.daysUntilReset >= 1 && store.daysUntilReset <= 7)
     }
 }
 
