@@ -250,7 +250,7 @@ enum StudioPreviewDocument {
         var original = console[level];
         console[level] = function(){
           var text = Array.prototype.map.call(arguments, function(v){ try { return typeof v === 'string' ? v : JSON.stringify(v); } catch (err) { return String(v); } }).join(' ');
-          post(level === 'error' ? 'error' : 'log', text);
+          post(level === 'error' ? 'error' : (level === 'warn' ? 'warn' : 'log'), text);
           if (original) original.apply(console, arguments);
         };
       });
@@ -395,6 +395,8 @@ struct StudioPreviewPanel: View {
     @State private var consoleLine = ""
     @State private var consoleIsError = false
     @State private var errorCount = 0
+    @State private var log: [StudioConsoleEntry] = []
+    @State private var showingLog = false
 
     private var fileName: String { track == .design ? "styles.css" : "game.js" }
     private var slug: String {
@@ -411,10 +413,18 @@ struct StudioPreviewPanel: View {
                 if !html.isEmpty {
                     StudioPreviewWebView(html: html, reloadToken: reloadToken) { type, text in
                         switch type {
-                        case "ready": consoleLine = ""; consoleIsError = false; errorCount = 0
-                        case "error": consoleLine = text; consoleIsError = true; errorCount += 1
-                        default: if !consoleIsError { consoleLine = text }
+                        case "ready":
+                            consoleLine = ""; consoleIsError = false; errorCount = 0
+                            // One marker per run of reloads, so typing doesn't flood the log.
+                            if log.last?.kind != .reload { log.append(StudioConsoleEntry(kind: .reload, text: "Page reloaded")) }
+                        case "error":
+                            consoleLine = text; consoleIsError = true; errorCount += 1
+                            log.append(StudioConsoleEntry(kind: .error, text: text))
+                        default:
+                            if !consoleIsError { consoleLine = text }
+                            log.append(StudioConsoleEntry(kind: type == "warn" ? .warning : .log, text: text))
                         }
+                        if log.count > StudioConsoleEntry.limit { log.removeFirst(log.count - StudioConsoleEntry.limit) }
                     }
                 }
             }
@@ -475,13 +485,103 @@ struct StudioPreviewPanel: View {
                 .foregroundStyle(consoleIsError ? Color(red: 1, green: 0.72, blue: 0.68) : Color.white.opacity(0.62))
             Spacer(minLength: 0)
             if errorCount > 1 { Text("\(errorCount)").font(.caption2.bold()).padding(5).background(Color.red.opacity(0.3), in: Circle()) }
+            if log.contains(where: { $0.kind != .reload }) {
+                Image(systemName: "chevron.up").font(.caption2.bold()).foregroundStyle(.white.opacity(0.5))
+            }
         }
         .font(.caption.monospaced())
         .padding(.horizontal, 12).padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(red: 0.035, green: 0.055, blue: 0.10))
+        .contentShape(Rectangle())
+        .onTapGesture { showingLog = true }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(consoleIsError ? "Error: \(consoleLine)" : "Console")
+        .accessibilityHint("Opens the full console log")
+        .accessibilityAddTraits(.isButton)
+        .sheet(isPresented: $showingLog) {
+            StudioConsoleLogView(entries: $log)
+                .presentationDetents([.medium, .large])
+        }
+    }
+}
+
+// MARK: - Full console log
+
+struct StudioConsoleEntry: Identifiable, Equatable {
+    enum Kind { case log, warning, error, reload }
+    static let limit = 200
+    let id = UUID()
+    let kind: Kind
+    let text: String
+    let time = Date()
+}
+
+struct StudioConsoleLogView: View {
+    @Binding var entries: [StudioConsoleEntry]
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if entries.isEmpty {
+                    ContentUnavailableView("Nothing logged yet", systemImage: "terminal",
+                                           description: Text("console.log() output and errors from your page show up here."))
+                } else {
+                    ScrollViewReader { proxy in
+                        List(entries) { entry in
+                            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                Image(systemName: icon(entry.kind)).foregroundStyle(color(entry.kind)).font(.caption)
+                                Text(entry.text)
+                                    .font(.caption.monospaced())
+                                    .foregroundStyle(entry.kind == .reload ? Color.secondary : color(entry.kind))
+                                    .textSelection(.enabled)
+                                Spacer(minLength: 0)
+                                Text(entry.time, format: .dateTime.hour().minute().second())
+                                    .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
+                            }
+                            .id(entry.id)
+                            .accessibilityElement(children: .combine)
+                        }
+                        .listStyle(.plain)
+                        .onAppear { if let last = entries.last { proxy.scrollTo(last.id, anchor: .bottom) } }
+                    }
+                }
+            }
+            .navigationTitle("Console")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Clear", role: .destructive) { entries.removeAll() }.disabled(entries.isEmpty)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    ShareLink(item: entries.filter { $0.kind != .reload }.map(\.text).joined(separator: "\n")) {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .disabled(entries.isEmpty)
+                    .accessibilityLabel("Share console log")
+                }
+                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+            }
+        }
+    }
+
+    private func icon(_ kind: StudioConsoleEntry.Kind) -> String {
+        switch kind {
+        case .log: return "chevron.right"
+        case .warning: return "exclamationmark.triangle"
+        case .error: return "xmark.octagon.fill"
+        case .reload: return "arrow.clockwise"
+        }
+    }
+
+    private func color(_ kind: StudioConsoleEntry.Kind) -> Color {
+        switch kind {
+        case .log: return .primary
+        case .warning: return .orange
+        case .error: return .red
+        case .reload: return .secondary
+        }
     }
 }
 

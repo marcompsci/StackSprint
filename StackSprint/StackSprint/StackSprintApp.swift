@@ -134,7 +134,7 @@ struct RootView: View {
         TabView {
             NavigationStack { LearnView().modifier(SprintTheme()) }.tabItem { Label("Learn", systemImage: "sparkles") }
             NavigationStack { StudioView().modifier(SprintTheme()) }.allowsLandscape().tabItem { Label("Studio", systemImage: "curlybraces") }
-            BitPracticeView().tabItem { Label("Practice", systemImage: "brain.head.profile") }
+            NavigationStack { PracticeTabView() }.tabItem { Label("Practice", systemImage: "brain.head.profile") }
             NavigationStack { AnalyticsDashboardView() }.tabItem { Label("Stats", systemImage: "chart.bar.fill") }
             NavigationStack { AccountView().modifier(SprintTheme()) }.tabItem { Label("Account", systemImage: "person.crop.circle") }
         }
@@ -863,6 +863,8 @@ struct DailyPracticeView: View {
                         .accessibilityLabel(isActive ? "Streak day \(day + 1) complete" : "Streak day \(day + 1) not yet complete")
                 }
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(store.currentStreak == 0 ? "No streak yet" : "\(store.currentStreak)-day streak\(store.streakAtRisk ? ", practice today to keep it" : "")")
             Text("Real learning activity · saved on this device").font(.subheadline).foregroundStyle(.secondary)
             ShareLink(item: "I’m on a \(store.currentStreak)-day coding streak in StackSprint. Want to learn one small thing with me today?") {
                 Label("Share my streak", systemImage: "square.and.arrow.up")
@@ -1003,6 +1005,7 @@ struct ProjectPlaygroundView: View {
     @State private var exportFile: CodeFile?
     @State private var activeProjectID: String = ""
     @State private var showingFullPreview = false
+    @State private var confirmingStartOver = false
     @State private var missionIndex: Int
     @State private var stepResults: [Bool] = []
     @State private var checking = false
@@ -1212,6 +1215,15 @@ struct ProjectPlaygroundView: View {
                 .buttonStyle(.studioSecondary)
             Button { showingProjects = true } label: { Image(systemName: "folder.fill") }
                 .buttonStyle(.studioIcon).accessibilityLabel("My projects")
+            Button { confirmingStartOver = true } label: { Image(systemName: "arrow.uturn.backward") }
+                .buttonStyle(.studioIcon)
+                .accessibilityLabel("Start this mission over")
+                .disabled(code == mission.starter)
+                .confirmationDialog("Start “\(mission.title)” over?", isPresented: $confirmingStartOver, titleVisibility: .visible) {
+                    Button("Replace my code with the starter", role: .destructive) { startOver() }
+                } message: {
+                    Text("Your code for this mission is replaced with the starter code. Projects you saved stay in My Projects.")
+                }
             exportMenu
             if socialAuth.authProvider == .github {
                 Button { pushToGitHub() } label: {
@@ -1458,6 +1470,14 @@ struct ProjectPlaygroundView: View {
         log = "Ready."
     }
 
+    private func startOver() {
+        code = mission.starter
+        UserDefaults.standard.set(code, forKey: draftKey)
+        terminalCode = ""; passed = false; stepResults = []; openStep = 1
+        log = "Started over with the starter code."
+        HapticManager.shared.impact(.light)
+    }
+
     private func switchTrack(_ newTrack: ProjectTrack) {
         guard newTrack != track else { return }
         UserDefaults.standard.set(code, forKey: draftKey)
@@ -1552,6 +1572,7 @@ struct LearnView: View {
     @ObservedObject private var challengeStore = FriendChallengeStore.shared
     @ObservedObject private var reviews = SM2Engine.shared
     @State private var difficultyFilter: String? = nil
+    @State private var searchText = ""
     private let myLessonsCategory = "My Lessons"
     private var categories: [String] {
         var seen = Set<String>()
@@ -1573,44 +1594,49 @@ struct LearnView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                heroCard
-                if let challenge = challengeStore.incomingChallenge {
-                    IncomingChallengeBanner(challenge: challenge) {
-                        showingChallenge = true
-                    } onDecline: {
-                        challengeStore.reset()
+                if !searchText.trimmingCharacters(in: .whitespaces).isEmpty {
+                    searchResults
+                } else {
+                    heroCard
+                    if let challenge = challengeStore.incomingChallenge {
+                        IncomingChallengeBanner(challenge: challenge) {
+                            showingChallenge = true
+                        } onDecline: {
+                            challengeStore.reset()
+                        }
                     }
-                }
-                if let error = store.error { Text(error).foregroundStyle(.red) }
-                if premiumStore.isPro { ProBadge().frame(maxWidth: .infinity, alignment: .trailing) }
-                GoalProgressBanner()
-                if celebrations.showStreakRecord {
-                    StreakRecordBanner(currentStreak: celebrations.streakRecordCount,
-                                      previousRecord: celebrations.streakRecordCount - 1)
-                        .onTapGesture { celebrations.showStreakRecord = false }
-                }
-                ChallengeBanner()
-                ReviewQueueSection()
-                GamificationHeader()
-                LearningPathSection()
-                challengeButton
-                DueTodaySectionView()
-                categoryTabBar
-                difficultyFilterBar
-                trackHeader
-                if let selected { selectedLessonCard(selected) }
-
-                LazyVGrid(columns: columns, spacing: 14) {
-                    ForEach(Array(lessons.enumerated()), id: \.element.id) { number, lesson in
-                        lessonGridCard(lesson: lesson, number: number)
+                    if let error = store.error { Text(error).foregroundStyle(.red) }
+                    if premiumStore.isPro { ProBadge().frame(maxWidth: .infinity, alignment: .trailing) }
+                    GoalProgressBanner()
+                    if celebrations.showStreakRecord {
+                        StreakRecordBanner(currentStreak: celebrations.streakRecordCount,
+                                          previousRecord: celebrations.streakRecordCount - 1)
+                            .onTapGesture { celebrations.showStreakRecord = false }
                     }
-                }
+                    ChallengeBanner()
+                    ReviewQueueSection()
+                    GamificationHeader()
+                    LearningPathSection()
+                    challengeButton
+                    DueTodaySectionView()
+                    categoryTabBar
+                    difficultyFilterBar
+                    trackHeader
+                    if let selected { selectedLessonCard(selected) }
 
-                streakSection
-                recallArcadeSection
+                    LazyVGrid(columns: columns, spacing: 14) {
+                        ForEach(Array(lessons.enumerated()), id: \.element.id) { number, lesson in
+                            lessonGridCard(lesson: lesson, number: number)
+                        }
+                    }
+
+                    streakSection
+                    recallArcadeSection
+                }
             }
             .padding(.horizontal, 18).padding(.top, 72).padding(.bottom, 110).frame(maxWidth: 980)
         }.navigationTitle("StackSprint").navigationBarTitleDisplayMode(.inline)
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search lessons")
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button { showingGenerator = true } label: {
@@ -1700,6 +1726,44 @@ struct LearnView: View {
         }
         .padding(22)
         .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+
+    @ViewBuilder
+    private var searchResults: some View {
+        let all = (store.curriculum?.lessons ?? []) + customLessons.lessons
+        let found = LessonSearch.results(for: searchText, in: all)
+        VStack(alignment: .leading, spacing: 10) {
+            Text(found.isEmpty ? "No lessons match \u{201C}\(searchText)\u{201D}" : "\(found.count) \(found.count == 1 ? "lesson" : "lessons")")
+                .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+            ForEach(found) { lesson in
+                let locked = PremiumStore.proTracks.contains(lesson.category) && !premiumStore.isPro
+                if locked {
+                    Button { showingPaywall = true } label: { searchRow(lesson, locked: true) }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(lesson.term), \(lesson.category), requires StackSprint Pro")
+                } else {
+                    NavigationLink { LessonView(lesson: lesson) } label: { searchRow(lesson, locked: false) }
+                        .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func searchRow(_ lesson: Lesson, locked: Bool) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Circle().fill(lessonColor(lesson)).frame(width: 10, height: 10).padding(.top, 6)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(lesson.term).font(.headline)
+                Text(lesson.definition).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+                Text(lesson.category).font(.caption.bold()).foregroundStyle(lessonColor(lesson))
+            }
+            Spacer()
+            Image(systemName: locked ? "lock.fill" : (store.completed.contains(lesson.id) ? "checkmark.seal.fill" : "chevron.right"))
+                .foregroundStyle(locked ? Color.secondary : (store.completed.contains(lesson.id) ? Color.green : Color.secondary))
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     /// One clear next step: reviews that are due come first, then the next new lesson.
@@ -1861,6 +1925,8 @@ struct LearnView: View {
                     }.frame(width: 38, height: 38)
                 }
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(store.currentStreak == 0 ? "No streak yet" : "\(store.currentStreak)-day streak\(store.streakAtRisk ? ", practice today to keep it" : "")")
             Text("Real learning activity \u{B7} saved on this device").font(.caption).foregroundStyle(.secondary)
             ShareLink(item: "I'm on a \(store.currentStreak)-day coding streak in StackSprint! Want to build one tiny win with me?") {
                 Label("Share my streak", systemImage: "square.and.arrow.up").font(.headline).padding(.vertical, 4)
@@ -2416,6 +2482,7 @@ struct AccountView: View {
             if backend.config != nil {
                 Section("About your progress") { Text("Guest and account lesson progress are separate. Sync uploads completed native lessons and merges cloud completions. Code drafts and the web studio stay on this device.") }
             }
+            ProgressBackupSection()
             LegalLinksSection()
         }.disabled(backend.busy).navigationTitle("Account")
         .confirmationDialog("Delete your account and all cloud progress? This cannot be undone.", isPresented: $confirmDelete, titleVisibility: .visible) {

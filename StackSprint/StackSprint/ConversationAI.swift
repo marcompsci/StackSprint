@@ -166,8 +166,9 @@ struct BitPracticeView: View {
         conv.messages.filter { $0.mode == conv.mode.rawValue }
     }
 
+    // No NavigationStack here: the Practice tab and the Account link both provide one.
     var body: some View {
-        NavigationStack {
+        Group {
             VStack(spacing: 0) {
                 modePicker
                 messageList

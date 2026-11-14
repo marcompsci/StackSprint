@@ -179,3 +179,31 @@ struct SeededGenerator: RandomNumberGenerator {
         return z ^ (z >> 31)
     }
 }
+
+// MARK: - Lesson search
+
+enum LessonSearch {
+    /// Lessons matching every word of the query, best matches first:
+    /// term starts with the query, then term contains it, then the explanation does.
+    static func results(for query: String, in lessons: [Lesson]) -> [Lesson] {
+        let words = query.lowercased().split(whereSeparator: \.isWhitespace).map(String.init)
+        guard !words.isEmpty else { return [] }
+        let whole = words.joined(separator: " ")
+        func haystack(_ l: Lesson) -> String {
+            [l.term, l.category, l.clue, l.definition, l.code].joined(separator: " ").lowercased()
+        }
+        func rank(_ l: Lesson) -> Int {
+            let term = l.term.lowercased()
+            if term == whole { return 0 }
+            if term.hasPrefix(whole) { return 1 }
+            if term.contains(whole) { return 2 }
+            if words.allSatisfy(term.contains) { return 3 }
+            return 4
+        }
+        return lessons
+            .filter { lesson in let text = haystack(lesson); return words.allSatisfy(text.contains) }
+            .enumerated()
+            .sorted { (rank($0.element), $0.offset) < (rank($1.element), $1.offset) }
+            .map(\.element)
+    }
+}

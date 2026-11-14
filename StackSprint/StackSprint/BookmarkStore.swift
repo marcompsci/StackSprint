@@ -40,6 +40,13 @@ import SwiftUI
         lessons.filter { bookmarks.contains($0.id) }
     }
 
+    /// Adds bookmarks and notes from a backup. Notes already on this device win.
+    func merge(bookmarks incoming: Set<String>, notes incomingNotes: [String: String]) {
+        bookmarks.formUnion(incoming)
+        for (id, note) in incomingNotes where (notes[id] ?? "").isEmpty && !note.isEmpty { notes[id] = note }
+        persist()
+    }
+
     private func persist() {
         UserDefaults.standard.set(Array(bookmarks), forKey: bookmarksKey)
         UserDefaults.standard.set(notes, forKey: notesKey)

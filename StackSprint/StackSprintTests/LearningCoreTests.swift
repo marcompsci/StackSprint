@@ -191,3 +191,75 @@ struct TrackQuizTests {
         #expect(TrackQuiz.curated(track: "Go", questions: curriculum.questions).isEmpty)
     }
 }
+
+// MARK: - Search
+
+@Suite("LessonSearch")
+@MainActor
+struct LessonSearchTests {
+    private func lesson(_ id: String, _ term: String, _ definition: String) -> Lesson {
+        Lesson(id: id, term: term, category: "T", clue: "", definition: definition, code: "", difficulty: nil)
+    }
+
+    @Test func termMatchesRankFirst() {
+        let lessons = [lesson("1", "Closures", "functions that capture state"),
+                       lesson("2", "State", "data that changes"),
+                       lesson("3", "Statements", "lines of code")]
+        let results = LessonSearch.results(for: "state", in: lessons).map(\.id)
+        #expect(results == ["2", "3", "1"])
+    }
+
+    @Test func everyWordMustMatch() {
+        let lessons = [lesson("1", "Hash map", "key value lookup"), lesson("2", "Array", "ordered values")]
+        #expect(LessonSearch.results(for: "key lookup", in: lessons).map(\.id) == ["1"])
+        #expect(LessonSearch.results(for: "   ", in: lessons).isEmpty)
+    }
+
+    @Test func findsRealLessons() throws {
+        let curriculum = try Curriculum.load()
+        #expect(!LessonSearch.results(for: "goroutine", in: curriculum.lessons).isEmpty)
+        #expect(LessonSearch.results(for: "zzqqxx", in: curriculum.lessons).isEmpty)
+    }
+}
+
+// MARK: - Backup
+
+@Suite("ProgressBackup")
+@MainActor
+struct ProgressBackupTests {
+    private func sample() -> ProgressBackup {
+        ProgressBackup(exportedAt: Date(timeIntervalSince1970: 1_800_000_000),
+                       completedLessons: ["web-html"], practiceDays: ["2026-11-12"],
+                       quizAnswers: ["2026-11-12|web-1"],
+                       reviewCards: ["web-html": SM2Card.initial(lessonID: "web-html")],
+                       bookmarks: ["web-css"], notes: ["web-css": "remember selectors"],
+                       completedMissions: ["design-1"], missionDrafts: ["project.design.draft": ".a{}"])
+    }
+
+    @Test func roundTrips() throws {
+        let backup = sample()
+        let decoded = try ProgressBackup.decode(backup.encoded())
+        #expect(decoded.completedLessons == backup.completedLessons)
+        #expect(decoded.notes == backup.notes)
+        #expect(decoded.reviewCards.keys.sorted() == ["web-html"])
+        #expect(abs(decoded.exportedAt.timeIntervalSince(backup.exportedAt)) < 1)
+    }
+
+    @Test func rejectsOtherFilesAndNewerVersions() throws {
+        #expect(throws: ProgressBackup.BackupError.self) { try ProgressBackup.decode(Data("{\"hello\":1}".utf8)) }
+        var newer = sample()
+        newer.version = ProgressBackup.currentVersion + 1
+        let data = try newer.encoded()
+        #expect(throws: ProgressBackup.BackupError.self) { try ProgressBackup.decode(data) }
+    }
+
+    @Test func reviewMergeKeepsMoreProgress() {
+        var ahead = SM2Card.initial(lessonID: "a")
+        ahead.update(quality: 5); ahead.update(quality: 5)
+        let fresh = SM2Card.initial(lessonID: "a")
+        let merged = SM2Engine.merged(["a": fresh], ["a": ahead, "b": SM2Card.initial(lessonID: "b")])
+        #expect(merged["a"]?.repetitions == 2)
+        #expect(merged["b"] != nil)
+        #expect(SM2Engine.merged(["a": ahead], ["a": fresh])["a"]?.repetitions == 2)
+    }
+}

@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - SM-2 Card
 
-struct SM2Card: Codable {
+struct SM2Card: Codable, Equatable {
     var lessonID: String
     var interval: Int        // days until next review
     var easeFactor: Double   // starts at 2.5
@@ -60,6 +60,19 @@ struct SM2Card: Codable {
     }
 
     func card(for lessonID: String) -> SM2Card? { cards[lessonID] }
+
+    /// Adds review cards from a backup, keeping whichever copy has more progress.
+    func merge(_ incoming: [String: SM2Card]) {
+        cards = Self.merged(cards, incoming)
+        persist()
+    }
+
+    static func merged(_ local: [String: SM2Card], _ incoming: [String: SM2Card]) -> [String: SM2Card] {
+        local.merging(incoming) { mine, theirs in
+            if theirs.repetitions != mine.repetitions { return theirs.repetitions > mine.repetitions ? theirs : mine }
+            return theirs.dueDate > mine.dueDate ? theirs : mine
+        }
+    }
 
     func dueCards(in curriculum: [Lesson]) -> [Lesson] {
         curriculum.filter { lesson in

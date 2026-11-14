@@ -12,6 +12,8 @@
 > 3. Try the key bar above the keyboard ({ } ( ) ;) and see whether brackets and quotes close themselves the way you expect.
 > 4. Free build: pick a template, change it, and export the .html. Does the file open in Safari?
 > 5. Learn and Practice: do lessons, quizzes and streaks save correctly after you close and reopen the app?
+> 6. Type a lesson example with a small mistake and tap Check. Does the hint point at the right line?
+> 7. Account → Backup: save a backup file, then restore it. Does everything come back?
 > Tell us about anything confusing, broken, or slow. Screenshots help: take one and TestFlight will offer to send it.
 
 ## Tester requirements

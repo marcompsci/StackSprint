@@ -12,7 +12,9 @@ Paste the **Review notes** section into App Store Connect → TestFlight → Tes
 > - Learn tab → any lesson card → reveal, then type the example.
 > - Studio tab → CSS → "Palette Pop" → tap Run checks (all three steps fail), add `.arena { background-color: #172554; }` and run again (step 1 passes). Turn the device sideways for the side-by-side editor and live preview.
 > - Studio tab → Free build → choose a template → edit the files → Export .html.
-> - Practice and Stats tabs → quizzes, streaks, and computer "pacers" (labelled on screen as computer-set marks, not real players).
+> - Practice tab → Review: lessons due for spaced review and a quiz for every track (works offline, no AI needed). "Chat with Bit" is the optional on-device AI tutor.
+> - Stats tab → streaks, practice heatmap, and computer "pacers" (labelled on screen as computer-set marks, not real players).
+> - Account → Backup: saves progress to a JSON file the learner chooses where to keep; restoring merges it. Nothing is uploaded.
 > - Learn → tap the locked Go, Rust or Interview Prep chip → StackSprint Pro subscription (sandbox).
 >
 > **Subscriptions:** StackSprint Pro (monthly and yearly, auto-renewing) unlocks the Go, Rust and Interview Prep tracks and Pro season collectibles. Everything else is free. Restore Purchases, Terms of Use and the Privacy Policy are on the paywall.
@@ -36,7 +38,8 @@ Paste the **Review notes** section into App Store Connect → TestFlight → Tes
 | Free build | Studio tab → Free build | Templates, HTML/CSS/JS tabs, live preview, Export .html |
 | Landscape editor | Studio tab, rotate the device | Code left, preview right; other tabs stay portrait |
 | Full Studio (60 projects) | Studio → "Explore the full 60-project Studio" | Web workspace |
-| Practice / Stats | Tabs 3 and 4 | Recall quizzes, streaks, pacers, weekly XP |
+| Practice | Tab 3 | Review (due lessons, quick round, quiz by track) works offline; Chat with Bit needs Apple Intelligence |
+| Stats | Tab 4 | Streaks, heatmap, pacers, weekly XP |
 | Account | Last tab | Sign in with Apple, Pro status, Together (challenges, Study Room), Privacy Policy, Terms, support |
 | Paywall | Learn → locked Go/Rust/Interview Prep chip, or Account → View Pro plans | Price and period from the App Store, renewal terms, Restore, Terms, Privacy |
 
