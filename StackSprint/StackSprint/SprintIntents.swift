@@ -54,6 +54,28 @@ func indexLessonsInSpotlight(_ lessons: [Lesson]) {
     CSSearchableIndex.default().indexSearchableItems(items) { _ in }
 }
 
+/// Indexing all lessons on every launch was wasted work; only redo it when the lessons change.
+@MainActor func indexLessonsInSpotlightIfChanged(_ lessons: [Lesson]) {
+    let signature = SpotlightSignature.of(lessons)
+    let key = "spotlight.signature"
+    guard UserDefaults.standard.string(forKey: key) != signature else { return }
+    indexLessonsInSpotlight(lessons)
+    UserDefaults.standard.set(signature, forKey: key)
+}
+
+enum SpotlightSignature {
+    /// A stable fingerprint of what Spotlight shows for each lesson.
+    static func of(_ lessons: [Lesson]) -> String {
+        var hash: UInt64 = 0xcbf29ce484222325
+        for lesson in lessons {
+            for byte in "\(lesson.id)|\(lesson.term)|\(lesson.definition)|\(lesson.category)\n".utf8 {
+                hash = (hash ^ UInt64(byte)) &* 0x100000001b3
+            }
+        }
+        return "\(lessons.count)-\(String(hash, radix: 16))"
+    }
+}
+
 func deindexAllLessons() {
     CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers: ["com.stacksprint.lessons"]) { _ in }
 }

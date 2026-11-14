@@ -531,3 +531,55 @@ struct TargetTests {
         #expect(!WhatsNew.shouldShow(onboarded: true, defaults: defaults))
     }
 }
+
+// MARK: - Phases 56–70
+
+@Suite("Course content is real")
+@MainActor
+struct CourseContentTests {
+    @Test func pythonOutputsMatchTheCurriculum() throws {
+        let python = try Curriculum.load().lessons.filter { $0.category == "Python" }
+        #expect(!python.isEmpty)
+        for lesson in python {
+            #expect(PythonOutputs.output(for: lesson) != nil, "\(lesson.id) has no verified output")
+        }
+        let changed = Lesson(id: "python-0", term: "x", category: "Python", clue: "", definition: "", code: "print(7)", difficulty: nil)
+        #expect(PythonOutputs.output(for: changed) == nil) // edited code never shows a stale answer
+    }
+
+    @Test func outputGuessesAreForgiving() {
+        #expect(PythonOutputs.matches(" 6 ", "6"))
+        #expect(PythonOutputs.matches("\"Level 3\"", "Level 3"))
+        #expect(PythonOutputs.matches("Launch  2", "Launch 2"))
+        #expect(!PythonOutputs.matches("7", "6"))
+    }
+
+    @Test func everyWebLessonHasALayer() throws {
+        let web = try Curriculum.load().lessons.filter { $0.category == "Web development" }
+        for lesson in web { #expect(WebLayer.answers[lesson.id] != nil, "\(lesson.id)") }
+    }
+
+    @Test func achievementProgressIsCapped() {
+        let context = AchievementContext(completedLessons: 14, streak: 2, correctRecalls: 0, practiceXP: 140,
+                                         seasonTier: 0, customLessonsCount: 0, curriculum: nil, hourOfDay: 12)
+        let roll = AchievementStore.progress(for: "on-a-roll", context: context)
+        #expect(roll?.current == 10 && roll?.goal == 10)
+        let half = AchievementStore.progress(for: "halfway-sprint", context: context)
+        #expect(half?.current == 14 && half?.goal == 25)
+        #expect(AchievementStore.progress(for: "night-owl", context: context) == nil)
+    }
+
+    @Test func spotlightSignatureTracksChanges() throws {
+        let lessons = try Curriculum.load().lessons
+        let a = SpotlightSignature.of(lessons)
+        #expect(a == SpotlightSignature.of(lessons))
+        var edited = lessons
+        edited[0] = Lesson(id: edited[0].id, term: "Changed", category: edited[0].category, clue: edited[0].clue,
+                           definition: edited[0].definition, code: edited[0].code, difficulty: edited[0].difficulty)
+        #expect(a != SpotlightSignature.of(edited))
+    }
+
+    @Test func bestScoreKeysAreNamespaced() {
+        #expect(QuizView.bestKey("track.Go") == "quiz.best.track.Go")
+    }
+}

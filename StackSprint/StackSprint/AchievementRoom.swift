@@ -64,6 +64,8 @@ struct AchievementContext {
     var unlocked: [Achievement] { achievements.filter(\.isUnlocked) }
     var locked:   [Achievement] { achievements.filter { !$0.isUnlocked } }
     var totalXPEarned: Int { unlocked.reduce(0) { $0 + $1.rarity.xpReward } }
+    /// Pays an unlock's bonus into the season pass. (The "+XP" used to be shown but never given.)
+    var onUnlock: ((Achievement) -> Void)?
 
     // MARK: Check conditions against current app state
 
@@ -75,6 +77,7 @@ struct AchievementContext {
                 achievements[i].isUnlocked = true
                 achievements[i].unlockedDate = .now
                 latestUnlock = achievements[i]
+                onUnlock?(achievements[i])
                 updated = true
                 HapticManager.shared.notification(.success)
             }
@@ -121,6 +124,25 @@ struct AchievementContext {
         case "xp-rich":            return c.practiceXP >= 10_000
         default:                   return false
         }
+    }
+
+    /// How far along a locked achievement is, for countable ones.
+    static func progress(for id: String, context c: AchievementContext) -> (current: Int, goal: Int)? {
+        let goals: [String: (Int, Int)] = [
+            "first-spark": (c.completedLessons, 1), "on-a-roll": (c.completedLessons, 10),
+            "halfway-sprint": (c.completedLessons, 25), "code-veteran": (c.completedLessons, 50),
+            "century-club": (c.completedLessons, 100),
+            "sprint-master": (c.completedLessons, c.curriculum?.lessons.count ?? 0),
+            "keep-it-up": (c.streak, 3), "week-warrior": (c.streak, 7), "fortnight-fire": (c.streak, 14),
+            "month-master": (c.streak, 30), "centurion-streak": (c.streak, 100),
+            "memory-test": (c.correctRecalls, 1), "sharp-mind": (c.correctRecalls, 10),
+            "recall-pro": (c.correctRecalls, 50), "photographic": (c.correctRecalls, 100),
+            "thousand-xp": (c.practiceXP, 1_000), "five-thousand-xp": (c.practiceXP, 5_000), "xp-rich": (c.practiceXP, 10_000),
+            "ai-apprentice": (c.customLessonsCount, 1), "ai-scholar": (c.customLessonsCount, 5),
+            "season-pioneer": (c.seasonTier, 5), "season-champion": (c.seasonTier, 10),
+        ]
+        guard let (current, goal) = goals[id], goal > 0 else { return nil }
+        return (min(current, goal), goal)
     }
 
     private static func completedAll(context: AchievementContext) -> Bool {
@@ -191,7 +213,17 @@ struct AchievementContext {
 
 struct TrophyRoomView: View {
     @ObservedObject var store = AchievementStore.shared
+    @EnvironmentObject var learning: LearningStore
+    @EnvironmentObject var seasonStore: SeasonStore
+    @EnvironmentObject var customLessons: CustomLessonsStore
     @State private var filterRarity: AchievementRarity? = nil
+
+    private var context: AchievementContext {
+        AchievementContext(completedLessons: learning.completed.count, streak: learning.currentStreak,
+                           correctRecalls: learning.correctRecallAnswers.count, practiceXP: learning.practiceXP,
+                           seasonTier: seasonStore.tier, customLessonsCount: customLessons.lessons.count,
+                           curriculum: learning.curriculum, hourOfDay: Calendar.current.component(.hour, from: Date()))
+    }
 
     private var filtered: [Achievement] {
         guard let r = filterRarity else { return store.achievements }
@@ -205,7 +237,8 @@ struct TrophyRoomView: View {
                 rarityFilter
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 14)], spacing: 14) {
                     ForEach(filtered) { achievement in
-                        AchievementCard(achievement: achievement)
+                        AchievementCard(achievement: achievement,
+                                        progress: AchievementStore.progress(for: achievement.id, context: context))
                     }
                 }
             }
@@ -220,7 +253,7 @@ struct TrophyRoomView: View {
         HStack(spacing: 0) {
             statBlock("\(store.unlocked.count)/\(store.achievements.count)", label: "Unlocked")
             Divider().padding(.vertical, 12)
-            statBlock("\(store.totalXPEarned)", label: "Bonus XP")
+            statBlock("\(store.totalXPEarned)", label: "Season XP")
             Divider().padding(.vertical, 12)
             statBlock(topRarityLabel, label: "Top Rarity")
         }
@@ -271,6 +304,7 @@ private struct FilterChip: View {
 
 struct AchievementCard: View {
     let achievement: Achievement
+    var progress: (current: Int, goal: Int)? = nil
 
     var body: some View {
         VStack(spacing: 10) {
@@ -280,20 +314,26 @@ struct AchievementCard: View {
                     Circle().strokeBorder(achievement.rarity.color.opacity(0.35), lineWidth: 1.5)
                         .frame(width: 60, height: 60)
                 } else {
-                    Circle().fill(Color.white.opacity(0.05)).frame(width: 60, height: 60)
+                    Circle().fill(Color.primary.opacity(0.05)).frame(width: 60, height: 60)
                 }
                 Image(systemName: achievement.icon).font(.system(size: 24, weight: .semibold))
-                    .foregroundStyle(achievement.isUnlocked ? achievement.rarity.color : Color.white.opacity(0.25))
+                    .foregroundStyle(achievement.isUnlocked ? achievement.rarity.color : Color.primary.opacity(0.25))
             }
             VStack(spacing: 3) {
                 Text(achievement.title).font(.subheadline.bold())
                     .multilineTextAlignment(.center).lineLimit(2)
                     .foregroundStyle(achievement.isUnlocked ? .primary : .tertiary)
                 Text(achievement.rarity.label).font(.caption2.bold())
-                    .foregroundStyle(achievement.isUnlocked ? achievement.rarity.color : Color.white.opacity(0.2))
+                    .foregroundStyle(achievement.isUnlocked ? achievement.rarity.color : Color.secondary)
                 if !achievement.isUnlocked {
-                    Text(achievement.description).font(.caption2).foregroundStyle(Color.white.opacity(0.2))
+                    // Was white at 20% opacity: unreadable in light mode and faint in dark.
+                    Text(achievement.description).font(.caption2).foregroundStyle(.secondary)
                         .multilineTextAlignment(.center).lineLimit(2)
+                    if let progress {
+                        ProgressView(value: Double(progress.current), total: Double(progress.goal))
+                            .tint(achievement.rarity.color)
+                        Text("\(progress.current)/\(progress.goal)").font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
+                    }
                 }
             }
         }
@@ -310,7 +350,8 @@ struct AchievementCard: View {
                     lineWidth: 1.5
                 )
         )
-        .accessibilityLabel("\(achievement.title), \(achievement.rarity.label). \(achievement.isUnlocked ? "Unlocked" : "Locked: \(achievement.description)")")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(achievement.title), \(achievement.rarity.label). \(achievement.isUnlocked ? "Unlocked" : "Locked: \(achievement.description)\(progress.map { ", \($0.current) of \($0.goal)" } ?? "")")")
     }
 }
 
@@ -341,7 +382,7 @@ struct AchievementUnlockOverlay: View {
                     Text(achievement.title).font(.title2.bold())
                     Text(achievement.description).font(.subheadline).foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
-                    Text("+\(achievement.rarity.xpReward) XP").font(.headline.bold())
+                    Text("+\(achievement.rarity.xpReward) season XP").font(.headline.bold())
                         .foregroundStyle(achievement.rarity.color)
                         .padding(.horizontal, 18).padding(.vertical, 6)
                         .background(achievement.rarity.color.opacity(0.15), in: Capsule())

@@ -310,7 +310,7 @@ struct SeasonView: View {
             // Season progress bar
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color.white.opacity(0.08)).frame(height: 10)
+                    Capsule().fill(Color.primary.opacity(0.08)).frame(height: 10)
                     Capsule().fill(LinearGradient(colors: [.orange, .yellow], startPoint: .leading, endPoint: .trailing))
                         .frame(width: geo.size.width * seasonStore.season.progress, height: 10)
                 }
@@ -326,7 +326,7 @@ struct SeasonView: View {
                 }
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
-                        Capsule().fill(Color.white.opacity(0.08)).frame(height: 6)
+                        Capsule().fill(Color.primary.opacity(0.08)).frame(height: 6)
                         Capsule().fill(Color.orange)
                             .frame(width: geo.size.width * seasonStore.progressInCurrentTier, height: 6)
                     }
@@ -451,7 +451,7 @@ private struct TierRow: View {
             // Tier indicator
             VStack(spacing: 4) {
                 ZStack {
-                    Circle().fill(unlocked ? Color.orange : Color.white.opacity(0.08)).frame(width: 34, height: 34)
+                    Circle().fill(unlocked ? Color.orange : Color.primary.opacity(0.08)).frame(width: 34, height: 34)
                     if unlocked {
                         Text("\(tier)").font(.caption.bold()).foregroundStyle(.white)
                     } else {
@@ -495,7 +495,7 @@ private struct TierRow: View {
         .padding(8)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(claimed ? Color.mint.opacity(0.07) : locked ? Color.white.opacity(0.03) : SprintPalette.card)
+                .fill(claimed ? Color.mint.opacity(0.07) : locked ? Color.primary.opacity(0.03) : SprintPalette.card)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)

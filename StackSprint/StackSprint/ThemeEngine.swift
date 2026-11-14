@@ -35,15 +35,24 @@ enum ThemePreset: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Bright accents for dark mode; deeper ones in light mode. The bright ones measured
+    /// 1.3:1 to 2.4:1 on the light background (neon green was nearly invisible); the
+    /// light-mode shades are all 4.8:1 or better.
     var accent: Color {
-        switch self {
-        case .default:  return .mint
-        case .midnight: return .purple
-        case .ocean:    return .cyan
-        case .neon:     return Color(red: 0.10, green: 1.00, blue: 0.40)
-        case .forest:   return Color(red: 0.20, green: 0.84, blue: 0.40)
-        case .sakura:   return Color(red: 1.00, green: 0.45, blue: 0.60)
-        }
+        let (dark, light): ((Double, Double, Double), (Double, Double, Double)) = {
+            switch self {
+            case .default:  return ((0.00, 0.78, 0.75), (0.00, 0.478, 0.455))
+            case .midnight: return ((0.69, 0.32, 0.87), (0.431, 0.235, 0.745))
+            case .ocean:    return ((0.20, 0.68, 0.90), (0.00, 0.431, 0.588))
+            case .neon:     return ((0.10, 1.00, 0.40), (0.078, 0.49, 0.216))
+            case .forest:   return ((0.20, 0.84, 0.40), (0.118, 0.471, 0.235))
+            case .sakura:   return ((1.00, 0.45, 0.60), (0.745, 0.157, 0.353))
+            }
+        }()
+        return Color(uiColor: UIColor { traits in
+            let c = traits.userInterfaceStyle == .dark ? dark : light
+            return UIColor(red: c.0, green: c.1, blue: c.2, alpha: 1)
+        })
     }
 
     // Dark-mode navy (background)

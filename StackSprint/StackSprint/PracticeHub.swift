@@ -215,7 +215,7 @@ struct ReviewHubView: View {
                         .accessibilityLabel("\(track) quiz, requires StackSprint Pro")
                 } else {
                     let qs = questions(for: track)
-                    NavigationLink { QuizView(questions: qs, title: "\(track) quiz") } label: { trackRow(track, count: qs.count) }
+                    NavigationLink { QuizView(questions: qs, title: "\(track) quiz", bestScoreID: "track.\(track)") } label: { trackRow(track, count: qs.count) }
                         .buttonStyle(.plain)
                 }
             }
@@ -227,7 +227,11 @@ struct ReviewHubView: View {
             Text(track).font(.headline)
             Spacer()
             if let count {
-                Text("\(count) questions").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                if let best = UserDefaults.standard.object(forKey: QuizView.bestKey("track.\(track)")) as? Int {
+                    Text("best \(best)/\(count)").font(.caption.monospacedDigit()).foregroundStyle(.mint)
+                } else {
+                    Text("\(count) questions").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                }
             } else {
                 Label("Pro", systemImage: "lock.fill").font(.caption.bold()).foregroundStyle(.secondary)
             }

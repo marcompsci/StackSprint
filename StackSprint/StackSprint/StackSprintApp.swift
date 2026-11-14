@@ -1,7 +1,6 @@
 import AppIntents
 import AVFoundation
 import Combine
-import CoreML
 import CoreSpotlight
 import FoundationModels
 import SwiftUI
@@ -54,7 +53,7 @@ import WebKit
                 .onAppear {
                     store.switchUser(backend.session?.user.id)
                     // Index all lessons in Spotlight on first launch
-                    if let lessons = store.curriculum?.lessons { indexLessonsInSpotlight(lessons) }
+                    if let lessons = store.curriculum?.lessons { indexLessonsInSpotlightIfChanged(lessons) }
                     // Donate Siri Shortcuts
                     StackSprintShortcuts.updateAppShortcutParameters()
                     store.onPractice = { [weak notifications, weak store, weak backend, weak celebrations, weak seasonStore] xp in
@@ -101,6 +100,9 @@ import WebKit
                     }
                     // Learn the permission state first: scheduling while it's unknown would clear reminders.
                     Task { await notifications.checkStatus(); notifications.scheduleDailyReminder() }
+                    AchievementStore.shared.onUnlock = { [weak seasonStore] achievement in
+                        seasonStore?.recordXP(achievement.rarity.xpReward)
+                    }
                     store.onActivity = { [weak notifications, weak store] in
                         notifications?.refreshAfterPractice()
                         if let s = store { notifications?.scheduleWeeklyRecap(lessons: s.lessonsThisWeek, streak: s.currentStreak) }
@@ -136,6 +138,11 @@ struct RootView: View {
     @ObservedObject private var achievementStore = AchievementStore.shared
     @ObservedObject private var studioLayout = StudioLayoutState.shared
     @ObservedObject private var router = LessonRouter.shared
+    @ObservedObject private var reviews = SM2Engine.shared
+    private var dueBadge: Int {
+        let lessons = store.curriculum?.lessons ?? []
+        return reviews.dueCards(in: lessons).filter { premiumStore.isPro || !PremiumStore.proTracks.contains($0.category) }.count
+    }
     @EnvironmentObject var premiumStore: PremiumStore
     @AppStorage("goal.startingTrack") private var startingTrack = "Web development"
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -156,6 +163,7 @@ struct RootView: View {
             NavigationStack { LearnView().modifier(SprintTheme()) }.tabItem { Label("Learn", systemImage: "sparkles") }
             NavigationStack { StudioView().modifier(SprintTheme()) }.allowsLandscape().tabItem { Label("Studio", systemImage: "curlybraces") }
             NavigationStack { PracticeTabView() }.tabItem { Label("Practice", systemImage: "brain.head.profile") }
+                .badge(dueBadge) // lessons due for review, so they're visible from anywhere
             NavigationStack { AnalyticsDashboardView() }.tabItem { Label("Stats", systemImage: "chart.bar.fill") }
             NavigationStack { AccountView().modifier(SprintTheme()) }.tabItem { Label("Account", systemImage: "person.crop.circle") }
         }
@@ -245,13 +253,60 @@ struct RootView: View {
 struct CourseMenuView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var store: LearningStore
-    private let menuItems: [(String, String, Int?)] = [
-        ("Daily Sprint", "sparkles", nil), ("Flash cards", "rectangle.stack.fill", 12),
-        ("Layer challenge", "circle.dashed", nil), ("Quick glossary", "command", nil),
-        ("Cybersecurity", "bolt.fill", 25), ("Python essentials", "textformat", 12),
-        ("Daily practice", "sparkle", nil), ("Friends & streaks", "heart", nil),
-        ("Design games", "pencil.and.outline", 30), ("Building games", "curlybraces", 30)
-    ]
+    @AppStorage("goal.startingTrack") private var startingTrack = "Web development"
+
+    /// Menu entries. Counts come from the content itself; they used to be typed in
+    /// (Studio said 30 projects when it has 5 missions a track), and "Daily Sprint"
+    /// and "Daily practice" were two entries for the same screen.
+    private enum Item: CaseIterable, Identifiable {
+        case daily, flashcards, layers, glossary, cyber, python, together, design, build
+        var id: Self { self }
+        var title: String {
+            switch self {
+            case .daily: return "Daily practice"
+            case .flashcards: return "Flash cards"
+            case .layers: return "Layer challenge"
+            case .glossary: return "Quick glossary"
+            case .cyber: return "Cybersecurity"
+            case .python: return "Python essentials"
+            case .together: return "Friends & streaks"
+            case .design: return "Design missions"
+            case .build: return "Building missions"
+            }
+        }
+        var icon: String {
+            switch self {
+            case .daily: return "sparkles"
+            case .flashcards: return "rectangle.stack.fill"
+            case .layers: return "circle.dashed"
+            case .glossary: return "command"
+            case .cyber: return "bolt.fill"
+            case .python: return "textformat"
+            case .together: return "heart"
+            case .design: return "pencil.and.outline"
+            case .build: return "curlybraces"
+            }
+        }
+    }
+
+    private func count(_ item: Item) -> Int? {
+        switch item {
+        case .flashcards, .glossary: return store.curriculum?.lessons.count
+        case .cyber: return store.lessonsByTrack["Cybersecurity"]?.count
+        case .python: return store.lessonsByTrack["Python"]?.count
+        case .design: return StudioMission.missions(for: .design).count
+        case .build: return StudioMission.missions(for: .build).count
+        default: return nil
+        }
+    }
+
+    /// The track of the lesson you touched most recently, else the one you started with.
+    private var currentTrack: String {
+        let latest = store.lessonActivity.max()?.split(separator: "|", maxSplits: 1).last.map(String.init)
+        if let id = latest, let lesson = store.curriculum?.lessons.first(where: { $0.id == id }) { return lesson.category }
+        return startingTrack
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -262,25 +317,29 @@ struct CourseMenuView: View {
                     }
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Current course").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
-                        Text("Web Development 101").font(.headline)
+                        Text(currentTrack).font(.headline)
+                        let progress = store.progress(in: currentTrack)
+                        if progress.total > 0 {
+                            ProgressView(value: Double(progress.done), total: Double(progress.total)).tint(.mint)
+                            Text("\(progress.done) of \(progress.total) lessons").font(.caption).foregroundStyle(.secondary)
+                        }
                     }
                     .padding(18).frame(maxWidth: .infinity, alignment: .leading)
                     .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    ForEach(Array(menuItems.enumerated()), id: \.offset) { index, item in
-                        NavigationLink { destination(for: index) } label: {
+                    ForEach(Item.allCases) { item in
+                        NavigationLink { destination(for: item) } label: {
                             HStack(spacing: 16) {
-                                Image(systemName: item.1).frame(width: 28).foregroundStyle(index == 1 ? .blue : .secondary)
-                                Text(item.0).font(.headline)
+                                Image(systemName: item.icon).frame(width: 28).foregroundStyle(.secondary)
+                                Text(item.title).font(.headline)
                                 Spacer()
-                                if let count = item.2 {
-                                    Text("\(count)").font(.subheadline.bold()).foregroundStyle(index >= 8 ? .mint : .blue)
+                                if let count = count(item) {
+                                    Text("\(count)").font(.subheadline.bold()).foregroundStyle(.mint)
                                         .padding(.horizontal, 10).padding(.vertical, 6)
-                                        .background((index >= 8 ? Color.mint : Color.blue).opacity(0.14), in: Capsule())
+                                        .background(Color.mint.opacity(0.14), in: Capsule())
                                 }
                                 Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
                             }
                             .padding(.horizontal, 16).frame(minHeight: 58)
-                            .background(index == 1 ? Color.blue.opacity(0.14) : Color.clear, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                         }.buttonStyle(.plain)
                     }
                 }.padding(22)
@@ -292,66 +351,68 @@ struct CourseMenuView: View {
             .navigationTitle("Course navigation").navigationBarTitleDisplayMode(.inline)
         }.modifier(SprintTheme())
     }
-    @ViewBuilder private func destination(for index: Int) -> some View {
-        switch index {
-        case 0, 6: DailyPracticeView()
-        case 1: RapidLearningDeck()
-        case 2: LayerChallengeView()
-        case 3: GlossaryView()
-        case 4: CybersecurityCourseView()
-        case 5: PythonEssentialsView()
-        case 7: TogetherView()
-        case 8: ProjectPlaygroundView(initialTrack: .design)
-        default: ProjectPlaygroundView(initialTrack: .build)
+
+    @ViewBuilder private func destination(for item: Item) -> some View {
+        switch item {
+        case .daily: DailyPracticeView()
+        case .flashcards: RapidLearningDeck()
+        case .layers: LayerChallengeView()
+        case .glossary: GlossaryView()
+        case .cyber: CybersecurityCourseView()
+        case .python: PythonEssentialsView()
+        case .together: TogetherView()
+        case .design: ProjectPlaygroundView(initialTrack: .design)
+        case .build: ProjectPlaygroundView(initialTrack: .build)
         }
     }
 }
 
 struct RapidLearningDeck: View {
     @EnvironmentObject private var store: LearningStore
+    @EnvironmentObject private var premiumStore: PremiumStore
+    @AppStorage("goal.startingTrack") private var startingTrack = "Web development"
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var index = 0
     @State private var revealed = false
-    @State private var filter = "All cards"
-    @State private var mode = 0
-    private var webLessons: [Lesson] { store.curriculum?.lessons.filter { $0.category == "Web development" } ?? [] }
-    private var filtered: [Lesson] {
-        switch filter {
-        case "Front-end": return webLessons.filter { ["web-html", "web-css", "web-javascript", "web-dom", "web-frontend"].contains($0.id) }
-        case "Back-end": return webLessons.filter { ["web-server", "web-database", "web-api", "web-authentication", "web-backend", "web-request-response"].contains($0.id) }
-        case "Full-stack": return webLessons.filter { $0.id == "web-fullstack" }
-        default: return webLessons
-        }
-    }
-    private var lesson: Lesson? { filtered.isEmpty ? nil : filtered[min(index, filtered.count - 1)] }
+    @State private var track = ""
+    /// Cards rated this visit: one rating per card, so tapping again can't push a review out.
+    @State private var rated: Set<String> = []
+
+    private var tracks: [String] { store.tracks.filter { premiumStore.isPro || !PremiumStore.proTracks.contains($0) } }
+    private var cards: [Lesson] { store.lessonsByTrack[track] ?? [] }
+    private var lesson: Lesson? { cards.isEmpty ? nil : cards[min(index, cards.count - 1)] }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Web development").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                        Text(track).font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                         Text("Flash cards").font(.largeTitle.bold())
                     }
                     Spacer()
-                    Picker("Deck mode", selection: $mode) { Text("Study").tag(0); Text("Quiz").tag(1) }
-                        .pickerStyle(.segmented).frame(maxWidth: 190)
+                    NavigationLink { QuizView(questions: store.quiz(for: track), title: "\(track) quiz") } label: {
+                        Label("Quiz", systemImage: "gamecontroller.fill")
+                    }
+                    .buttonStyle(.bordered)
                 }
-                ProgressView(value: Double(min(index + 1, filtered.count)), total: Double(max(filtered.count, 1)))
-                Text("\(min(index + 1, filtered.count), format: .number.precision(.integerLength(2))) / \(filtered.count, format: .number.precision(.integerLength(2)))")
-                    .font(.system(.subheadline, design: .monospaced)).foregroundStyle(.secondary)
+                // Every track you can open; this deck used to be Web development only.
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack { ForEach(["All cards", "Front-end", "Back-end", "Full-stack"], id: \.self) { name in
-                        Button(name + (name == "All cards" ? "  \(webLessons.count)" : "")) { filter = name; index = 0; revealed = false }
-                            .buttonStyle(.borderedProminent).tint(filter == name ? .blue : SprintPalette.card)
-                    }}
+                    HStack {
+                        ForEach(tracks, id: \.self) { name in
+                            Button("\(name)  \(store.lessonsByTrack[name]?.count ?? 0)") { track = name; index = 0; revealed = false }
+                                .buttonStyle(.borderedProminent).tint(track == name ? .blue : SprintPalette.card)
+                                .accessibilityAddTraits(track == name ? .isSelected : [])
+                        }
+                    }
                 }
-                if mode == 1 {
-                    QuizView(questions: store.curriculum?.questions.filter { $0.id.hasPrefix("web-") } ?? [])
-                        .frame(minHeight: 520)
-                } else if let lesson {
+                ProgressView(value: Double(min(index + 1, cards.count)), total: Double(max(cards.count, 1)))
+                Text("\(min(index + 1, cards.count)) / \(cards.count)")
+                    .font(.system(.subheadline, design: .monospaced)).foregroundStyle(.secondary)
+                if let lesson {
                     Button { withAnimation(reduceMotion ? .smooth(duration: 0.15) : .spring(response: 0.38, dampingFraction: 0.86)) { revealed.toggle() } } label: {
                         VStack(alignment: .leading, spacing: 18) {
-                            Text(filter == "All cards" ? deckLabel(for: lesson) : filter.uppercased()).font(.caption.bold()).tracking(0.4)
+                            Text(lesson.category.uppercased()).font(.caption.bold()).tracking(0.4)
                                 .padding(.horizontal, 14).padding(.vertical, 8).overlay(Capsule().stroke(.white.opacity(0.5)))
                             Spacer()
                             Text(revealed ? lesson.definition : lesson.term).font(.system(revealed ? .title2 : .largeTitle, design: .rounded, weight: .bold))
@@ -366,27 +427,44 @@ struct RapidLearningDeck: View {
                     }.buttonStyle(.plain).accessibilityLabel(revealed ? "Answer: \(lesson.definition)" : "Card term: \(lesson.term). Tap to reveal")
                     HStack {
                         Button { move(-1) } label: { Image(systemName: "arrow.left").frame(width: 48, height: 48) }.buttonStyle(.bordered).disabled(index == 0)
+                            .accessibilityLabel("Previous card")
                         Button { revealed.toggle() } label: { Label(revealed ? "Hide answer" : "Reveal answer", systemImage: "sparkles").frame(maxWidth: .infinity) }.buttonStyle(.borderedProminent)
-                        Button { move(1) } label: { Image(systemName: "arrow.right").frame(width: 48, height: 48) }.buttonStyle(.bordered).disabled(index >= filtered.count - 1)
+                        Button { move(1) } label: { Image(systemName: "arrow.right").frame(width: 48, height: 48) }.buttonStyle(.bordered).disabled(index >= cards.count - 1)
+                            .accessibilityLabel("Next card")
                     }
-                    Text(revealed ? "How did that feel?" : "Flip the card to start its two-step checkpoint.").font(.subheadline).foregroundStyle(.secondary).frame(maxWidth: .infinity)
-                    HStack { ForEach(["Teach me again", "Almost there", "I knew it"], id: \.self) { label in
-                        Button(label) {
-                            let quality: Int = label == "I knew it" ? 5 : label == "Almost there" ? 3 : 1
-                            SM2Engine.shared.recordReview(lessonID: lesson.id, quality: quality)
-                            store.complete(lesson.id)
-                            if index < filtered.count - 1 { move(1) }
-                        }.buttonStyle(.bordered).disabled(!revealed)
-                    }}
+                    Text(rated.contains(lesson.id) ? "Rated. It'll come back for review on schedule."
+                         : revealed ? "How well did you know it?" : "Flip the card, then rate how well you knew it.")
+                        .font(.subheadline).foregroundStyle(.secondary).frame(maxWidth: .infinity)
+                    HStack {
+                        ForEach(["Teach me again", "Almost there", "I knew it"], id: \.self) { label in
+                            Button(label) { rate(lesson, label) }
+                                .buttonStyle(.bordered).disabled(!revealed || rated.contains(lesson.id))
+                        }
+                    }
                 }
             }.padding(24).frame(maxWidth: 760)
-        }.navigationTitle("Flash cards").modifier(SprintTheme())
+        }
+        .navigationTitle("Flash cards").modifier(SprintTheme())
+        .onAppear {
+            if track.isEmpty { track = tracks.contains(startingTrack) ? startingTrack : (tracks.first ?? "Web development") }
+        }
     }
-    private func move(_ amount: Int) { index = min(max(0, index + amount), max(0, filtered.count - 1)); revealed = false }
-    private func deckLabel(for lesson: Lesson) -> String {
-        if lesson.id == "web-fullstack" { return "FULL-STACK BRIDGE" }
-        return ["web-html", "web-css", "web-javascript", "web-dom", "web-frontend"].contains(lesson.id) ? "FRONT-END FOUNDATION" : "BACK-END FOUNDATION"
+
+    /// "Teach me again" used to mark the lesson finished and pay XP. Now only knowing
+    /// it (or nearly) counts as finishing; not knowing it brings it back tomorrow.
+    private func rate(_ lesson: Lesson, _ label: String) {
+        rated.insert(lesson.id)
+        let quality = label == "I knew it" ? 5 : label == "Almost there" ? 3 : ReviewGrade.unsolved
+        SM2Engine.shared.recordReview(lessonID: lesson.id, quality: quality)
+        if quality >= 3 {
+            if store.completed.contains(lesson.id) { store.recordLessonReplay(lesson.id) } else { store.complete(lesson.id) }
+        } else {
+            store.recordPractice()
+        }
+        if index < cards.count - 1 { move(1) }
     }
+
+    private func move(_ amount: Int) { index = min(max(0, index + amount), max(0, cards.count - 1)); revealed = false }
 }
 
 struct CourseCategoryView: View {
@@ -402,6 +480,7 @@ struct PythonEssentialsView: View {
     @State private var mode = "Flashcards"
     @State private var index = 0
     @State private var revealed = false
+    @State private var prediction = ""
     private let modes = ["Flashcards", "Output sprint", "Type detective", "Bug rescue"]
     private var lessons: [Lesson] { store.curriculum?.lessons.filter { $0.category == "Python" } ?? [] }
     private var lesson: Lesson? { lessons.isEmpty ? nil : lessons[min(index, lessons.count - 1)] }
@@ -452,11 +531,29 @@ struct PythonEssentialsView: View {
                         Text(cardTitle(lesson)).font(.largeTitle.bold())
                         Text(cardPrompt(lesson)).font(.title3)
                         if mode == "Output sprint" { Text(lesson.code).font(.system(.body, design: .monospaced)).padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Color.black.opacity(0.18), in: RoundedRectangle(cornerRadius: 16, style: .continuous)) }
+                        if mode == "Output sprint", PythonOutputs.output(for: lesson) != nil, !revealed {
+                            TextField("Type what you think it prints", text: $prediction)
+                                .font(.system(.body, design: .monospaced))
+                                .textInputAutocapitalization(.never).autocorrectionDisabled()
+                                .padding(12)
+                                .background(Color.black.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
                         Button(revealed ? "Hide answer" : "Reveal & practice", systemImage: revealed ? "eye.slash" : "sparkles") {
                             withAnimation(reduceMotion ? .smooth(duration: 0.12) : .spring(response: 0.32, dampingFraction: 0.85)) { revealed.toggle() }
                         }.buttonStyle(.borderedProminent).tint(.orange)
                         if revealed {
                             VStack(alignment: .leading, spacing: 12) {
+                                if mode == "Output sprint", let output = PythonOutputs.output(for: lesson) {
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text("Python prints").font(.caption.bold()).foregroundStyle(.secondary)
+                                        Text(output).font(.system(.title3, design: .monospaced).bold())
+                                        if !prediction.isEmpty {
+                                            Label(PythonOutputs.matches(prediction, output) ? "You predicted it" : "You said \(prediction)",
+                                                  systemImage: PythonOutputs.matches(prediction, output) ? "checkmark.circle.fill" : "xmark.circle")
+                                                .foregroundStyle(PythonOutputs.matches(prediction, output) ? .green : .orange)
+                                        }
+                                    }
+                                }
                                 Text(lesson.definition).font(.headline)
                                 if mode != "Output sprint" && !lesson.code.isEmpty { Text(lesson.code).font(.system(.body, design: .monospaced)).padding(12).frame(maxWidth: .infinity, alignment: .leading).background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous)) }
                                 NavigationLink { LessonView(lesson: lesson) } label: { Label("Recreate it, then make it yours", systemImage: "keyboard").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12) }.buttonStyle(.borderedProminent).tint(.mint)
@@ -478,7 +575,7 @@ struct PythonEssentialsView: View {
                     LazyVGrid(columns: columns, spacing: 14) {
                         ForEach(Array(lessons.enumerated()), id: \.element.id) { number, item in
                             Button {
-                                withAnimation(.smooth(duration: 0.18)) { index = number; revealed = false }
+                                withAnimation(.smooth(duration: 0.18)) { index = number; revealed = false; prediction = "" }
                             } label: {
                                 VStack(alignment: .leading, spacing: 9) {
                                     HStack { Circle().fill(.orange).frame(width: 10); Text(item.term).font(.headline).foregroundStyle(.primary); Spacer(); if store.completed.contains(item.id) { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) } }
@@ -496,7 +593,7 @@ struct PythonEssentialsView: View {
             }.padding(.horizontal, 20).padding(.top, 24).padding(.bottom, 110).frame(maxWidth: 980)
         }.navigationTitle("Python essentials").navigationBarTitleDisplayMode(.inline).modifier(SprintTheme())
     }
-    private func move(_ amount: Int) { index = min(max(0, index + amount), max(lessons.count - 1, 0)); revealed = false }
+    private func move(_ amount: Int) { index = min(max(0, index + amount), max(lessons.count - 1, 0)); revealed = false; prediction = "" }
     private func cardTitle(_ lesson: Lesson) -> String {
         switch mode { case "Output sprint": return "Predict the output"; case "Type detective": return "Type detective"; case "Bug rescue": return "Bug rescue"; default: return lesson.term }
     }
@@ -555,7 +652,7 @@ struct CybersecurityCourseView: View {
                                 }
                                 .padding(16).frame(maxWidth: .infinity, minHeight: 190, alignment: .leading)
                                 .background(SprintPalette.card.opacity(0.72), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                                .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(revealed.contains(lesson.id) ? Color.purple : Color.white.opacity(0.12), lineWidth: 1.5))
+                                .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(revealed.contains(lesson.id) ? Color.purple : Color.primary.opacity(0.12), lineWidth: 1.5))
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel("\(lesson.term). \(revealed.contains(lesson.id) ? safetyMove(for: lesson) : lesson.clue)")
@@ -564,7 +661,7 @@ struct CybersecurityCourseView: View {
                     }
                 }
                 .padding(sizeClass == .compact ? 18 : 28)
-                .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
                 VStack(alignment: .leading, spacing: 20) {
                     HStack {
                         VStack(alignment: .leading, spacing: 6) {
@@ -572,28 +669,19 @@ struct CybersecurityCourseView: View {
                             Text("Can you spot the safer move?").font(.title2.bold())
                         }
                         Spacer()
-                        Text("1 / \(questions.count)").font(.system(.subheadline, design: .monospaced)).foregroundStyle(.blue)
-                            .padding(.horizontal, 14).padding(.vertical, 9).background(.blue.opacity(0.14), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
-                    ProgressView(value: 0, total: Double(max(questions.count, 1)))
-                    if let first = questions.first {
-                        Text(first.question).font(.title3.bold())
-                        ForEach(first.choices.indices, id: \.self) { choice in
-                            HStack(spacing: 14) {
-                                Text(["A", "B", "C", "D"][min(choice, 3)]).font(.caption.bold()).foregroundStyle(.secondary)
-                                    .frame(width: 38, height: 38).background(Color.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                Text(first.choices[choice]).font(.subheadline.bold())
-                                Spacer()
-                            }.padding(10).overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.white.opacity(0.12)))
-                        }
-                    }
-                    NavigationLink { QuizView(questions: questions) } label: {
-                        Text("Start 25-question checkpoint →").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 14)
+                    // This used to show question 1 with answers that looked tappable but did nothing.
+                    let best = UserDefaults.standard.object(forKey: QuizView.bestKey("cybersecurity")) as? Int
+                    Label(best.map { "Your best: \($0) of \(questions.count)" } ?? "Not taken yet",
+                          systemImage: best == nil ? "circle.dashed" : "rosette")
+                        .font(.headline).foregroundStyle(best == nil ? Color.secondary : Color.purple)
+                    NavigationLink { QuizView(questions: questions, title: "Cybersecurity", bestScoreID: "cybersecurity") } label: {
+                        Text("Start \(questions.count)-question checkpoint →").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 14)
                     }.buttonStyle(.borderedProminent).tint(.purple)
                     Text("Choose the answer that keeps people and information safer.").font(.caption).foregroundStyle(.secondary)
                 }
                 .padding(sizeClass == .compact ? 18 : 28)
-                .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
             }.padding(22).frame(maxWidth: 980)
         }.navigationTitle("Cybersecurity").modifier(SprintTheme())
     }
@@ -618,17 +706,25 @@ struct CybersecurityCourseView: View {
 }
 struct GlossaryView: View {
     @EnvironmentObject private var store: LearningStore
+    @EnvironmentObject private var premiumStore: PremiumStore
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var query = ""
     @State private var selectedID: String?
+    @State private var track = "All"
+    /// Every track you can open (it used to be Web development only), A to Z.
+    private var available: [Lesson] {
+        (store.curriculum?.lessons ?? [])
+            .filter { premiumStore.isPro || !PremiumStore.proTracks.contains($0.category) }
+            .filter { track == "All" || $0.category == track }
+            .sorted { $0.term.localizedCaseInsensitiveCompare($1.term) == .orderedAscending }
+    }
+    private var trackChoices: [String] {
+        ["All"] + store.tracks.filter { premiumStore.isPro || !PremiumStore.proTracks.contains($0) }
+    }
     private var lessons: [Lesson] {
-        let all = store.curriculum?.lessons.filter { $0.category == "Web development" } ?? []
-        return query.isEmpty ? all : all.filter { $0.term.localizedCaseInsensitiveContains(query) || $0.definition.localizedCaseInsensitiveContains(query) }
+        query.isEmpty ? available : available.filter { $0.term.localizedCaseInsensitiveContains(query) || $0.definition.localizedCaseInsensitiveContains(query) }
     }
-    private var selected: Lesson? {
-        let all = store.curriculum?.lessons.filter { $0.category == "Web development" } ?? []
-        return all.first { $0.id == selectedID }
-    }
+    private var selected: Lesson? { store.curriculum?.lessons.first { $0.id == selectedID } }
     private var columns: [GridItem] { [GridItem(.adaptive(minimum: sizeClass == .compact ? 150 : 210), spacing: 14)] }
     var body: some View {
         ScrollViewReader { proxy in
@@ -654,9 +750,21 @@ struct GlossaryView: View {
                         .padding(22).background(LinearGradient(colors: [dotColor(for: selected).opacity(0.42), SprintPalette.card], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
                         .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
                     }
-                    TextField("Search HTML, API, full-stack…", text: $query)
-                        .textFieldStyle(.plain).padding(14).background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.white.opacity(0.12))).autocorrectionDisabled()
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(trackChoices, id: \.self) { name in
+                                Button(name) { withAnimation(.smooth(duration: 0.15)) { track = name } }
+                                    .font(.caption.bold())
+                                    .padding(.horizontal, 12).padding(.vertical, 7)
+                                    .background(track == name ? Color.mint.opacity(0.25) : Color.primary.opacity(0.06), in: Capsule())
+                                    .buttonStyle(.plain)
+                                    .accessibilityAddTraits(track == name ? .isSelected : [])
+                            }
+                        }
+                    }
+                    TextField("Search terms and definitions", text: $query)
+                        .textFieldStyle(.plain).padding(14).background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.primary.opacity(0.12))).autocorrectionDisabled()
                     LazyVGrid(columns: columns, spacing: 14) {
                         ForEach(lessons) { lesson in
                             Button {
@@ -669,8 +777,8 @@ struct GlossaryView: View {
                                     Spacer(minLength: 0)
                                 }
                                 .padding(18).frame(maxWidth: .infinity, minHeight: 128, alignment: .leading)
-                                .background(selectedID == lesson.id ? dotColor(for: lesson).opacity(0.15) : Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                                .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(selectedID == lesson.id ? dotColor(for: lesson) : Color.white.opacity(0.13), lineWidth: 1.5))
+                                .background(selectedID == lesson.id ? dotColor(for: lesson).opacity(0.15) : Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(selectedID == lesson.id ? dotColor(for: lesson) : Color.primary.opacity(0.13), lineWidth: 1.5))
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel("\(lesson.term), \(categoryLabel(for: lesson))")
@@ -684,6 +792,14 @@ struct GlossaryView: View {
         }
     }
     private func dotColor(for lesson: Lesson) -> Color {
+        switch lesson.category {
+        case "Python": return .orange
+        case "Cybersecurity": return .purple
+        case "Go": return .mint
+        case "Rust": return Color(red: 0.8, green: 0.35, blue: 0.1)
+        case "TypeScript", "React", "Swift", "Interview Prep": return .teal
+        default: break
+        }
         if lesson.id == "web-fullstack" || lesson.id == "web-request-response" { return .purple }
         if ["web-server", "web-database", "web-api", "web-authentication", "web-backend"].contains(lesson.id) { return .mint }
         return .blue
@@ -707,18 +823,22 @@ struct DailyPracticeView: View {
     @State private var selectedChoice: Int?
     @State private var projectsBuilt = 0
 
+    /// Three questions a day, rotating through every free track's handwritten questions.
+    /// (One question was pinned every single day, and Pro-track questions slipped in.)
     private var questions: [Question] {
-        let all = store.curriculum?.questions ?? []
+        let lessons = store.curriculum?.lessons ?? []
+        let all = (store.curriculum?.questions ?? []).filter {
+            guard let track = QuestionBank.track(forQuestionID: $0.id, lessons: lessons) else { return false }
+            return !PremiumStore.proTracks.contains(track)
+        }
         guard !all.isEmpty else { return [] }
-        let featured = all.first { $0.id == "cyber-17" }
-        let others = all.filter { $0.id != featured?.id }
         let day = Calendar.current.ordinality(of: .day, in: .era, for: Date()) ?? 0
-        let rotating = (0..<min(3 - (featured == nil ? 0 : 1), others.count)).map { others[(day + $0) % others.count] }
-        return (featured.map { [$0] } ?? []) + rotating
+        return (0..<min(3, all.count)).map { all[(day * 3 + $0) % all.count] }
     }
     private var recallCount: Int { questions.filter { store.recalledToday($0.id) }.count }
-    private var completedWeb: Int { store.completed.filter { $0.hasPrefix("web-") }.count }
-    private var completedSafety: Int { store.completed.filter { $0.hasPrefix("cyber-") }.count }
+    private var completedWeb: Int { store.progress(in: "Web development").done }
+    private var completedSafety: Int { store.progress(in: "Cybersecurity").done }
+    private var missionsTotal: Int { StudioMission.missions(for: .design).count + StudioMission.missions(for: .build).count }
 
     var body: some View {
         ScrollView {
@@ -732,8 +852,8 @@ struct DailyPracticeView: View {
 
                 HStack(spacing: sizeClass == .compact ? 20 : 38) {
                     metric("\(store.currentStreak)", "day streak", icon: "flame.fill")
-                    metric("\(store.practiceXP + projectsBuilt * 25)", "XP earned", icon: "bolt.fill")
-                    metric("\(projectsBuilt)/2", "starter builds", icon: "gamecontroller.fill")
+                    metric("\(store.practiceXP)", "XP earned", icon: "bolt.fill")
+                    metric("\(projectsBuilt)/\(missionsTotal)", "Studio missions", icon: "gamecontroller.fill")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 4)
@@ -753,7 +873,7 @@ struct DailyPracticeView: View {
                         Image(systemName: recallCount == questions.count && !questions.isEmpty ? "checkmark.diamond.fill" : "diamond")
                             .foregroundStyle(.purple).font(.title2)
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("\(completedWeb)/12 web concepts · \(completedSafety)/12 safety terms · \(recallCount)/\(questions.count) recall reps")
+                            Text("\(completedWeb)/\(store.progress(in: "Web development").total) web concepts · \(completedSafety)/\(store.progress(in: "Cybersecurity").total) safety terms · \(recallCount)/\(questions.count) recall reps")
                                 .foregroundStyle(.secondary)
                             Text("One recalled idea and one remix can become something you can share.")
                                 .font(.subheadline).foregroundStyle(.secondary)
@@ -773,7 +893,7 @@ struct DailyPracticeView: View {
         }
         .navigationTitle("Daily practice").navigationBarTitleDisplayMode(.inline).modifier(SprintTheme())
         .onAppear {
-            projectsBuilt = ["Design Games", "Building Games"].filter { UserDefaults.standard.string(forKey: "project.\($0).passing") != nil }.count
+            projectsBuilt = [ProjectTrack.design, .build].flatMap { StudioMission.missions(for: $0) }.filter(MissionProgress.isCompleted).count
             recallIndex = questions.firstIndex { !store.recalledToday($0.id) } ?? questions.count
         }
     }
@@ -917,7 +1037,7 @@ struct DailyPracticeView: View {
             HStack {
                 Text("Today").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                 Spacer()
-                Text("\(store.practiceXP + projectsBuilt * 25) XP")
+                Text("\(store.practiceXP) XP")
                     .font(.caption.bold()).foregroundStyle(.orange)
             }
 
@@ -1017,8 +1137,103 @@ struct DailyPracticeView: View {
         .accessibilityElement(children: .combine)
     }
 }
+/// "Layer challenge" was a static list with nothing to place. Now it's a sorting game:
+/// each web concept goes to the layer it belongs to, with the reason shown after.
+enum WebLayer: String, CaseIterable {
+    case front = "Front-end", back = "Back-end", connection = "Between them"
+
+    static let answers: [String: WebLayer] = [
+        "web-html": .front, "web-css": .front, "web-javascript": .front, "web-dom": .front, "web-frontend": .front,
+        "web-server": .back, "web-database": .back, "web-authentication": .back, "web-backend": .back,
+        "web-api": .connection, "web-request-response": .connection, "web-fullstack": .connection,
+    ]
+    var hint: String {
+        switch self {
+        case .front: return "What people see and use, running in the browser."
+        case .back: return "Logic, data and rules, running on a server."
+        case .connection: return "How the two sides talk, or work that spans both."
+        }
+    }
+}
+
 struct LayerChallengeView: View {
-    var body: some View { ScrollView { VStack(alignment: .leading, spacing: 18) { Text("Place the layers").font(.largeTitle.bold()); ForEach([("Front-end", "What people see and use"), ("Back-end", "Logic, data, and rules"), ("Full-stack", "The bridge across both sides")], id: \.0) { layer in HStack { Image(systemName: "square.stack.3d.up.fill").foregroundStyle(.mint); VStack(alignment: .leading) { Text(layer.0).font(.headline); Text(layer.1).foregroundStyle(.secondary) } }.padding().frame(maxWidth: .infinity, alignment: .leading).background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous)) } }.padding(24) }.navigationTitle("Layer challenge") }
+    @EnvironmentObject private var store: LearningStore
+    @State private var order: [Lesson] = []
+    @State private var index = 0
+    @State private var picked: WebLayer?
+    @State private var score = 0
+
+    private var playable: [Lesson] { (store.lessonsByTrack["Web development"] ?? []).filter { WebLayer.answers[$0.id] != nil } }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                Text("Place the layers").font(.largeTitle.bold())
+                Text("Where does each part of a web app live?").foregroundStyle(.secondary)
+                if order.isEmpty {
+                    ProgressView()
+                } else if index < order.count, let answer = WebLayer.answers[order[index].id] {
+                    let lesson = order[index]
+                    ProgressView(value: Double(index), total: Double(order.count)).tint(.mint)
+                    Text("\(index + 1) of \(order.count)").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                    Text(lesson.term).font(.title.bold())
+                    Text(lesson.clue).foregroundStyle(.secondary)
+                    ForEach(WebLayer.allCases, id: \.self) { layer in
+                        Button { choose(layer, answer: answer) } label: {
+                            HStack {
+                                Image(systemName: "square.stack.3d.up.fill").foregroundStyle(.mint)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(layer.rawValue).font(.headline)
+                                    Text(layer.hint).font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                if picked != nil && layer == answer { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) }
+                                else if picked == layer { Image(systemName: "xmark.circle.fill").foregroundStyle(.red) }
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(background(layer, answer: answer), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(picked != nil)
+                    }
+                    if let picked {
+                        Text(picked == answer ? "Right: \(answer.rawValue)." : "It's \(answer.rawValue).").font(.headline)
+                        Text(lesson.definition).foregroundStyle(.secondary)
+                        Button(index + 1 < order.count ? "Next" : "See score") {
+                            if index + 1 == order.count { store.recordPractice() }
+                            index += 1; self.picked = nil
+                        }
+                            .buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
+                    }
+                } else {
+                    Text("\(score) of \(order.count) placed right").font(.title2.bold())
+                    Button("Play again") { start() }.buttonStyle(.borderedProminent)
+                }
+            }
+            .padding(24)
+        }
+        .navigationTitle("Layer challenge")
+        .modifier(SprintTheme())
+        .onAppear { if order.isEmpty { start() } }
+    }
+
+    private func start() { order = playable.shuffled(); index = 0; score = 0; picked = nil }
+
+    private func choose(_ layer: WebLayer, answer: WebLayer) {
+        picked = layer
+        let right = layer == answer
+        if right { score += 1 }
+        HapticManager.shared.notification(right ? .success : .warning)
+        AccessibilityNotification.Announcement(right ? "Correct" : "It's \(answer.rawValue)").post()
+    }
+
+    private func background(_ layer: WebLayer, answer: WebLayer) -> Color {
+        guard let picked else { return SprintPalette.card }
+        if layer == answer { return .green.opacity(0.15) }
+        if layer == picked { return .red.opacity(0.12) }
+        return SprintPalette.card
+    }
 }
 enum ProjectTrack: String, CaseIterable { case design = "Design Games"; case build = "Building Games" }
 struct ProjectPlaygroundView: View {
@@ -2018,7 +2233,7 @@ struct LearnView: View {
             let trackQuestions = quizQuestions(for: category)
             if !trackQuestions.isEmpty {
                 NavigationLink {
-                    QuizView(questions: trackQuestions, title: "\(shortName(category)) quiz")
+                    QuizView(questions: trackQuestions, title: "\(shortName(category)) quiz", bestScoreID: "track.\(category)")
                 } label: {
                     Label("\(shortName(category)) quiz \u{B7} \(trackQuestions.count) questions", systemImage: "gamecontroller.fill")
                         .frame(maxWidth: .infinity, alignment: .leading).padding(14)
@@ -2288,11 +2503,17 @@ struct QuizView: View {
     @State private var round: [Question]
     @State private var retrying = false
 
-    init(questions: [Question], title: String = "Quiz") {
+    /// When set, the best full-round score is remembered under this name.
+    var bestScoreID: String? = nil
+
+    init(questions: [Question], title: String = "Quiz", bestScoreID: String? = nil) {
         self.questions = questions
         self.title = title
+        self.bestScoreID = bestScoreID
         _round = State(initialValue: questions)
     }
+
+    static func bestKey(_ id: String) -> String { "quiz.best.\(id)" }
 
     var body: some View {
         ScrollView {
@@ -2338,7 +2559,15 @@ struct QuizView: View {
             Text(q.explanation).fixedSize(horizontal: false, vertical: true)
             Button(index + 1 == round.count ? "See results" : "Continue") {
                 withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { index += 1; self.selected = nil }
-                if index >= round.count { store.recordPractice() }
+                if index >= round.count {
+                    store.recordPractice()
+                    if let bestScoreID, !retrying {
+                        let key = Self.bestKey(bestScoreID)
+                        if score > UserDefaults.standard.integer(forKey: key) || UserDefaults.standard.object(forKey: key) == nil {
+                            UserDefaults.standard.set(score, forKey: key)
+                        }
+                    }
+                }
             }
             .keyboardShortcut(.defaultAction)
             .buttonStyle(.borderedProminent)
@@ -2352,8 +2581,21 @@ struct QuizView: View {
             if !missed.isEmpty {
                 Text("Worth another look").font(.headline)
                 ForEach(missed) { q in
-                    Text(q.explanation).font(.subheadline).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    if let id = TrackQuiz.lessonID(forQuestion: q.id),
+                       let lesson = store.curriculum?.lessons.first(where: { $0.id == id }) {
+                        NavigationLink { LessonView(lesson: lesson) } label: {
+                            HStack {
+                                Text(q.explanation).font(.subheadline).multilineTextAlignment(.leading)
+                                Spacer()
+                                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Opens the lesson")
+                    } else {
+                        Text(q.explanation).font(.subheadline).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 if missed.contains(where: { TrackQuiz.lessonID(forQuestion: $0.id) != nil }) {
                     Text("Missed terms are now in your review list for tomorrow.").font(.caption).foregroundStyle(.secondary)
@@ -2830,7 +3072,6 @@ struct Triangle: Shape {
     @Published var answer = "Hi, I’m Bite! Ask about a concept or paste a small code example. I’ll help you reason it out."
     @Published var busy = false
     @Published var mode = "Offline lesson tips"
-    private let speech = AVSpeechSynthesizer()
     private var work: Task<Void, Never>?
     func ask(_ question: String, lessons: [Lesson]) {
         guard !busy, !question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
@@ -2850,25 +3091,24 @@ struct Triangle: Shape {
                     return
                 } catch {
                     if Task.isCancelled { return }
-                    mode = "AI unavailable for this request · offline tips"
+                    mode = AIErrorText.message(for: error) + " Here's an offline tip instead."
                 }
             } else { mode = "Offline tips · on-device AI unavailable" }
             answer = context.isEmpty ? "Let’s break it down: what should your code do, and what happens instead? Try one small change, predict its effect, then run it in Studio. Ask about a lesson term such as HTML, CSS, or a Python variable for a reference explanation." : "From your lessons:\n\(context)\n\nTry describing this in your own words, then change one value in its example. What output do you expect?"
         }
     }
-    func readAloud() {
-        speech.stopSpeaking(at: .immediate)
-        let utterance = AVSpeechUtterance(string: answer)
-        utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
-        utterance.pitchMultiplier = 1.4
-        utterance.rate = 0.46
-        speech.speak(utterance)
-    }
-    func stop() { work?.cancel(); speech.stopSpeaking(at: .immediate) }
+    /// Uses the shared reader, so Bite is heard with the silent switch on and stops like lessons do.
+    func readAloud() { VoiceManager.shared.toggle(answer) }
+    func stop() { work?.cancel(); VoiceManager.shared.stop() }
 }
 
 struct BiteAssistantView: View {
     @EnvironmentObject var store: LearningStore
+    @EnvironmentObject var premiumStore: PremiumStore
+    /// Bite's lesson references come only from tracks you can open.
+    private var openLessons: [Lesson] {
+        (store.curriculum?.lessons ?? []).filter { premiumStore.isPro || !PremiumStore.proTracks.contains($0.category) }
+    }
     @Environment(\.dismiss) private var dismiss
     @StateObject private var tutor = BiteTutor()
     @State private var question = ""
@@ -2883,7 +3123,7 @@ struct BiteAssistantView: View {
                     TextField("Ask Bite about your code…", text: $question, axis: .vertical).lineLimit(3...8).textFieldStyle(.roundedBorder).autocorrectionDisabled()
                         .onChange(of: question) { _, value in if value.count > 1600 { question = String(value.prefix(1600)) } }
                     HStack {
-                        Button("Ask Bite") { tutor.ask(question, lessons: store.curriculum?.lessons ?? []) }.buttonStyle(.borderedProminent).disabled(tutor.busy || question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        Button("Ask Bite") { tutor.ask(question, lessons: openLessons) }.buttonStyle(.borderedProminent).disabled(tutor.busy || question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         Button("Read aloud", systemImage: "speaker.wave.2") { tutor.readAloud() }.disabled(tutor.busy)
                     }
                     if tutor.busy { ProgressView("Bite is thinking…"); Button("Cancel") { tutor.stop() } }
@@ -2891,19 +3131,6 @@ struct BiteAssistantView: View {
             }.modifier(SprintTheme()).navigationTitle("Bite")
                 .toolbar { Button("Done") { dismiss() } }
         }.onDisappear { tutor.stop() }
-    }
-}
-
-// Optional custom-model integration. No untrained model is represented as a working tutor.
-// Bundle a validated BiteHintClassifier.mlmodel: string input `text`, string output `label`.
-struct BiteCoreMLClassifier {
-    func classify(_ text: String) throws -> String? {
-        guard let url = Bundle.main.url(forResource: "BiteHintClassifier", withExtension: "mlmodelc") else { return nil }
-        let configuration = MLModelConfiguration()
-        configuration.computeUnits = .all
-        let model = try MLModel(contentsOf: url, configuration: configuration)
-        let input = try MLDictionaryFeatureProvider(dictionary: ["text": MLFeatureValue(string: String(text.prefix(1600)))])
-        return try model.prediction(from: input).featureValue(for: "label")?.stringValue
     }
 }
 

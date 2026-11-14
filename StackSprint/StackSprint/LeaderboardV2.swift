@@ -102,7 +102,7 @@ struct WeeklyLeaderboardView: View {
             let pct = min(1, Double(weekly.weeklyXP) / Double(weeklyGoal))
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color.white.opacity(0.08)).frame(height: 8)
+                    Capsule().fill(Color.primary.opacity(0.08)).frame(height: 8)
                     Capsule().fill(LinearGradient(colors: [.yellow, .orange], startPoint: .leading, endPoint: .trailing))
                         .frame(width: geo.size.width * pct, height: 8)
                 }

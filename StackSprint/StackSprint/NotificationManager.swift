@@ -9,6 +9,8 @@ import UserNotifications
     @AppStorage("notifications.enabled") var enabled = true
     @AppStorage("notifications.dailyHour") var dailyHour = 19
     @AppStorage("notifications.dailyMinute") var dailyMinute = 0
+    @AppStorage("notifications.streakNudge") var streakNudge = true
+    @AppStorage("notifications.weeklyRecap") var weeklyRecap = true
 
     private let center = UNUserNotificationCenter.current()
 
@@ -36,10 +38,10 @@ import UserNotifications
         scheduleDailyReminder()
         // A streak lasts until the end of the day after you practice, so the nudge
         // comes a day later, while there's still time to keep it.
-        center.removePendingNotificationRequests(withIdentifiers: ["comeback.48h"])
-        scheduleComeback(afterHours: 23, id: "comeback.24h",
+        center.removePendingNotificationRequests(withIdentifiers: ["comeback.48h", "comeback.24h"])
+        if streakNudge { scheduleComeback(afterHours: 23, id: "comeback.24h",
                          title: "Keep your streak going",
-                         body: "One small lesson or review before midnight keeps it alive.")
+                         body: "One small lesson or review before midnight keeps it alive.") }
         scheduleComeback(afterHours: 168, id: "comeback.7d",
                          title: "Pick up where you left off",
                          body: "Your next lesson takes about two minutes.")
@@ -98,7 +100,7 @@ import UserNotifications
     /// so the numbers are current as of your latest lesson.
     func scheduleWeeklyRecap(lessons: Int, streak: Int) {
         center.removePendingNotificationRequests(withIdentifiers: ["weekly.recap"])
-        guard enabled, permissionGranted, lessons > 0,
+        guard enabled, weeklyRecap, permissionGranted, lessons > 0,
               let fire = Self.weeklyRecapDate(now: Date()) else { return }
         let content = UNMutableNotificationContent()
         content.title = "Your week in StackSprint"
@@ -119,6 +121,8 @@ import UserNotifications
         return fire
     }
 
+    func cancelWeeklyRecap() { center.removePendingNotificationRequests(withIdentifiers: ["weekly.recap"]) }
+
     // MARK: – Comeback (one-shot, rescheduled after practice)
 
     private func scheduleComeback(afterHours hours: Double, id: String, title: String, body: String) {
@@ -137,10 +141,10 @@ import UserNotifications
         guard enabled, permissionGranted else { return }
         scheduleDailyReminder()
         // Reset comeback timers so they count from NOW
-        center.removePendingNotificationRequests(withIdentifiers: ["comeback.48h"])
-        scheduleComeback(afterHours: 23, id: "comeback.24h",
+        center.removePendingNotificationRequests(withIdentifiers: ["comeback.48h", "comeback.24h"])
+        if streakNudge { scheduleComeback(afterHours: 23, id: "comeback.24h",
                          title: "Keep your streak going",
-                         body: "One small lesson or review before midnight keeps it alive.")
+                         body: "One small lesson or review before midnight keeps it alive.") }
         scheduleComeback(afterHours: 168, id: "comeback.7d",
                          title: "Pick up where you left off",
                          body: "Your next lesson takes about two minutes.")
@@ -222,6 +226,12 @@ struct NotificationSettingsSection: View {
                     }
 
                 if notifications.enabled {
+                    Toggle("Streak reminder", isOn: $notifications.streakNudge)
+                        .onChange(of: notifications.streakNudge) { _, _ in notifications.refreshAfterPractice() }
+                    Toggle("Weekly recap", isOn: $notifications.weeklyRecap)
+                        .onChange(of: notifications.weeklyRecap) { _, on in
+                            if !on { notifications.cancelWeeklyRecap() }
+                        }
                     Button {
                         showTimePicker.toggle()
                     } label: {
@@ -239,7 +249,7 @@ struct NotificationSettingsSection: View {
             Text("Notifications")
         } footer: {
             if notifications.permissionGranted {
-                Text("A daily reminder at your chosen time, plus a nudge if you miss 2 or more days.")
+                Text("Daily reminders skip days you've already practiced. The streak reminder comes the day after you practice, while there's still time; the weekly recap comes on the last evening of the week. Everything is scheduled on your phone.")
             }
         }
         .sheet(isPresented: $showTimePicker) {

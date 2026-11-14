@@ -203,3 +203,41 @@ enum LessonSearch {
             .map(\.element)
     }
 }
+
+// MARK: - Predict the output
+//
+// "Output sprint" asked "What will Python print?" and then showed the lesson's
+// definition, never the output. These outputs were produced by running each
+// example with Python 3; one is used only while the lesson's code is unchanged.
+
+enum PythonOutputs {
+    private static let verified: [String: (code: String, output: String)] = [
+        "python-0": ("stars = 6\nprint(stars)", "6"),
+        "python-1": ("player_score = 8\nprint(player_score)", "8"),
+        "python-2": ("print(\"Launch\", 2)", "Launch 2"),
+        "python-3": ("print(len(\"orbit\"))", "5"),
+        "python-4": ("print(type(\"42\").__name__)", "str"),
+        "python-5": ("tickets = int(\"4\")\nprint(tickets + 2)", "6"),
+        "python-6": ("print(int(float(\"6.8\")))", "6"),
+        "python-7": ("print(int(-6.8))", "-6"),
+        "python-8": ("print(\"Level \" + str(3))", "Level 3"),
+        "python-9": ("gear = [\"map\", \"torch\"]\nprint(len(gear))", "2"),
+        "python-10": ("wins, losses = 3, 1\nprint(wins + losses)", "4"),
+        "python-11": ("print(sum([2, 4, 6]))", "12"),
+    ]
+
+    static func output(for lesson: Lesson) -> String? {
+        guard let entry = verified[lesson.id], entry.code == lesson.code else { return nil }
+        return entry.output
+    }
+
+    /// Forgiving comparison: spacing and surrounding quotes don't matter.
+    static func matches(_ guess: String, _ output: String) -> Bool {
+        func clean(_ s: String) -> String {
+            s.trimmingCharacters(in: .whitespacesAndNewlines)
+                .trimmingCharacters(in: CharacterSet(charactersIn: "\"'\u{201C}\u{201D}\u{2018}\u{2019}"))
+                .split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        }
+        return clean(guess) == clean(output)
+    }
+}
