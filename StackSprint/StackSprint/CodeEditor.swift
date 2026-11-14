@@ -68,7 +68,13 @@ struct CodeEditor: UIViewRepresentable {
                 guard let tv, let coordinator else { return }
                 coordinator.insert(key, in: tv)
             },
-            onDone: { [weak tv] in _ = tv?.resignFirstResponder() }
+            onDone: { [weak tv] in _ = tv?.resignFirstResponder() },
+            onUndo: { [weak tv, weak coordinator] redo in
+                // Phones have no ⌘Z, and shake-to-undo is easy to miss.
+                guard let tv, let coordinator, let manager = tv.undoManager else { return }
+                if redo { if manager.canRedo { manager.redo() } } else if manager.canUndo { manager.undo() }
+                coordinator.textViewDidChange(tv)
+            }
         )
         tv.text = text
         coordinator.highlight(tv)
@@ -379,7 +385,7 @@ final class CodeKeyBar: UIInputView, UIInputViewAudioFeedback {
 
     var enableInputClicksWhenVisible: Bool { true }
 
-    init(onKey: @escaping (String) -> Void, onDone: @escaping () -> Void) {
+    init(onKey: @escaping (String) -> Void, onDone: @escaping () -> Void, onUndo: @escaping (_ redo: Bool) -> Void) {
         super.init(frame: CGRect(x: 0, y: 0, width: 0, height: 50), inputViewStyle: .keyboard)
         autoresizingMask = [.flexibleWidth]
 
@@ -390,6 +396,19 @@ final class CodeKeyBar: UIInputView, UIInputViewAudioFeedback {
         stack.axis = .horizontal
         stack.spacing = 6
         stack.alignment = .fill
+
+        for (symbol, redo, spoken) in [("arrow.uturn.backward", false, "Undo"), ("arrow.uturn.forward", true, "Redo")] {
+            var config = UIButton.Configuration.filled()
+            config.image = UIImage(systemName: symbol, withConfiguration: UIImage.SymbolConfiguration(pointSize: 15, weight: .semibold))
+            config.baseBackgroundColor = UIColor(white: 1, alpha: 0.08)
+            config.baseForegroundColor = .white
+            config.cornerStyle = .medium
+            config.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 11, bottom: 4, trailing: 11)
+            let button = UIButton(configuration: config, primaryAction: UIAction { _ in onUndo(redo) })
+            button.accessibilityLabel = spoken
+            button.widthAnchor.constraint(greaterThanOrEqualToConstant: 40).isActive = true
+            stack.addArrangedSubview(button)
+        }
 
         for key in Self.keys {
             var config = UIButton.Configuration.filled()

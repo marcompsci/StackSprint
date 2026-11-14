@@ -47,20 +47,13 @@ struct WeeklyChallenge: Identifiable {
         return Self.pools[week % 4]
     }
 
-    var activeEventName: String? {
-        let weekday = Calendar.current.component(.weekday, from: Date())
-        if weekday == 7 || weekday == 1 { return "XP Weekend" }
-        return nil
-    }
+    // There used to be an "XP Weekend" that promised double XP; nothing ever doubled it, so it's gone.
 
-    var xpMultiplier: Double { activeEventName != nil ? 2.0 : 1.0 }
-
+    /// Days left in the calendar week the challenges count (the same week their progress uses).
     var daysUntilReset: Int {
         let cal = Calendar.current
-        let today = cal.startOfDay(for: Date())
-        guard let nextMonday = cal.nextDate(after: today, matching: DateComponents(weekday: 2),
-                                            matchingPolicy: .nextTime) else { return 7 }
-        return cal.dateComponents([.day], from: today, to: nextMonday).day ?? 7
+        guard let end = cal.dateInterval(of: .weekOfYear, for: Date())?.end else { return 7 }
+        return max(1, cal.dateComponents([.day], from: cal.startOfDay(for: Date()), to: end).day ?? 7)
     }
 
     func progress(for challenge: WeeklyChallenge, store: LearningStore) -> Int {
@@ -79,24 +72,23 @@ struct WeeklyChallenge: Identifiable {
         UserDefaults.standard.bool(forKey: claimedKey(challenge))
     }
 
-    func markClaimed(_ challenge: WeeklyChallenge) {
+    /// Marks the challenge claimed and pays its reward into the season pass and this week's XP.
+    /// (Claiming used to pay nothing.)
+    func claim(_ challenge: WeeklyChallenge, store: LearningStore, season: SeasonStore) {
+        guard isCompleted(challenge, store: store), !isClaimed(challenge) else { return }
         UserDefaults.standard.set(true, forKey: claimedKey(challenge))
+        season.recordXP(challenge.xpReward)
+        WeeklyXPStore.shared.recordXP(challenge.xpReward)
+        HapticManager.shared.notification(.success)
         objectWillChange.send()
     }
 
     private func claimedKey(_ challenge: WeeklyChallenge) -> String {
-        let week = Calendar.current.component(.weekOfYear, from: Date())
-        return "challenge.claimed.\(challenge.id).w\(week)"
+        let parts = Calendar.current.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
+        return "challenge.claimed.\(challenge.id).\(parts.yearForWeekOfYear ?? 0)w\(parts.weekOfYear ?? 0)"
     }
 
-    private func weekDayKeys() -> [String] {
-        let cal = Calendar.current
-        guard let weekStart = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())) else { return [] }
-        return (0..<7).compactMap { cal.date(byAdding: .day, value: $0, to: weekStart) }.map { date in
-            let c = cal.dateComponents([.year, .month, .day], from: date)
-            return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
-        }
-    }
+    private func weekDayKeys() -> [String] { Array(WeeklyGoalMath.weekKeys(containing: Date())) }
 
     private func practiceDaysThisWeek(store: LearningStore) -> Int {
         let keys = weekDayKeys()
@@ -127,18 +119,13 @@ struct ChallengeBanner: View {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
                         Text("Weekly challenges").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
-                        if let event = challenges.activeEventName {
-                            Text(event).font(.caption.bold())
-                                .padding(.horizontal, 6).padding(.vertical, 2)
-                                .background(Color.yellow.opacity(0.2), in: Capsule())
-                        }
                     }
                     Text("\(completed)/\(active.count) done \u{B7} resets in \(challenges.daysUntilReset)d")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 if claimable > 0 {
-                    Text("+\(claimable) XP")
+                    Text("\(claimable) to claim")
                         .font(.caption.bold())
                         .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(Color.orange.opacity(0.18), in: Capsule())
@@ -166,13 +153,10 @@ struct ChallengesSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    if let event = challenges.activeEventName {
-                        eventBanner(event)
-                    }
                     ForEach(challenges.currentChallenges) { challenge in
                         ChallengeCard(challenge: challenge)
                     }
-                    Text("Challenges reset every Monday \u{B7} \(challenges.daysUntilReset) days left")
+                    Text("Challenges reset when a new week starts \u{B7} \(challenges.daysUntilReset) \(challenges.daysUntilReset == 1 ? "day" : "days") left. Rewards go to your season pass.")
                         .font(.caption).foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.top, 4)
@@ -186,24 +170,12 @@ struct ChallengesSheet: View {
         }
     }
 
-    private func eventBanner(_ name: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: "paperplane.fill").font(.title).symbolRenderingMode(.hierarchical).foregroundStyle(.tint)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(name).font(.headline)
-                Text("All XP rewards are doubled this weekend.").font(.caption).foregroundStyle(.secondary)
-            }
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.yellow.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.yellow.opacity(0.3)))
-    }
 }
 
 private struct ChallengeCard: View {
     @EnvironmentObject var store: LearningStore
     @EnvironmentObject var challenges: ChallengeStore
+    @EnvironmentObject var seasonStore: SeasonStore
     let challenge: WeeklyChallenge
 
     var body: some View {
@@ -220,13 +192,8 @@ private struct ChallengeCard: View {
                     Text(challenge.description).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("+\(Int(Double(challenge.xpReward) * challenges.xpMultiplier)) XP")
-                        .font(.caption.bold()).foregroundStyle(.orange)
-                    if challenges.xpMultiplier > 1 {
-                        Text("2\u{D7} boost!").font(.caption2).foregroundStyle(.yellow)
-                    }
-                }
+                Text("+\(challenge.xpReward) season XP")
+                    .font(.caption.bold()).foregroundStyle(.orange)
             }
             ProgressView(value: pct).tint(done ? .mint : .orange)
                 .animation(.smooth(duration: 0.4), value: pct)
@@ -234,7 +201,7 @@ private struct ChallengeCard: View {
                 Text("\(prog) / \(challenge.goal)").font(.caption.monospaced()).foregroundStyle(.secondary)
                 Spacer()
                 if done && !claimed {
-                    Button("Claim reward") { challenges.markClaimed(challenge) }
+                    Button("Claim reward") { challenges.claim(challenge, store: store, season: seasonStore) }
                         .font(.caption.bold()).buttonStyle(.borderedProminent).tint(.mint)
                 } else if claimed {
                     Label("Claimed", systemImage: "checkmark.circle.fill")

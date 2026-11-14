@@ -15,7 +15,12 @@ import SwiftUI
 
     private init() {
         let d = SynthDelegate { [weak self] in
-            Task { @MainActor in self?.isSpeaking = false }
+            Task { @MainActor in
+                // A cancelled utterance reports in after the next one has started; ignore it then.
+                guard let self, !self.synthesizer.isSpeaking else { return }
+                self.isSpeaking = false
+                self.releaseAudio()
+            }
         }
         delegate = d
         synthesizer.delegate = d
@@ -23,6 +28,10 @@ import SwiftUI
 
     func speak(_ text: String) {
         synthesizer.stopSpeaking(at: .immediate)
+        // Read aloud was silent with the ring/silent switch off, because the app used the
+        // default ambient audio session. Spoken-audio playback is heard, and other audio dips.
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
+        try? AVAudioSession.sharedInstance().setActive(true)
         let utterance = AVSpeechUtterance(string: text)
         let minRate = AVSpeechUtteranceMinimumSpeechRate
         let maxRate = AVSpeechUtteranceMaximumSpeechRate
@@ -32,7 +41,16 @@ import SwiftUI
         isSpeaking = true
     }
 
-    func stop() { synthesizer.stopSpeaking(at: .immediate); isSpeaking = false }
+    func stop() {
+        synthesizer.stopSpeaking(at: .immediate)
+        isSpeaking = false
+        releaseAudio()
+    }
+
+    /// Lets music or podcasts the learner paused come back up.
+    private func releaseAudio() {
+        try? AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
+    }
 
     func toggle(_ text: String) { isSpeaking ? stop() : speak(text) }
 }
@@ -41,6 +59,9 @@ private final class SynthDelegate: NSObject, AVSpeechSynthesizerDelegate {
     let onFinish: () -> Void
     init(onFinish: @escaping () -> Void) { self.onFinish = onFinish }
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        onFinish()
+    }
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
         onFinish()
     }
 }

@@ -7,17 +7,38 @@ import UIKit
 
 final class HapticManager {
     static let shared = HapticManager()
+    static let enabledKey = "haptics.enabled"
     private init() {}
 
+    /// Learners can turn vibrations off in Account; on by default.
+    private var enabled: Bool { UserDefaults.standard.object(forKey: Self.enabledKey) as? Bool ?? true }
+
     func impact(_ style: UIImpactFeedbackGenerator.FeedbackStyle = .medium) {
+        guard enabled else { return }
         UIImpactFeedbackGenerator(style: style).impactOccurred()
     }
 
     func notification(_ type: UINotificationFeedbackGenerator.FeedbackType) {
+        guard enabled else { return }
         UINotificationFeedbackGenerator().notificationOccurred(type)
     }
 
-    func selection() { UISelectionFeedbackGenerator().selectionChanged() }
+    func selection() {
+        guard enabled else { return }
+        UISelectionFeedbackGenerator().selectionChanged()
+    }
+}
+
+struct HapticsSettingsSection: View {
+    @AppStorage(HapticManager.enabledKey) private var enabled = true
+
+    var body: some View {
+        Section {
+            Toggle("Vibrations", isOn: $enabled)
+        } footer: {
+            Text("Short taps when you answer, finish a lesson or press keys in Studio.")
+        }
+    }
 }
 
 // MARK: - Shimmer / Skeleton

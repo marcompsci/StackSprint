@@ -150,13 +150,9 @@ enum TrackQuiz {
         .shuffled(using: &rng)
     }
 
-    /// Handwritten questions that belong to a track (only Web and Cybersecurity are tagged).
+    /// Handwritten questions that belong to a track, by their ID prefix.
     static func curated(track: String, questions: [Question]) -> [Question] {
-        switch track {
-        case "Web development": return questions.filter { $0.id.hasPrefix("web-") }
-        case "Cybersecurity": return questions.filter { $0.id.hasPrefix("cyber-") }
-        default: return []
-        }
+        questions.filter { QuestionBank.track(forQuestionID: $0.id, lessons: []) == track }
     }
 }
 

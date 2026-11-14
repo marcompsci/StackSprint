@@ -320,37 +320,60 @@ struct AnalyticsDashboardView: View {
 struct PracticeHeatmap: View {
     let practicedDays: Set<String>
     private let weeks = 12
-    private let cols = 7
 
-    var body: some View {
-        let days = last84Days()
-        LazyVGrid(columns: Array(repeating: GridItem(.fixed(20), spacing: 4), count: cols), spacing: 4) {
-            ForEach(days, id: \.self) { key in
-                let practiced = practicedDays.contains(key)
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(practiced ? Color.orange : Color.secondary.opacity(0.12))
-                    .frame(width: 20, height: 20)
-                    .overlay {
-                        if practiced {
-                            Image(systemName: "flame.fill")
-                                .font(.system(size: 9)).foregroundStyle(.white)
-                        }
-                    }
+    /// Rows are real calendar weeks, so each column is one weekday (they used to start
+    /// on whatever weekday fell 84 days ago). Days after today are left blank.
+    private var grid: [[String?]] {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        guard let thisWeek = cal.dateInterval(of: .weekOfYear, for: today)?.start,
+              let first = cal.date(byAdding: .weekOfYear, value: -(weeks - 1), to: thisWeek) else { return [] }
+        return (0..<weeks).map { week in
+            (0..<7).map { day -> String? in
+                guard let date = cal.date(byAdding: .day, value: week * 7 + day, to: first), date <= today else { return nil }
+                return StreakMath.key(date, cal)
             }
-        }
-        HStack {
-            Text("12 weeks ago").font(.caption2).foregroundStyle(.secondary)
-            Spacer()
-            Text("Today").font(.caption2).foregroundStyle(.secondary)
         }
     }
 
-    private func last84Days() -> [String] {
-        (0..<(weeks * cols)).reversed().compactMap { offset in
-            Calendar.current.date(byAdding: .day, value: -offset, to: Date())
-        }.map { date in
-            let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
-            return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    private var weekdaySymbols: [String] {
+        let cal = Calendar.current
+        let symbols = cal.veryShortWeekdaySymbols
+        return (0..<7).map { symbols[(cal.firstWeekday - 1 + $0) % 7] }
+    }
+
+    var body: some View {
+        let rows = grid
+        let shown = rows.flatMap { $0 }.compactMap { $0 }
+        let practicedCount = shown.filter(practicedDays.contains).count
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 4) {
+                ForEach(Array(weekdaySymbols.enumerated()), id: \.offset) { _, symbol in
+                    Text(symbol).font(.caption2).foregroundStyle(.secondary).frame(width: 20)
+                }
+            }
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                HStack(spacing: 4) {
+                    ForEach(Array(row.enumerated()), id: \.offset) { _, key in
+                        let practiced = key.map(practicedDays.contains) ?? false
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(key == nil ? Color.clear : (practiced ? Color.orange : Color.secondary.opacity(0.12)))
+                            .frame(width: 20, height: 20)
+                            .overlay {
+                                if practiced {
+                                    Image(systemName: "flame.fill").font(.system(size: 9)).foregroundStyle(.white)
+                                }
+                            }
+                    }
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Practiced on \(practicedCount) of the last \(shown.count) days")
+        HStack {
+            Text("\(weeks) weeks ago").font(.caption2).foregroundStyle(.secondary)
+            Spacer()
+            Text("This week").font(.caption2).foregroundStyle(.secondary)
         }
     }
 }

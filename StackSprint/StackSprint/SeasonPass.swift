@@ -128,10 +128,20 @@ struct DailyMission: Identifiable, Codable, Equatable {
         DailyMission(id: "dm-recall-3",   emoji: "brain.head.profile", title: "Memory Master",   description: "Get 3 correct recall answers",     goal: 3,  xpReward: 45,  type: .recall),
         DailyMission(id: "dm-recall-5",   emoji: "scope", title: "Recall Sprint",   description: "Get 5 correct recall answers",     goal: 5,  xpReward: 75,  type: .recall),
         DailyMission(id: "dm-streak-1",   emoji: "calendar", title: "Keep It Going",   description: "Maintain your streak today",       goal: 1,  xpReward: 20,  type: .streak),
-        DailyMission(id: "dm-quiz-3",     emoji: "checkmark.circle.fill", title: "Quiz Quickshot",  description: "Answer 3 adaptive quiz questions", goal: 3,  xpReward: 40,  type: .quiz),
+        DailyMission(id: "dm-quiz-3",     emoji: "checkmark.circle.fill", title: "Quiz Quickshot",  description: "Answer 3 quiz questions right",    goal: 3,  xpReward: 40,  type: .quiz),
         DailyMission(id: "dm-lessons-10", emoji: "paperplane.fill", title: "Full Sprint",     description: "Complete 10 lessons today",        goal: 10, xpReward: 120, type: .lessons),
         DailyMission(id: "dm-recall-10",  emoji: "lightbulb.fill", title: "Recall Ace",      description: "Get 10 correct recall answers",   goal: 10, xpReward: 150, type: .recall),
     ]
+
+    /// Real progress toward the mission today. Missions used to have a "Done" button
+    /// that paid out XP whether or not you'd done anything.
+    static func progress(type: MissionType, lessonsToday: Int, quizAnswersToday: Int, practicedToday: Bool) -> Int {
+        switch type {
+        case .lessons: return lessonsToday
+        case .recall, .quiz: return quizAnswersToday
+        case .streak: return practicedToday ? 1 : 0
+        }
+    }
 
     // Deterministic rotation: 3 missions per day based on day-of-year
     static func todaysMissions() -> [DailyMission] {
@@ -258,6 +268,7 @@ struct DailyMission: Identifiable, Codable, Equatable {
 
 struct SeasonView: View {
     @EnvironmentObject var seasonStore: SeasonStore
+    @EnvironmentObject var store: LearningStore
     @EnvironmentObject var premiumStore: PremiumStore
 
     var body: some View {
@@ -336,6 +347,9 @@ struct SeasonView: View {
 
             ForEach(seasonStore.dailyMissions) { mission in
                 MissionRow(mission: mission,
+                           progress: DailyMission.progress(type: mission.type, lessonsToday: store.lessonsToday,
+                                                           quizAnswersToday: store.quizAnswersToday,
+                                                           practicedToday: store.practicedToday),
                            isCompleted: seasonStore.missionCompleted(mission)) {
                     seasonStore.completeMission(mission)
                 }
@@ -377,6 +391,7 @@ struct SeasonView: View {
 
 private struct MissionRow: View {
     let mission: DailyMission
+    let progress: Int
     let isCompleted: Bool
     let onComplete: () -> Void
 
@@ -386,6 +401,10 @@ private struct MissionRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(mission.title).font(.subheadline.bold())
                 Text(mission.description).font(.caption).foregroundStyle(.secondary)
+                if !isCompleted {
+                    ProgressView(value: Double(min(progress, mission.goal)), total: Double(mission.goal))
+                        .tint(.orange).frame(maxWidth: 140)
+                }
             }
             Spacer()
             if isCompleted {
@@ -393,9 +412,14 @@ private struct MissionRow: View {
             } else {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("+\(mission.xpReward) XP").font(.caption.bold()).foregroundStyle(.orange)
-                    Button("Done") { withAnimation(.smooth) { onComplete() } }
-                        .font(.caption.bold()).buttonStyle(.borderedProminent).tint(.orange)
-                        .controlSize(.mini)
+                    if progress >= mission.goal {
+                        Button("Claim") { withAnimation(.smooth) { onComplete() } }
+                            .font(.caption.bold()).buttonStyle(.borderedProminent).tint(.orange)
+                            .controlSize(.mini)
+                    } else {
+                        Text("\(min(progress, mission.goal))/\(mission.goal)")
+                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                    }
                 }
             }
         }
@@ -403,7 +427,7 @@ private struct MissionRow: View {
         .background(isCompleted ? Color.mint.opacity(0.07) : SprintPalette.card,
                     in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(mission.title): \(mission.description), \(mission.xpReward) XP. \(isCompleted ? "Completed" : "Not completed")")
+        .accessibilityLabel("\(mission.title): \(mission.description), \(mission.xpReward) XP. \(isCompleted ? "Claimed" : "\(min(progress, mission.goal)) of \(mission.goal) done")")
     }
 }
 

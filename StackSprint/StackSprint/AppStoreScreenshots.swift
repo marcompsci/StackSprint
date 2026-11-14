@@ -26,7 +26,6 @@ enum AppStoreCopy {
 
     STAY MOTIVATED
     • Daily streaks, XP, and computer pacers to race
-    • Weekly challenges with XP Weekend double-XP events
     • Head-to-head quiz races through Game Center
 
     GO PRO (auto-renewing subscription)

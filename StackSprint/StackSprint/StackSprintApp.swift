@@ -57,7 +57,7 @@ import WebKit
                     if let lessons = store.curriculum?.lessons { indexLessonsInSpotlight(lessons) }
                     // Donate Siri Shortcuts
                     StackSprintShortcuts.updateAppShortcutParameters()
-                    store.onPractice = { [weak notifications, weak store, weak backend, weak celebrations, weak seasonStore] in
+                    store.onPractice = { [weak notifications, weak store, weak backend, weak celebrations, weak seasonStore] xp in
                         notifications?.refreshAfterPractice()
                         if let total = store?.curriculum?.lessons.count, total > 0,
                            let done = store?.completed.count {
@@ -70,9 +70,9 @@ import WebKit
                         if let s = store { writeWatchData(store: s) }
                         if let s = store { celebrations?.check(store: s) }
                         if let s = store { ReviewManager.shared.checkAndRequest(store: s) }
-                        seasonStore?.recordXP(10)
+                        seasonStore?.recordXP(xp)
                         // Achievement + weekly XP
-                        WeeklyXPStore.shared.recordXP(10)
+                        WeeklyXPStore.shared.recordXP(xp)
                         if let s = store {
                             let hour = Calendar.current.component(.hour, from: Date())
                             let ctx = AchievementContext(
@@ -206,9 +206,8 @@ struct RootView: View {
             if hasChallenge { showingChallenge = true }
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active, let lastDate = store.lastPracticedDate {
-                WeeklyXPStore.shared.applyDecayIfNeeded(lastPracticed: lastDate)
-            }
+            // Start a fresh week if one began while the app was in the background.
+            if phase == .active { WeeklyXPStore.shared.checkWeekReset() }
         }
         .overlay {
             if let achievement = achievementStore.latestUnlock {
@@ -1528,7 +1527,7 @@ struct ProjectPlaygroundView: View {
                 lines.append(missionIndex + 1 < missions.count
                              ? "Mission complete. \(missions[missionIndex + 1].title) is unlocked."
                              : "Every \(track == .design ? "CSS" : "JavaScript") mission is complete.")
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                HapticManager.shared.notification(.success)
             } else if let firstMiss = result.passed.firstIndex(of: false) {
                 openStep = firstMiss + 1
             }
@@ -1704,6 +1703,13 @@ struct LearnView: View {
                 Spacer(minLength: 8)
                 Text(lesson.term).font(.headline).foregroundStyle(.primary).multilineTextAlignment(.leading)
                 Text(cardLabel(lesson)).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                if let level = lesson.difficulty {
+                    Text(level.capitalized)
+                        .font(.caption2.weight(.semibold))
+                        .padding(.horizontal, 7).padding(.vertical, 3)
+                        .background(Color.secondary.opacity(0.14), in: Capsule())
+                        .foregroundStyle(.secondary)
+                }
                 Text(done ? "Mastered \u{B7} tap to replay" : "Tap to power up \u{2192}").font(.caption.bold()).foregroundStyle(color)
             }
             .padding(16).frame(maxWidth: .infinity, minHeight: 160, alignment: .leading)
@@ -1714,7 +1720,17 @@ struct LearnView: View {
                         lineWidth: selectedID == lesson.id ? 2 : 1.2))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(lesson.term), \(cardLabel(lesson)). \(done ? "Completed" : "Not completed")")
+        .contextMenu {
+            // Lessons Bite generated can be removed; built-in ones can't.
+            if category == myLessonsCategory {
+                Button("Delete this lesson", systemImage: "trash", role: .destructive) {
+                    if selectedID == lesson.id { selectedID = nil }
+                    customLessons.remove(lesson)
+                    if customLessons.lessons.isEmpty { category = store.tracks.first ?? "Web development" }
+                }
+            }
+        }
+        .accessibilityLabel("\(lesson.term), \(cardLabel(lesson))\(lesson.difficulty.map { ", \($0)" } ?? ""). \(done ? "Completed" : "Not completed")")
         .accessibilityHint("Shows a preview and start button")
     }
 
@@ -2061,6 +2077,7 @@ struct LessonView: View {
     @State private var result: CodeCheck.Result?
     @State private var failedAttempts = 0
     @State private var graded = false
+    @State private var showingTutor = false
 
     private var language: CodeLanguage { .forLessonCategory(lesson.category) }
     private var solved: Bool { result == .match || (lesson.code.isEmpty && graded) }
@@ -2079,22 +2096,29 @@ struct LessonView: View {
                 }.buttonStyle(.borderedProminent)
                 if revealed {
                     Text(lesson.definition).font(.title3)
+                    ReadAloudButton(text: "\(lesson.term). \(lesson.definition)")
                     LessonNoteEditor(lessonID: lesson.id)
                         .padding(12)
                         .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     if !lesson.code.isEmpty { practiceArea } else { conceptArea }
                     if solved { nextStep }
+                    if SystemLanguageModel.default.isAvailable {
+                        Button("Ask Bite about this lesson", systemImage: "sparkles") { showingTutor = true }
+                            .buttonStyle(.bordered).tint(.mint)
+                    }
                     NavigationLink("Open hands-on studio \u{2192}") { StudioView() }
                 }
             }.padding(24).frame(maxWidth: 700)
         }.modifier(SprintTheme()).navigationTitle(lesson.term)
         .toolbar { ToolbarItem(placement: .topBarTrailing) { BookmarkButton(lessonID: lesson.id) } }
+        .sheet(isPresented: $showingTutor) { AITutorView(lesson: lesson) }
         .onAppear { code = UserDefaults.standard.string(forKey: "draft.\(lesson.id)") ?? "" }
         .onChange(of: code) { _, value in
             UserDefaults.standard.set(value, forKey: "draft.\(lesson.id)")
             if result != nil && result != .match { result = nil }
         }
         .onDisappear {
+            VoiceManager.shared.stop() // don't keep reading after you've left the lesson
             // Tried and didn't solve it: schedule it again for tomorrow (one grade per visit).
             if !graded && failedAttempts > 0 {
                 SM2Engine.shared.recordReview(lessonID: lesson.id, quality: ReviewGrade.unsolved)
@@ -2294,10 +2318,12 @@ struct QuizView: View {
         if choice == q.answer {
             score += 1
             store.recordDailyRecall(q.id)
+            AdaptiveEngine.shared.recordCorrect(q.id)
             HapticManager.shared.notification(.success)
             AccessibilityNotification.Announcement("Correct").post()
         } else {
             missed.append(q)
+            AdaptiveEngine.shared.recordWrong(q.id)
             if let lessonID = TrackQuiz.lessonID(forQuestion: q.id) {
                 SM2Engine.shared.recordReview(lessonID: lessonID, quality: ReviewGrade.unsolved)
             }
@@ -2453,6 +2479,7 @@ struct AccountView: View {
             GoalSettingsSection()
             NotificationSettingsSection(notifications: notifications)
             VoiceSpeedSection()
+            HapticsSettingsSection()
             if CloudKitSyncManager.isAvailable { CloudSyncSection() }
             Section {
                 if premiumStore.isPro {

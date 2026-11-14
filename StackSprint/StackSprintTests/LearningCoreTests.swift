@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import CoreGraphics
 @testable import StackSprint
 
 // MARK: - Streaks
@@ -184,11 +185,12 @@ struct TrackQuizTests {
         #expect(a.map(\.choices) == b.map(\.choices))
     }
 
-    @Test func curatedOnlyForTaggedTracks() throws {
+    @Test func curatedMatchesTracksByPrefix() throws {
         let curriculum = try Curriculum.load()
         #expect(TrackQuiz.curated(track: "Web development", questions: curriculum.questions).count == 25)
         #expect(TrackQuiz.curated(track: "Cybersecurity", questions: curriculum.questions).count == 25)
-        #expect(TrackQuiz.curated(track: "Go", questions: curriculum.questions).isEmpty)
+        #expect(TrackQuiz.curated(track: "Go", questions: curriculum.questions).count == 4)
+        #expect(TrackQuiz.curated(track: "Python", questions: curriculum.questions).isEmpty)
     }
 }
 
@@ -357,7 +359,8 @@ struct PolishTests {
         #expect(store.tracks.count == 9)
         #expect(store.tracks.first == "Web development")
         #expect(store.quiz(for: "Web development").count == 25 + 12)
-        #expect(store.quiz(for: "Go").count == 10)
+        #expect(store.quiz(for: "Go").count == 4 + 10)
+        #expect(store.quiz(for: "Python").count == 12)
         #expect(store.progress(in: "Rust").total == 10)
     }
 
@@ -369,5 +372,81 @@ struct PolishTests {
         let backup = try ProgressBackup.decode(Data(json.utf8))
         #expect(backup.lessonActivity == nil)
         #expect(backup.completedLessons == ["web-html"])
+    }
+}
+
+
+// MARK: - Phases 26–40
+
+@Suite("Honest rewards")
+@MainActor
+struct HonestRewardTests {
+    @Test func everyQuestionHasATrack() throws {
+        let curriculum = try Curriculum.load()
+        for q in curriculum.questions {
+            #expect(QuestionBank.track(forQuestionID: q.id, lessons: curriculum.lessons) != nil, "\(q.id)")
+        }
+        #expect(QuestionBank.track(forQuestionID: "cyber-3", lessons: []) == "Cybersecurity")
+        #expect(QuestionBank.track(forQuestionID: "term-web-html", lessons: curriculum.lessons) == "Web development")
+    }
+
+    @Test func freeTracksNeverIncludeProQuestions() throws {
+        let store = LearningStore()
+        let free = store.tracks.filter { !PremiumStore.proTracks.contains($0) }
+        let pool = free.flatMap { store.quiz(for: $0) }
+        let curriculum = try Curriculum.load()
+        for q in pool {
+            let track = QuestionBank.track(forQuestionID: q.id, lessons: curriculum.lessons)
+            #expect(!PremiumStore.proTracks.contains(track ?? ""), "\(q.id)")
+        }
+    }
+
+    @Test func missionsNeedRealProgress() {
+        #expect(DailyMission.progress(type: .lessons, lessonsToday: 2, quizAnswersToday: 9, practicedToday: true) == 2)
+        #expect(DailyMission.progress(type: .recall, lessonsToday: 2, quizAnswersToday: 9, practicedToday: true) == 9)
+        #expect(DailyMission.progress(type: .streak, lessonsToday: 0, quizAnswersToday: 0, practicedToday: false) == 0)
+    }
+
+    @Test func weeklyXPOnlyGrows() {
+        let weekly = WeeklyXPStore.shared
+        let before = weekly.weeklyXP
+        weekly.recordXP(10)
+        weekly.recordXP(-50)
+        #expect(weekly.weeklyXP == before + 10)
+        #expect(weekly.daysUntilReset >= 1 && weekly.daysUntilReset <= 7)
+    }
+}
+
+@Suite("Tutor and portfolio")
+@MainActor
+struct TutorPortfolioTests {
+    private let lesson = Lesson(id: "x", term: "Closures", category: "Swift", clue: "", definition: "Functions that capture values.",
+                                code: "let add = { $0 + 1 }", difficulty: "beginner")
+
+    @Test func tutorKnowsTheLesson() {
+        let text = TutorViewModel.instructions(for: lesson)
+        #expect(text.contains("Closures"))
+        #expect(text.contains("let add"))
+        #expect(!TutorViewModel.instructions(for: nil).contains("studying"))
+    }
+
+    @Test func portfolioListsMissionsAndPrintsLight() {
+        let data = PortfolioData(displayName: "Omari <dev>", completedLessons: [lesson], streak: 3, xp: 40,
+                                 generatedDate: Date(), studioMissions: ["CSS · Palette Pop"])
+        let screen = PortfolioGenerator.html(from: data)
+        let print = PortfolioGenerator.html(from: data, forPrint: true)
+        #expect(screen.contains("Studio missions"))
+        #expect(screen.contains("Omari &lt;dev&gt;"))
+        #expect(print.contains("--bg: #ffffff"))
+        #expect(!screen.contains("--bg: #ffffff"))
+    }
+
+    @Test func longPortfolioSpansPages() throws {
+        let many = (0..<80).map { Lesson(id: "l\($0)", term: "Term \($0)", category: "Web development", clue: "",
+                                        definition: String(repeating: "A long explanation. ", count: 6), code: "", difficulty: nil) }
+        let data = PortfolioData(displayName: "Me", completedLessons: many, streak: 1, xp: 800, generatedDate: Date())
+        let pdf = try #require(PortfolioGenerator.pdf(from: data))
+        let pages = CGPDFDocument(CGDataProvider(data: pdf as CFData)!)?.numberOfPages ?? 0
+        #expect(pages > 1)
     }
 }

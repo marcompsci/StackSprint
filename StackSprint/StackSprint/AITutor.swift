@@ -20,15 +20,30 @@ struct ChatMessage: Identifiable {
     var errorMessage: String?
 
     private var session: LanguageModelSession?
+    /// The lesson the learner opened the tutor from, if any.
+    var lesson: Lesson?
 
     func resetSession() {
-        session = LanguageModelSession(instructions: """
+        session = LanguageModelSession(instructions: Self.instructions(for: lesson))
+    }
+
+    static func instructions(for lesson: Lesson?) -> String {
+        var text = """
             You are Bite, a friendly AI coding tutor inside StackSprint. \
             Help learners understand coding concepts concisely and encouragingly. \
             Keep answers under 120 words. Use simple language. \
             Show a short code snippet when helpful. \
             Never discuss topics outside software development and learning.
-            """)
+            """
+        if let lesson {
+            text += """
+
+                The learner is studying the \(lesson.category) lesson "\(lesson.term)": \(lesson.definition)
+                """
+            if !lesson.code.isEmpty { text += "\nIts example code is:\n\(lesson.code)" }
+            text += "\nRelate answers to this lesson when it helps, but don't just recite it."
+        }
+        return text
     }
 
     func send(_ text: String) async {
@@ -49,11 +64,10 @@ struct ChatMessage: Identifiable {
             }
             messages.append(ChatMessage(role: .assistant, text: streamingText))
             streamingText = ""
-        } catch LanguageModelSession.GenerationError.exceededContextWindowSize {
-            resetSession()
-            errorMessage = "Conversation reset (context full). Please ask again."
         } catch {
-            errorMessage = error.localizedDescription
+            if case LanguageModelSession.GenerationError.exceededContextWindowSize = error { resetSession() }
+            errorMessage = AIErrorText.message(for: error)
+            streamingText = ""
         }
         isGenerating = false
     }
@@ -64,6 +78,7 @@ struct ChatMessage: Identifiable {
 struct AITutorView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var vm = TutorViewModel()
+    var lesson: Lesson? = nil
     @State private var input = ""
     @FocusState private var inputFocused: Bool
 
@@ -72,7 +87,8 @@ struct AITutorView: View {
     var body: some View {
         NavigationStack {
             modelBody
-                .navigationTitle("Bite AI Tutor")
+                .onAppear { if vm.lesson == nil, let lesson { vm.lesson = lesson } }
+                .navigationTitle(lesson.map { "Bite · \($0.term)" } ?? "Bite AI Tutor")
                 .navigationBarTitleDisplayMode(.inline)
                 .modifier(SprintTheme())
                 .toolbar {
@@ -181,7 +197,7 @@ struct AITutorView: View {
                 .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 .padding(.horizontal)
             VStack(spacing: 8) {
-                ForEach(quickPrompts, id: \.self) { prompt in
+                ForEach(prompts, id: \.self) { prompt in
                     Button(prompt) { Task { await vm.send(prompt) } }
                         .font(.subheadline)
                         .padding(.horizontal, 16).padding(.vertical, 9)
@@ -201,6 +217,13 @@ struct AITutorView: View {
                 .multilineTextAlignment(.center).padding(.horizontal, 32)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var prompts: [String] {
+        guard let lesson else { return quickPrompts }
+        return ["Explain \(lesson.term) another way",
+                "Give me a real-world example of \(lesson.term)",
+                lesson.code.isEmpty ? "Quiz me on \(lesson.term)" : "Walk me through the example line by line"]
     }
 
     private let quickPrompts = [
@@ -262,6 +285,33 @@ private struct ThinkingDots: View {
                 try? await Task.sleep(for: .milliseconds(350))
                 phase = (phase + 1) % 3
             }
+        }
+    }
+}
+
+// MARK: - Friendly AI errors
+
+/// Plain-language messages for on-device model failures, instead of raw system errors.
+enum AIErrorText {
+    static func message(for error: Error) -> String {
+        guard let generation = error as? LanguageModelSession.GenerationError else {
+            return "Bite couldn't answer just now. Try again."
+        }
+        switch generation {
+        case .exceededContextWindowSize:
+            return "That conversation got too long, so Bite started fresh. Ask again."
+        case .guardrailViolation:
+            return "Bite can't help with that one. Try asking about code, a lesson or a bug."
+        case .unsupportedLanguageOrLocale:
+            return "Bite doesn't understand that language yet. Try asking in English."
+        case .assetsUnavailable:
+            return "Apple Intelligence is still getting ready on this device. Try again in a little while."
+        case .refusal:
+            return "Bite couldn't answer that. Try rephrasing the question."
+        case .rateLimited, .concurrentRequests:
+            return "Bite is busy for a moment. Try again in a few seconds."
+        default:
+            return "Bite couldn't answer just now. Try again."
         }
     }
 }

@@ -85,7 +85,8 @@ struct ProgressRow: Codable {
     private var quizCache: [String: [Question]] = [:]
     @Published var error: String?
     private var namespace = "guest"
-    var onPractice: (() -> Void)?
+    /// Runs when XP is earned; the argument is the XP gained (10 per lesson, 5 per quiz answer).
+    var onPractice: ((Int) -> Void)?
     /// Runs whenever today counts as practiced, including replays that earn no new XP,
     /// so reminders and widgets know the learner showed up.
     var onActivity: (() -> Void)?
@@ -150,7 +151,7 @@ struct ProgressRow: Codable {
         practicedDays.insert(Self.dayKey(Date()))
         lessonActivity.insert("\(Self.dayKey(Date()))|\(id)")
         persist()
-        onPractice?()
+        onPractice?(10)
         onActivity?()
     }
 
@@ -178,6 +179,10 @@ struct ProgressRow: Codable {
     /// Lessons finished or practiced this week (Monday or Sunday start, per the user's calendar).
     var lessonsThisWeek: Int { WeeklyGoalMath.lessons(in: lessonActivity, weekOf: Date()) }
 
+    /// Lessons finished or practiced today, and quiz questions answered right today.
+    var lessonsToday: Int { lessonActivity.filter { $0.hasPrefix(Self.dayKey(Date()) + "|") }.count }
+    var quizAnswersToday: Int { correctRecallAnswers.filter { $0.hasPrefix(Self.dayKey(Date()) + "|") }.count }
+
     var practicedToday: Bool { practicedDays.contains(Self.dayKey(Date())) }
 
     func recordDailyRecall(_ questionID: String) {
@@ -186,7 +191,7 @@ struct ProgressRow: Codable {
         correctRecallAnswers.insert(key)
         practicedDays.insert(Self.dayKey(Date()))
         persist()
-        onPractice?()
+        onPractice?(5)
         onActivity?()
     }
 

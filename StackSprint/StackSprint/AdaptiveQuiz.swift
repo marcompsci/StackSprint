@@ -4,6 +4,8 @@ import SwiftUI
 // MARK: - Adaptive Quiz Engine
 
 @MainActor final class AdaptiveEngine: ObservableObject {
+    /// Shared so every quiz (Challenge Mode, track quizzes, Practice) feeds the same weak-spot data.
+    static let shared = AdaptiveEngine()
     // wrong attempt counts per question ID, persisted to UserDefaults
     @Published private(set) var wrongCounts: [String: Int] = {
         UserDefaults.standard.dictionary(forKey: "adaptive.wrongCounts") as? [String: Int] ?? [:]
@@ -36,34 +38,19 @@ import SwiftUI
         return picked.prefix(count).map { $0 }
     }
 
-    // Weak topics: categories where user got most questions wrong
+    /// Tracks where the learner has missed the most questions.
     func weakTopics(questions: [Question], curriculum: [Lesson]) -> [WeakTopic] {
         var catWrong: [String: Int] = [:]
         var catTotal: [String: Int] = [:]
-
         for q in questions {
-            // Match question to category via shared term in id prefix (best-effort)
-            let cat = inferCategory(q.id, curriculum: curriculum)
+            guard let cat = QuestionBank.track(forQuestionID: q.id, lessons: curriculum) else { continue }
             catTotal[cat, default: 0] += 1
             catWrong[cat, default: 0] += (wrongCounts[q.id] ?? 0)
         }
-
         return catWrong
             .filter { $0.value > 0 }
             .map { WeakTopic(category: $0.key, wrongCount: $0.value, totalQuestions: catTotal[$0.key] ?? 1) }
             .sorted { $0.wrongCount > $1.wrongCount }
-    }
-
-    private func inferCategory(_ questionID: String, curriculum: [Lesson]) -> String {
-        if questionID.hasPrefix("q-ts")        { return "TypeScript" }
-        if questionID.hasPrefix("q-react")     { return "React" }
-        if questionID.hasPrefix("q-swift")     { return "Swift" }
-        if questionID.hasPrefix("q-cyber")     { return "Cybersecurity" }
-        if questionID.hasPrefix("q-py")        { return "Python" }
-        if questionID.hasPrefix("q-go")        { return "Go" }
-        if questionID.hasPrefix("q-rust")      { return "Rust" }
-        if questionID.hasPrefix("q-interview") { return "Interview Prep" }
-        return "Web development"
     }
 
     private func persist() {
@@ -83,7 +70,7 @@ struct WeakTopic: Identifiable {
 
 struct AdaptiveQuizView: View {
     @EnvironmentObject var store: LearningStore
-    @StateObject private var engine = AdaptiveEngine()
+    @ObservedObject private var engine = AdaptiveEngine.shared
     @Environment(\.dismiss) private var dismiss
 
     @State private var questions: [Question] = []
@@ -91,17 +78,18 @@ struct AdaptiveQuizView: View {
     @State private var selected: Int?
     @State private var score = 0
     @State private var done = false
-    @State private var category: QuizCategory = .mixed
+    @EnvironmentObject var premiumStore: PremiumStore
+    /// "Mixed" or a track name. Only tracks the learner can open are offered.
+    @State private var category = Self.mixed
+    static let mixed = "Mixed (adaptive)"
 
-    enum QuizCategory: String, CaseIterable, Identifiable {
-        case mixed = "Mixed (adaptive)"
-        case webDev = "Web Dev"
-        case python = "Python"
-        case cyber = "Cybersecurity"
-        case typescript = "TypeScript"
-        case react = "React"
-        case swift = "Swift"
-        var id: String { rawValue }
+    private var unlockedTracks: [String] {
+        store.tracks.filter { premiumStore.isPro || !PremiumStore.proTracks.contains($0) }
+    }
+    /// Every track's questions (handwritten + term questions), never from a locked track.
+    private var pool: [Question] {
+        let tracks = category == Self.mixed ? unlockedTracks : unlockedTracks.filter { $0 == category }
+        return tracks.flatMap { store.quiz(for: $0) }
     }
 
     var body: some View {
@@ -140,7 +128,7 @@ struct AdaptiveQuizView: View {
                 }
 
                 // Weakness report
-                let topics = engine.weakTopics(questions: store.curriculum?.questions ?? [],
+                let topics = engine.weakTopics(questions: unlockedTracks.flatMap { store.quiz(for: $0) },
                                                curriculum: store.curriculum?.lessons ?? [])
                 if !topics.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
@@ -158,9 +146,8 @@ struct AdaptiveQuizView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Choose a focus").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                     Picker("Category", selection: $category) {
-                        ForEach(QuizCategory.allCases) { cat in
-                            Text(cat.rawValue).tag(cat)
-                        }
+                        Text(Self.mixed).tag(Self.mixed)
+                        ForEach(unlockedTracks, id: \.self) { Text($0).tag($0) }
                     }
                     .pickerStyle(.menu)
                     .padding(12)
@@ -260,7 +247,7 @@ struct AdaptiveQuizView: View {
                     Text(scoreMessage).font(.subheadline).foregroundStyle(.secondary)
                 }
 
-                let topics = engine.weakTopics(questions: store.curriculum?.questions ?? [],
+                let topics = engine.weakTopics(questions: unlockedTracks.flatMap { store.quiz(for: $0) },
                                                curriculum: store.curriculum?.lessons ?? [])
                 if !topics.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
@@ -288,19 +275,7 @@ struct AdaptiveQuizView: View {
     // MARK: – Helpers
 
     private func startQuiz() {
-        let all = store.curriculum?.questions ?? []
-        let filtered: [Question] = {
-            switch category {
-            case .mixed:      return all
-            case .webDev:     return all.filter { $0.id.hasPrefix("q-web") || (!$0.id.hasPrefix("q-ts") && !$0.id.hasPrefix("q-react") && !$0.id.hasPrefix("q-swift") && !$0.id.hasPrefix("q-py") && !$0.id.hasPrefix("q-cyber")) }
-            case .python:     return all.filter { $0.id.hasPrefix("q-py") }
-            case .cyber:      return all.filter { $0.id.hasPrefix("q-cyber") }
-            case .typescript: return all.filter { $0.id.hasPrefix("q-ts") }
-            case .react:      return all.filter { $0.id.hasPrefix("q-react") }
-            case .swift:      return all.filter { $0.id.hasPrefix("q-swift") }
-            }
-        }()
-        questions = engine.sortedSession(filtered.isEmpty ? all : filtered)
+        questions = engine.sortedSession(pool)
         index = 0; score = 0; selected = nil; done = false
     }
 
@@ -351,5 +326,23 @@ struct WeaknessRow: View {
                 .foregroundStyle(topic.accuracy > 0.7 ? .mint : .orange)
                 .frame(width: 38, alignment: .trailing)
         }
+    }
+}
+
+// MARK: - Which track a question belongs to
+
+enum QuestionBank {
+    private static let prefixes: [(String, String)] = [
+        ("web-", "Web development"), ("cyber-", "Cybersecurity"), ("q-ts", "TypeScript"),
+        ("q-react", "React"), ("q-swift", "Swift"), ("q-go", "Go"), ("q-rust", "Rust"),
+        ("q-interview", "Interview Prep"), ("q-py", "Python"),
+    ]
+
+    /// The track for a handwritten or generated question, or nil if it can't be told.
+    static func track(forQuestionID id: String, lessons: [Lesson]) -> String? {
+        if let lessonID = TrackQuiz.lessonID(forQuestion: id) {
+            return lessons.first { $0.id == lessonID }?.category
+        }
+        return prefixes.first { id.hasPrefix($0.0) }?.1
     }
 }

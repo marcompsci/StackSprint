@@ -53,7 +53,7 @@ private struct StudioKey: View {
             .offset(y: travel)
             .padding(.bottom, depth)
         .animation(reduceMotion ? nil : .spring(response: 0.16, dampingFraction: 1), value: pressed)
-        .sensoryFeedback(.impact(weight: .light, intensity: 0.8), trigger: configuration.isPressed) { _, isDown in isDown && isEnabled }
+        .sensoryFeedback(.impact(weight: .light, intensity: 0.8), trigger: configuration.isPressed) { _, isDown in isDown && isEnabled && (UserDefaults.standard.object(forKey: HapticManager.enabledKey) as? Bool ?? true) }
         .contentShape(shape)
     }
 
@@ -611,7 +611,7 @@ struct StudioSplitHandle: View {
                 }
                 .onEnded { _ in startFraction = nil }
         )
-        .sensoryFeedback(.selection, trigger: dragging)
+        .sensoryFeedback(.selection, trigger: dragging) { _, _ in UserDefaults.standard.object(forKey: HapticManager.enabledKey) as? Bool ?? true }
         .accessibilityElement()
         .accessibilityLabel("Resize editor and preview")
         .accessibilityValue("\(Int(fraction * 100)) percent editor")

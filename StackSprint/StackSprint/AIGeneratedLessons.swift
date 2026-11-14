@@ -64,8 +64,6 @@ struct GeneratedLesson {
     let categories = ["Swift", "Python", "TypeScript", "React", "Go", "Rust",
                       "Web development", "Cybersecurity", "Interview Prep", "Custom"]
 
-    private var session: LanguageModelSession?
-
     func generate() async {
         guard !topic.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         guard case .available = SystemLanguageModel.default.availability else {
@@ -76,26 +74,32 @@ struct GeneratedLesson {
         error = nil
         savedLesson = nil
 
-        if session == nil {
-            session = LanguageModelSession(instructions: """
-                You are Bite, a coding tutor assistant inside StackSprint. \
-                Generate concise, beginner-friendly coding lessons. \
-                Always use clear language and practical code examples. \
-                Category context: \(category).
-                """)
-        }
+        // A fresh session for every lesson: reusing one kept the first category in its
+        // instructions and grew the transcript until generation failed.
+        let session = LanguageModelSession(instructions: """
+            You are Bite, a coding tutor assistant inside StackSprint. \
+            Generate concise, beginner-friendly coding lessons. \
+            Always use clear language and practical code examples. \
+            Category context: \(category).
+            """)
         do {
             let prompt = """
                 Create a StackSprint lesson card for the following topic in \(category): "\(topic)".
                 The code example should be in \(codeLanguage) syntax.
                 Keep everything concise and educational.
                 """
-            let response = try await session!.respond(to: prompt, generating: GeneratedLesson.self)
-            preview = response.content
+            let response = try await session.respond(to: prompt, generating: GeneratedLesson.self)
+            let lesson = response.content
+            if lesson.term.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                || lesson.definition.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                error = "Bite's lesson came back incomplete. Try again or reword the topic."
+            } else {
+                preview = lesson
+            }
         } catch LanguageModelSession.GenerationError.refusal(let refusal, _) {
             error = (try? await refusal.explanation.content) ?? "Bite couldn't generate a lesson for that topic."
         } catch {
-            self.error = error.localizedDescription
+            self.error = AIErrorText.message(for: error)
         }
         isGenerating = false
     }
@@ -104,11 +108,11 @@ struct GeneratedLesson {
         guard let gen = preview else { return }
         let lesson = Lesson(
             id: "custom-\(UUID().uuidString.prefix(8).lowercased())",
-            term: gen.term,
+            term: gen.term.trimmingCharacters(in: .whitespacesAndNewlines),
             category: "My Lessons",
-            clue: gen.clue,
-            definition: gen.definition,
-            code: gen.code,
+            clue: gen.clue.trimmingCharacters(in: .whitespacesAndNewlines),
+            definition: gen.definition.trimmingCharacters(in: .whitespacesAndNewlines),
+            code: gen.code.trimmingCharacters(in: .newlines),
             difficulty: nil
         )
         store.add(lesson)

@@ -5,7 +5,10 @@ import SwiftUI
 
 struct WeeklyInsightsView: View {
     @EnvironmentObject var store: LearningStore
-    @StateObject private var engine = AdaptiveEngine()
+    @EnvironmentObject var premiumStore: PremiumStore
+    @ObservedObject private var engine = AdaptiveEngine.shared
+
+    private func isLocked(_ track: String) -> Bool { !premiumStore.isPro && PremiumStore.proTracks.contains(track) }
 
     var body: some View {
         ScrollView {
@@ -167,7 +170,9 @@ struct WeeklyInsightsView: View {
 
     private var weakTopics: [WeakTopic] {
         guard let curriculum = store.curriculum else { return [] }
-        return engine.weakTopics(questions: curriculum.questions, curriculum: curriculum.lessons)
+        // Every quiz question the learner can see, including the term questions for each track.
+        let questions = store.tracks.filter { !isLocked($0) }.flatMap { store.quiz(for: $0) }
+        return engine.weakTopics(questions: questions, curriculum: curriculum.lessons)
     }
 
     // MARK: Personalized Recommendations
@@ -210,7 +215,7 @@ struct WeeklyInsightsView: View {
 
     private var recommendations: [Lesson] {
         guard let curriculum = store.curriculum else { return [] }
-        let incomplete = curriculum.lessons.filter { !store.completed.contains($0.id) }
+        let incomplete = curriculum.lessons.filter { !store.completed.contains($0.id) && !isLocked($0.category) }
         let startedCategories = Set(
             curriculum.lessons.filter { store.completed.contains($0.id) }.map(\.category)
         )

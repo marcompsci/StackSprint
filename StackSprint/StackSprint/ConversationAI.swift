@@ -110,11 +110,10 @@ struct PracticeMessage: Identifiable, Codable {
             messages.append(assistantMsg)
             streamingText = ""
             saveHistory()
-        } catch LanguageModelSession.GenerationError.exceededContextWindowSize {
-            resetSession()
-            error = "Conversation was too long — starting fresh."
         } catch {
-            self.error = error.localizedDescription
+            if case LanguageModelSession.GenerationError.exceededContextWindowSize = error { resetSession() }
+            self.error = AIErrorText.message(for: error)
+            streamingText = ""
         }
         isStreaming = false
     }

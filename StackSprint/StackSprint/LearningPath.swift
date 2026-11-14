@@ -6,7 +6,14 @@ import FoundationModels
 
 struct LearningPathSection: View {
     @EnvironmentObject var store: LearningStore
+    @EnvironmentObject var premiumStore: PremiumStore
     @StateObject private var advisor = AILearningAdvisor()
+
+    /// Only lessons the learner can open: suggesting a locked Pro lesson was a dead end.
+    private var openLessons: [Lesson] {
+        let lessons = store.curriculum?.lessons ?? []
+        return premiumStore.isPro ? lessons : lessons.filter { !PremiumStore.proTracks.contains($0.category) }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -23,14 +30,14 @@ struct LearningPathSection: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             } else if let rec = advisor.recommendation {
-                RecommendationCard(rec: rec) {
+                RecommendationCard(rec: rec, lessons: openLessons) {
                     advisor.refresh(completed: store.completed,
-                                   lessons: store.curriculum?.lessons ?? [])
+                                   lessons: openLessons)
                 }
             } else {
                 Button {
                     advisor.refresh(completed: store.completed,
-                                   lessons: store.curriculum?.lessons ?? [])
+                                   lessons: openLessons)
                 } label: {
                     Label("Get a personalised suggestion", systemImage: "wand.and.stars")
                         .font(.subheadline.bold())
@@ -42,7 +49,7 @@ struct LearningPathSection: View {
         .onAppear {
             if advisor.recommendation == nil && !advisor.busy {
                 advisor.refresh(completed: store.completed,
-                               lessons: store.curriculum?.lessons ?? [])
+                               lessons: openLessons)
             }
         }
     }
@@ -52,6 +59,7 @@ struct LearningPathSection: View {
 
 private struct RecommendationCard: View {
     let rec: LearningRecommendation
+    let lessons: [Lesson]
     let onRefresh: () -> Void
 
     var body: some View {
@@ -80,11 +88,14 @@ private struct RecommendationCard: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(rec.suggestedTopics, id: \.self) { topic in
-                            Text(topic)
-                                .font(.caption.bold())
-                                .padding(.horizontal, 12).padding(.vertical, 7)
-                                .background(Color.mint.opacity(0.12), in: Capsule())
-                                .overlay(Capsule().stroke(Color.mint.opacity(0.3)))
+                            // Suggestions open their lesson; non-lesson ideas stay as labels.
+                            if let lesson = lessons.first(where: { $0.term == topic }) {
+                                NavigationLink { LessonView(lesson: lesson) } label: { chip(topic, linked: true) }
+                                    .buttonStyle(.plain)
+                                    .accessibilityHint("Opens the lesson")
+                            } else {
+                                chip(topic, linked: false)
+                            }
                         }
                     }
                 }
@@ -94,6 +105,17 @@ private struct RecommendationCard: View {
         .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
             .stroke(rec.aiPowered ? Color.mint.opacity(0.25) : Color.yellow.opacity(0.2)))
+    }
+
+    private func chip(_ topic: String, linked: Bool) -> some View {
+        HStack(spacing: 4) {
+            Text(topic)
+            if linked { Image(systemName: "arrow.up.right").font(.caption2.bold()) }
+        }
+        .font(.caption.bold())
+        .padding(.horizontal, 12).padding(.vertical, 7)
+        .background(Color.mint.opacity(0.12), in: Capsule())
+        .overlay(Capsule().stroke(Color.mint.opacity(0.3)))
     }
 }
 
@@ -179,7 +201,9 @@ final class AILearningAdvisor: ObservableObject {
                 reason = String(line.dropFirst(7)).trimmingCharacters(in: .whitespaces)
             }
         }
-        guard !topic.isEmpty else { return nil }
+        // The model must pick from the list; anything else falls back to the offline suggestion.
+        guard !topic.isEmpty, let match = available.first(where: { $0.caseInsensitiveCompare(topic) == .orderedSame }) else { return nil }
+        topic = match
         let suggestedTopics = available.filter { $0 != topic }.prefix(3).map { $0 }
         return LearningRecommendation(
             headline: "Study \(topic) next",

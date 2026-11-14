@@ -6,116 +6,57 @@ import SwiftUI
 @MainActor final class WeeklyXPStore: ObservableObject {
     static let shared = WeeklyXPStore()
 
+    /// XP actually earned since the week began: 10 per lesson, 5 per quiz answer.
+    /// (It used to shrink 5% every time the app opened after a day off, and showed
+    /// made-up global rankings.)
     @Published private(set) var weeklyXP: Int = 0
-    @Published private(set) var weekStart: Date = Date()
+    @Published private(set) var weekStart: Date = .distantPast
     @Published private(set) var previousWeekXP: Int = 0
-    @Published private(set) var previousRank: Int = 0
-    @Published private(set) var currentRank: Int = 0
-    @Published var showRankUpBanner = false
 
     private enum Keys {
-        static let weeklyXP      = "weekly.xp"
-        static let weekStart     = "weekly.start"
-        static let prevXP        = "weekly.prevXP"
-        static let prevRank      = "weekly.prevRank"
+        static let weeklyXP = "weekly.xp"
+        static let weekStart = "weekly.start"
+        static let prevXP = "weekly.prevXP"
     }
-
-    static let decayPercent: Double = 0.05  // 5% daily decay if no practice
 
     init() { load(); checkWeekReset() }
 
-    // MARK: Record XP earned this week
-
     func recordXP(_ xp: Int) {
-        weeklyXP += xp
-        let newRank = estimatedRank(xp: weeklyXP)
-        if newRank < currentRank && currentRank > 0 {
-            showRankUpBanner = true
-            HapticManager.shared.notification(.success)
-        }
-        currentRank = newRank
+        checkWeekReset()
+        weeklyXP += max(xp, 0)
         save()
-    }
-
-    // MARK: Apply daily decay (call once per day when app opens)
-
-    func applyDecayIfNeeded(lastPracticed: Date) {
-        let daysSinceLastPractice = Calendar.current.dateComponents([.day], from: lastPracticed, to: .now).day ?? 0
-        guard daysSinceLastPractice >= 1 else { return }
-        let decayFactor = pow(1.0 - Self.decayPercent, Double(daysSinceLastPractice))
-        weeklyXP = max(0, Int(Double(weeklyXP) * decayFactor))
-        currentRank = estimatedRank(xp: weeklyXP)
-        save()
-    }
-
-    // MARK: "Top X%" calculation
-
-    func topPercentLabel(totalXP: Int) -> String {
-        let p = estimatedTopPercent(xp: weeklyXP)
-        if p <= 1 { return "Top 1%" }
-        if p <= 5 { return "Top 5%" }
-        if p <= 10 { return "Top 10%" }
-        if p <= 25 { return "Top 25%" }
-        return "Top 50%"
     }
 
     var daysUntilReset: Int {
         let cal = Calendar.current
-        let nextMonday = cal.nextDate(after: Date(), matching: DateComponents(weekday: 2), matchingPolicy: .nextTime) ?? Date()
-        return cal.dateComponents([.day], from: .now, to: nextMonday).day ?? 7
+        guard let end = cal.dateInterval(of: .weekOfYear, for: Date())?.end else { return 7 }
+        return max(1, cal.dateComponents([.day], from: cal.startOfDay(for: Date()), to: end).day ?? 7)
     }
 
-    // MARK: - Helpers (simulate a global distribution)
-
-    private func estimatedRank(xp: Int) -> Int {
-        // Rough global simulation: rank 1 ≈ 5000+ weekly XP
-        let base = max(xp, 0)
-        return max(1, Int(5000.0 / Double(base + 1)))
-    }
-
-    private func estimatedTopPercent(xp: Int) -> Int {
-        switch xp {
-        case 5000...: return 1
-        case 2000...: return 5
-        case 1000...: return 10
-        case 500...:  return 25
-        default:      return 50
-        }
-    }
-
-    // MARK: - Reset logic
-
-    private func checkWeekReset() {
-        let cal = Calendar.current
-        let storedWeekStart = weekStart
-        let currentWeekStart = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: .now)) ?? .now
-        guard currentWeekStart > storedWeekStart else { return }
-        // New week — archive last week's XP
-        previousWeekXP = weeklyXP
-        previousRank = currentRank
+    /// Archives last week and starts a new one when the calendar week has changed.
+    func checkWeekReset(now: Date = Date()) {
+        guard let currentWeekStart = Calendar.current.dateInterval(of: .weekOfYear, for: now)?.start,
+              currentWeekStart > weekStart else { return }
+        // Only last week's total counts as "last week"; an older total is stale.
+        let lastWeek = Calendar.current.date(byAdding: .weekOfYear, value: -1, to: currentWeekStart)
+        previousWeekXP = weekStart == lastWeek ? weeklyXP : 0
         weeklyXP = 0
         weekStart = currentWeekStart
-        currentRank = 0
         save()
     }
 
-    // MARK: Persistence
-
     private func load() {
         let ud = UserDefaults.standard
-        weeklyXP     = ud.integer(forKey: Keys.weeklyXP)
+        weeklyXP = ud.integer(forKey: Keys.weeklyXP)
         previousWeekXP = ud.integer(forKey: Keys.prevXP)
-        previousRank = ud.integer(forKey: Keys.prevRank)
         if let d = ud.object(forKey: Keys.weekStart) as? Date { weekStart = d }
-        currentRank = estimatedRank(xp: weeklyXP)
     }
 
     private func save() {
         let ud = UserDefaults.standard
-        ud.set(weeklyXP,        forKey: Keys.weeklyXP)
-        ud.set(weekStart,       forKey: Keys.weekStart)
-        ud.set(previousWeekXP,  forKey: Keys.prevXP)
-        ud.set(previousRank,    forKey: Keys.prevRank)
+        ud.set(weeklyXP, forKey: Keys.weeklyXP)
+        ud.set(weekStart, forKey: Keys.weekStart)
+        ud.set(previousWeekXP, forKey: Keys.prevXP)
     }
 }
 
@@ -184,23 +125,6 @@ struct WeeklyLeaderboardView: View {
         .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
-    // MARK: Rank Banner
-
-    @ViewBuilder private var rankUpBanner: some View {
-        if weekly.previousRank > 0 && weekly.currentRank < weekly.previousRank {
-            HStack(spacing: 10) {
-                Image(systemName: "arrow.up.circle.fill").foregroundStyle(.mint)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("You moved up the rankings").font(.subheadline.bold())
-                    Text("From #\(weekly.previousRank) → #\(weekly.currentRank) this week").font(.caption).foregroundStyle(.secondary)
-                }
-                Spacer()
-            }
-            .padding(14)
-            .background(Color.mint.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        }
-    }
-
     // MARK: Tab
 
     private var leaderboardTabs: some View {
@@ -209,7 +133,7 @@ struct WeeklyLeaderboardView: View {
                 .font(.caption).foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            let entries = LeaderboardStore.globalEntries(playerXP: store.practiceXP)
+            let entries = LeaderboardStore.globalEntries(playerXP: weekly.weeklyXP)
 
             ForEach(entries) { entry in
                 WeeklyLeaderRow(entry: entry)
