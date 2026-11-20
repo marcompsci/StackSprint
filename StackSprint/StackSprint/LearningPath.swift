@@ -12,7 +12,7 @@ struct LearningPathSection: View {
     /// Only lessons the learner can open: suggesting a locked Pro lesson was a dead end.
     private var openLessons: [Lesson] {
         let lessons = store.curriculum?.lessons ?? []
-        return premiumStore.isPro ? lessons : lessons.filter { !PremiumStore.proTracks.contains($0.category) }
+        return lessons.filter { !premiumStore.isLocked($0.category) }
     }
 
     var body: some View {

@@ -8,7 +8,7 @@ struct WeeklyInsightsView: View {
     @EnvironmentObject var premiumStore: PremiumStore
     @ObservedObject private var engine = AdaptiveEngine.shared
 
-    private func isLocked(_ track: String) -> Bool { !premiumStore.isPro && PremiumStore.proTracks.contains(track) }
+    private func isLocked(_ track: String) -> Bool { premiumStore.isLocked(track) }
 
     var body: some View {
         ScrollView {

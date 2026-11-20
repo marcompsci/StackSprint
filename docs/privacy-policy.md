@@ -6,7 +6,7 @@ This is the hostable copy of the policy shown in the app (Account → Privacy Po
 
 **The short version.** StackSprint works without an account. Your lessons, streaks, code and projects are stored on your device. We don't sell data, show ads, or track you across apps or websites.
 
-**What stays on your device.** Lesson progress, quiz scores, streaks, XP, season progress, Studio missions, free-build projects, code drafts and settings are saved locally on your device. Deleting the app deletes them. If you save a backup file from Account → Backup, it goes only where you choose to save it (for example Files or iCloud Drive); we never receive it.
+**What stays on your device.** Lesson progress, quiz scores (including each lesson quiz and the time of day you usually study, used only to time reminders on your device), streaks, XP, season progress, Studio missions, free-build projects, code drafts and settings are saved locally on your device. Deleting the app deletes them. If you save a backup file from Account → Backup, it goes only where you choose to save it (for example Files or iCloud Drive); we never receive it.
 
 **Sign in with Apple.** If you choose Sign in with Apple, Apple shares an identifier and, the first time only, the name and email you choose to share. StackSprint keeps these on your device to label your progress. They aren't sent to us. Signing out removes them.
 
@@ -18,7 +18,7 @@ This is the hostable copy of the policy shown in the app (Account → Privacy Po
 
 **Python lessons.** The first time you run Python, the app downloads the open-source Pyodide runtime from the jsDelivr network. Like any web request, this shares your IP address with jsDelivr. Your code runs on your device and isn't uploaded.
 
-**Purchases.** Subscriptions are handled by Apple. We receive no payment details. The app checks your subscription status with the App Store.
+**Purchases.** Subscriptions and one-time purchases are handled by Apple. We receive no payment details. The app checks what you've bought with the App Store.
 
 **Notifications.** Reminders are scheduled on your device only if you allow notifications. We don't send push notifications.
 

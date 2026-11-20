@@ -8,7 +8,7 @@ import SwiftUI
 
 enum WhatsNew {
     /// Bump when the list below changes.
-    static let revision = 1
+    static let revision = 2
     static let seenKey = "whatsnew.seenRevision"
 
     struct Item: Identifiable {
@@ -19,6 +19,14 @@ enum WhatsNew {
     }
 
     static let items: [Item] = [
+        Item(icon: "checkmark.circle.fill", title: "A quiz after every lesson",
+             detail: "Five questions on what matters most. Your score sets when the lesson comes back for review."),
+        Item(icon: "brain.head.profile", title: "See what you remember",
+             detail: "Stats → Memory shows what's strong, what's fading, and your quiz accuracy week by week."),
+        Item(icon: "bell.badge", title: "Reminders that fit your day",
+             detail: "Reminders come at the time you usually study and tell you when lessons start to fade."),
+        Item(icon: "sparkles", title: "AI Skills and Professional Practice",
+             detail: "New tracks on prompting AI safely and on how developers work. Look for them on the Learn tab."),
         Item(icon: "brain.head.profile", title: "Practice without AI",
              detail: "Review due lessons, a quick round, and a quiz for every track. Works on every device."),
         Item(icon: "checkmark.circle", title: "Fairer lesson checks",

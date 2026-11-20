@@ -91,9 +91,16 @@ import WebKit
                         }
                     }
                     notifications.practicedToday = { [weak store] in store?.practicedToday ?? false }
+                    notifications.dueCountBy = { [weak store, weak premiumStore] date in
+                        guard let store else { return 0 }
+                        let locked = premiumStore?.lockedTracks ?? []
+                        return (store.curriculum?.lessons ?? []).filter { lesson in
+                            !locked.contains(lesson.category) && (SM2Engine.shared.card(for: lesson.id)?.dueDate ?? .distantFuture) <= date
+                        }.count
+                    }
                     notifications.nextLessonTitle = { [weak store, weak premiumStore] in
                         guard let store else { return nil }
-                        let locked = (premiumStore?.isPro ?? false) ? [] : PremiumStore.proTracks
+                        let locked = premiumStore?.lockedTracks ?? PremiumStore.paidTracks
                         return LessonFlow.continueLesson(in: store.curriculum?.lessons ?? [], completed: store.completed,
                                                          preferredTrack: UserDefaults.standard.string(forKey: "goal.startingTrack") ?? "Web development",
                                                          locked: locked)?.term
@@ -104,6 +111,7 @@ import WebKit
                         seasonStore?.recordXP(achievement.rarity.xpReward)
                     }
                     store.onActivity = { [weak notifications, weak store] in
+                        StudyRoutine.recordSession()
                         notifications?.refreshAfterPractice()
                         if let s = store { notifications?.scheduleWeeklyRecap(lessons: s.lessonsThisWeek, streak: s.currentStreak) }
                         if let s = store { writeWidgetData(store: s) }
@@ -141,7 +149,7 @@ struct RootView: View {
     @ObservedObject private var reviews = SM2Engine.shared
     private var dueBadge: Int {
         let lessons = store.curriculum?.lessons ?? []
-        return reviews.dueCards(in: lessons).filter { premiumStore.isPro || !PremiumStore.proTracks.contains($0.category) }.count
+        return reviews.dueCards(in: lessons).filter { !premiumStore.isLocked($0.category) }.count
     }
     @EnvironmentObject var premiumStore: PremiumStore
     @AppStorage("goal.startingTrack") private var startingTrack = "Web development"
@@ -219,7 +227,7 @@ struct RootView: View {
             }
         }
         .sheet(item: $router.request) { request in
-            RoutedLessonSheet(request: request, isPro: premiumStore.isPro, preferredTrack: startingTrack)
+            RoutedLessonSheet(request: request, locked: premiumStore.lockedTracks, preferredTrack: startingTrack)
         }
         .sheet(isPresented: $showingMenu) { CourseMenuView() }
         .sheet(isPresented: $showingChallenge, onDismiss: { challengeStore.reset() }) {
@@ -378,7 +386,7 @@ struct RapidLearningDeck: View {
     /// Cards rated this visit: one rating per card, so tapping again can't push a review out.
     @State private var rated: Set<String> = []
 
-    private var tracks: [String] { store.tracks.filter { premiumStore.isPro || !PremiumStore.proTracks.contains($0) } }
+    private var tracks: [String] { store.tracks.filter { !premiumStore.isLocked($0) } }
     private var cards: [Lesson] { store.lessonsByTrack[track] ?? [] }
     private var lesson: Lesson? { cards.isEmpty ? nil : cards[min(index, cards.count - 1)] }
 
@@ -714,12 +722,12 @@ struct GlossaryView: View {
     /// Every track you can open (it used to be Web development only), A to Z.
     private var available: [Lesson] {
         (store.curriculum?.lessons ?? [])
-            .filter { premiumStore.isPro || !PremiumStore.proTracks.contains($0.category) }
+            .filter { !premiumStore.isLocked($0.category) }
             .filter { track == "All" || $0.category == track }
             .sorted { $0.term.localizedCaseInsensitiveCompare($1.term) == .orderedAscending }
     }
     private var trackChoices: [String] {
-        ["All"] + store.tracks.filter { premiumStore.isPro || !PremiumStore.proTracks.contains($0) }
+        ["All"] + store.tracks.filter { !premiumStore.isLocked($0) }
     }
     private var lessons: [Lesson] {
         query.isEmpty ? available : available.filter { $0.term.localizedCaseInsensitiveContains(query) || $0.definition.localizedCaseInsensitiveContains(query) }
@@ -829,7 +837,7 @@ struct DailyPracticeView: View {
         let lessons = store.curriculum?.lessons ?? []
         let all = (store.curriculum?.questions ?? []).filter {
             guard let track = QuestionBank.track(forQuestionID: $0.id, lessons: lessons) else { return false }
-            return !PremiumStore.proTracks.contains(track)
+            return !PremiumStore.paidTracks.contains(track)
         }
         guard !all.isEmpty else { return [] }
         let day = Calendar.current.ordinality(of: .day, in: .era, for: Date()) ?? 0
@@ -2007,11 +2015,11 @@ struct LearnView: View {
             Text(found.isEmpty ? "No lessons match \u{201C}\(searchText)\u{201D}" : "\(found.count) \(found.count == 1 ? "lesson" : "lessons")")
                 .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
             ForEach(found) { lesson in
-                let locked = PremiumStore.proTracks.contains(lesson.category) && !premiumStore.isPro
+                let locked = premiumStore.isLocked(lesson.category)
                 if locked {
-                    Button { showingPaywall = true } label: { searchRow(lesson, locked: true) }
+                    Button { premiumStore.preparePaywall(for: lesson.category); showingPaywall = true } label: { searchRow(lesson, locked: true) }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("\(lesson.term), \(lesson.category), requires StackSprint Pro")
+                        .accessibilityLabel("\(lesson.term), \(lesson.category), requires \(PremiumStore.offer(for: lesson.category).title)")
                 } else {
                     NavigationLink { LessonView(lesson: lesson) } label: { searchRow(lesson, locked: false) }
                         .buttonStyle(.plain)
@@ -2051,7 +2059,7 @@ struct LearnView: View {
             .buttonStyle(.borderedProminent).tint(.orange)
         } else if let next = LessonFlow.continueLesson(in: lessons, completed: store.completed,
                                                        preferredTrack: category,
-                                                       locked: premiumStore.isPro ? [] : PremiumStore.proTracks) {
+                                                       locked: premiumStore.lockedTracks) {
             NavigationLink { LessonView(lesson: next) } label: {
                 Label("Continue: \(next.term)", systemImage: "play.fill")
                     .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12)
@@ -2110,10 +2118,11 @@ struct LearnView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
                 ForEach(categories, id: \.self) { name in
-                    let locked = PremiumStore.proTracks.contains(name) && !premiumStore.isPro
+                    let locked = premiumStore.isLocked(name)
                     if locked {
                         ProLockedCategoryChip(name: shortName(name), icon: categoryIcon(name)) {
                             HapticManager.shared.selection()
+                            premiumStore.preparePaywall(for: name)
                             showingPaywall = true
                         }
                     } else {
@@ -2258,7 +2267,7 @@ struct LearnView: View {
     }
 
     private func isLockedTrack(_ track: String) -> Bool {
-        PremiumStore.proTracks.contains(track) && !premiumStore.isPro
+        premiumStore.isLocked(track)
     }
 
     /// Flashcards for the track on screen; Pro tracks only for Pro members.
@@ -2270,7 +2279,7 @@ struct LearnView: View {
 
     private func quizQuestions(for track: String) -> [Question] {
         guard track != myLessonsCategory else { return [] }
-        if PremiumStore.proTracks.contains(track) && !premiumStore.isPro { return [] }
+        if premiumStore.isLocked(track) { return [] }
         return store.quiz(for: track)
     }
 
@@ -2278,6 +2287,7 @@ struct LearnView: View {
         switch value {
         case "Web development": return "Web"
         case "Interview Prep": return "Interview"
+        case "Professional Practice": return "Professional"
         default: return value
         }
     }
@@ -2288,6 +2298,9 @@ struct LearnView: View {
         case "Go": return "hare.fill"
         case "Rust": return "gearshape.2.fill"
         case "Interview Prep": return "briefcase.fill"
+        case "Professional Practice": return "hammer.fill"
+        case "AI Skills": return "sparkles"
+        case "TypeScript", "React", "Swift": return "curlybraces"
         default: return "shield.fill"
         }
     }
@@ -2329,8 +2342,21 @@ struct LessonView: View {
     @State private var failedAttempts = 0
     @State private var graded = false
     @State private var showingTutor = false
+    @State private var guessDone = false
+    @State private var showingQuiz = false
+    @State private var quizDone = false
+    @State private var quizTaken = false
+    /// Review grade from the example check, used only if the quiz is skipped.
+    @State private var pendingQuality: Int?
+    @State private var lessonXP = 0
+    @ObservedObject private var mastery = MasteryStore.shared
 
     private var language: CodeLanguage { .forLessonCategory(lesson.category) }
+    /// AI Skills examples are prompts to read, not code to retype.
+    private var typingPractice: Bool { !lesson.code.isEmpty && lesson.category != PaidContent.aiTrack }
+    private var quizQuestions: [LessonQuizQuestion] {
+        LessonQuizBuilder.build(for: lesson, in: store.lessonsByTrack[lesson.category] ?? store.curriculum?.lessons ?? [])
+    }
 
     /// Where this lesson sits in spaced review, so the schedule isn't a mystery.
     private var reviewSchedule: String? {
@@ -2339,7 +2365,7 @@ struct LessonView: View {
         let days = card.daysUntilDue
         return "Next review in \(days) \(days == 1 ? "day" : "days")"
     }
-    private var solved: Bool { result == .match || (lesson.code.isEmpty && graded) }
+    private var solved: Bool { result == .match || (!typingPractice && graded) }
     /// The next unfinished lesson in this track, so finishing one flows into the next.
     /// It stays in the same track, which the learner already has access to.
     private var nextLesson: Lesson? {
@@ -2350,21 +2376,49 @@ struct LessonView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 Text(lesson.clue).font(.title2.bold())
-                if let schedule = reviewSchedule {
-                    Label(schedule, systemImage: "calendar.badge.clock")
-                        .font(.footnote).foregroundStyle(.secondary)
+                HStack(spacing: 12) {
+                    if let schedule = reviewSchedule {
+                        Label(schedule, systemImage: "calendar.badge.clock")
+                    }
+                    if let best = mastery.best(lesson.id) {
+                        Label("\(mastery.level(lesson.id).rawValue) · best quiz \(best)/5", systemImage: "brain.head.profile")
+                    }
                 }
-                Button(revealed ? "Hide explanation" : "Reveal explanation", systemImage: "sparkles") {
-                    withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { revealed.toggle() }
-                }.buttonStyle(.borderedProminent)
+                .font(.footnote).foregroundStyle(.secondary)
+                // Guess first on a lesson you haven't finished: it primes memory.
+                if !revealed && !guessDone && !store.completed.contains(lesson.id), let guess = quizQuestions.first {
+                    QuickGuessCard(question: guess) {
+                        guessDone = true
+                        withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { revealed = true }
+                    }
+                } else {
+                    Button(revealed ? "Hide explanation" : "Reveal explanation", systemImage: "sparkles") {
+                        withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { revealed.toggle() }
+                    }.buttonStyle(.borderedProminent)
+                }
                 if revealed {
                     Text(lesson.definition).font(.title3)
                     ReadAloudButton(text: "\(lesson.term). \(lesson.definition)")
                     LessonNoteEditor(lessonID: lesson.id)
                         .padding(12)
                         .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    if !lesson.code.isEmpty { practiceArea } else { conceptArea }
-                    if solved { nextStep }
+                    if typingPractice { practiceArea } else {
+                        if !lesson.code.isEmpty {
+                            Text(lesson.category == PaidContent.aiTrack ? "Example" : "Example code").font(.headline)
+                            Text(lesson.code).font(.system(.callout, design: .monospaced)).textSelection(.enabled)
+                                .padding().frame(maxWidth: .infinity, alignment: .leading)
+                                .background(.indigo.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        }
+                        if lesson.category == PaidContent.aiTrack {
+                            NavigationLink { PromptMakeoverView() } label: {
+                                Label("Practice: prompt makeovers", systemImage: "wand.and.stars")
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                        conceptArea
+                    }
+                    if solved { quizCard }
+                    if solved && (quizDone || quizQuestions.isEmpty) { nextStep }
                     if SystemLanguageModel.default.isAvailable {
                         Button("Ask Bite about this lesson", systemImage: "sparkles") { showingTutor = true }
                             .buttonStyle(.bordered).tint(.mint)
@@ -2375,6 +2429,11 @@ struct LessonView: View {
         }.modifier(SprintTheme()).navigationTitle(lesson.term)
         .toolbar { ToolbarItem(placement: .topBarTrailing) { BookmarkButton(lessonID: lesson.id) } }
         .sheet(isPresented: $showingTutor) { AITutorView(lesson: lesson) }
+        .sheet(isPresented: $showingQuiz) {
+            LessonQuizView(lesson: lesson, questions: quizQuestions, lessonXP: lessonXP) { result in
+                finishQuiz(result)
+            }
+        }
         .onAppear { code = UserDefaults.standard.string(forKey: "draft.\(lesson.id)") ?? "" }
         .onChange(of: code) { _, value in
             UserDefaults.standard.set(value, forKey: "draft.\(lesson.id)")
@@ -2382,8 +2441,11 @@ struct LessonView: View {
         }
         .onDisappear {
             VoiceManager.shared.stop() // don't keep reading after you've left the lesson
-            // Tried and didn't solve it: schedule it again for tomorrow (one grade per visit).
-            if !graded && failedAttempts > 0 {
+            // One review grade per visit: the quiz's if it was taken, otherwise the example check's.
+            if !quizTaken, let quality = pendingQuality {
+                SM2Engine.shared.recordReview(lessonID: lesson.id, quality: quality)
+                pendingQuality = nil
+            } else if !graded && failedAttempts > 0 {
                 SM2Engine.shared.recordReview(lessonID: lesson.id, quality: ReviewGrade.unsolved)
             }
         }
@@ -2422,10 +2484,10 @@ struct LessonView: View {
             Button(graded ? "Reviewed" : "I reviewed this concept", systemImage: graded ? "checkmark.seal.fill" : "checkmark") {
                 guard !graded else { return }
                 graded = true
-                SM2Engine.shared.recordReview(lessonID: lesson.id, quality: ReviewGrade.reviewedConcept)
-                if store.completed.contains(lesson.id) { store.recordLessonReplay(lesson.id) } else { store.complete(lesson.id) }
+                pendingQuality = ReviewGrade.reviewedConcept
+                finishLessonPart()
                 HapticManager.shared.notification(.success)
-                announce("Reviewed. Test your recall in a quiz.")
+                announce("Reviewed. Now take the 5-question lesson quiz.")
             }
             .buttonStyle(.borderedProminent)
             .disabled(graded)
@@ -2471,16 +2533,61 @@ struct LessonView: View {
             HapticManager.shared.notification(.success)
             if !graded {
                 graded = true
-                SM2Engine.shared.recordReview(lessonID: lesson.id, quality: ReviewGrade.solved(failedAttempts: failedAttempts))
+                pendingQuality = ReviewGrade.solved(failedAttempts: failedAttempts)
+                finishLessonPart()
             }
-            if store.completed.contains(lesson.id) { store.recordLessonReplay(lesson.id) } else { store.complete(lesson.id) }
-            announce("Correct. \(CodeCheck.hint(for: outcome))")
+            announce("Correct. Now take the 5-question lesson quiz.")
         case .mismatch:
             failedAttempts += 1
             HapticManager.shared.notification(.warning)
             announce(CodeCheck.hint(for: outcome))
         case .empty:
             announce(CodeCheck.hint(for: outcome))
+        }
+    }
+
+    private func finishLessonPart() {
+        if store.completed.contains(lesson.id) {
+            store.recordLessonReplay(lesson.id)
+        } else {
+            store.complete(lesson.id)
+            lessonXP = 10
+        }
+    }
+
+    /// The quiz tests recall of what matters most, so it sets the next review date.
+    private func finishQuiz(_ result: LessonQuizResult) {
+        quizDone = true
+        quizTaken = true
+        MasteryStore.shared.record(lessonID: lesson.id, score: result.score, total: result.total,
+                                   missed: result.missed.map(\.kind))
+        SM2Engine.shared.recordReview(lessonID: lesson.id,
+                                      quality: LessonQuizBuilder.reviewQuality(score: result.score, of: result.total))
+        for missed in result.missed { AdaptiveEngine.shared.recordWrong(missed.id) }
+        store.recordPractice()
+    }
+
+    @ViewBuilder
+    private var quizCard: some View {
+        if !quizQuestions.isEmpty {
+            Button { showingQuiz = true } label: {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label(quizDone ? "Retake the lesson quiz" : "Lesson quiz: 5 questions", systemImage: "checkmark.circle.fill")
+                        .font(.headline)
+                    Text(quizDone ? "Last score \(mastery.latest(lesson.id)?.score ?? 0)/5. Retaking sets the next review."
+                         : "Testing yourself right after a lesson is the fastest way to remember it.")
+                        .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(quizDone ? SprintPalette.card : Color.mint.opacity(0.16),
+                            in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            if !quizDone {
+                Button("Skip the quiz for now") { quizDone = true }
+                    .font(.footnote).foregroundStyle(.secondary).buttonStyle(.plain)
+            }
         }
     }
 
@@ -2783,28 +2890,29 @@ struct AccountView: View {
             CodeTextSizeSection()
             if CloudKitSyncManager.isAvailable { CloudSyncSection() }
             Section {
-                if premiumStore.isPro {
-                    HStack(spacing: 10) {
-                        ProBadge()
-                        Text("You're on StackSprint Pro").font(.subheadline.bold())
-                        Spacer()
-                    }
-                    Text("Go, Rust and Interview Prep tracks are unlocked.")
-                        .font(.caption).foregroundStyle(.secondary)
-                } else {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Image(systemName: "crown.fill").foregroundStyle(.yellow)
-                            Text("Upgrade to Pro").font(.headline)
-                            Spacer()
+                // One row per offer: what you have, and a way to see the others.
+                ForEach(PaywallOffer.allCases) { offer in
+                    if premiumStore.owns(offer) {
+                        Label("\(offer.title): unlocked", systemImage: "checkmark.seal.fill")
+                            .font(.subheadline.bold()).foregroundStyle(.green)
+                    } else {
+                        Button {
+                            premiumStore.requestedOffer = offer
+                            showingPaywall = true
+                        } label: {
+                            HStack {
+                                Label(offer.title, systemImage: offer.icon)
+                                Spacer()
+                                Text(offer.isSubscription ? "Subscription" : "One-time").font(.caption).foregroundStyle(.secondary)
+                            }
                         }
-                        Text("Unlock Go, Rust, Interview Prep, and more.").font(.caption).foregroundStyle(.secondary)
+                        .foregroundStyle(.primary)
                     }
-                    Button("View Pro plans") { showingPaywall = true }
-                        .foregroundStyle(.mint)
                 }
             } header: {
-                Label("StackSprint Pro", systemImage: "crown.fill")
+                Label("Plans and purchases", systemImage: "crown.fill")
+            } footer: {
+                Text("Lessons outside these tracks are free.")
             }
             .sheet(isPresented: $showingPaywall) {
                 ProPaywallView().environmentObject(premiumStore)
@@ -3107,7 +3215,7 @@ struct BiteAssistantView: View {
     @EnvironmentObject var premiumStore: PremiumStore
     /// Bite's lesson references come only from tracks you can open.
     private var openLessons: [Lesson] {
-        (store.curriculum?.lessons ?? []).filter { premiumStore.isPro || !PremiumStore.proTracks.contains($0.category) }
+        (store.curriculum?.lessons ?? []).filter { !premiumStore.isLocked($0.category) }
     }
     @Environment(\.dismiss) private var dismiss
     @StateObject private var tutor = BiteTutor()

@@ -1,0 +1,135 @@
+{
+  "identifier": "4A5B0629",
+  "nonRenewingSubscriptions": [],
+  "products": [
+    {
+      "displayPrice": "14.99",
+      "familyShareable": false,
+      "internalID": "D0E58F3A",
+      "localizations": [
+        {
+          "description": "12 lessons on Git, reviews, tests, CI and debugging.",
+          "displayName": "Professional Practice",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.stacksprint.pack.professional",
+      "referenceName": "Professional Practice pack",
+      "type": "NonConsumable"
+    }
+  ],
+  "settings": {
+    "_failTransactionsEnabled": false,
+    "_locale": "en_US",
+    "_storefront": "USA",
+    "_storeKitErrors": []
+  },
+  "subscriptionGroups": [
+    {
+      "id": "B92CBD21",
+      "localizations": [],
+      "name": "StackSprint Pro",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "4.99",
+          "familyShareable": false,
+          "groupNumber": 2,
+          "internalID": "A12A858B",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Go, Rust and Interview Prep tracks.",
+              "displayName": "StackSprint Pro Monthly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.stacksprint.pro.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Pro Monthly",
+          "subscriptionGroupID": "B92CBD21",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "39.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "764B141E",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Go, Rust and Interview Prep tracks.",
+              "displayName": "StackSprint Pro Yearly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.stacksprint.pro.yearly",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Pro Yearly",
+          "subscriptionGroupID": "B92CBD21",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        }
+      ]
+    },
+    {
+      "id": "1F8F2344",
+      "localizations": [],
+      "name": "AI Skills",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "4.99",
+          "familyShareable": false,
+          "groupNumber": 2,
+          "internalID": "D64C15F6",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Lessons on prompting AI clearly and safely.",
+              "displayName": "AI Skills Monthly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.stacksprint.ai.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "AI Skills Monthly",
+          "subscriptionGroupID": "1F8F2344",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "39.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "A56A0FC8",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Lessons on prompting AI clearly and safely.",
+              "displayName": "AI Skills Yearly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.stacksprint.ai.yearly",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "AI Skills Yearly",
+          "subscriptionGroupID": "1F8F2344",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        }
+      ]
+    }
+  ],
+  "version": {
+    "major": 4,
+    "minor": 0
+  }
+}

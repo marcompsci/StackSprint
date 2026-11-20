@@ -24,6 +24,7 @@ struct ProgressBackup: Codable, Equatable {
     /// Added after version 1 shipped; older backups simply don't have it.
     var lessonActivity: [String]? = nil
     var frozenDays: [String]? = nil
+    var lessonQuizzes: [String: [LessonQuizRecord]]? = nil
 
     enum BackupError: LocalizedError {
         case newerVersion, notABackup
@@ -77,7 +78,8 @@ struct ProgressBackup: Codable, Equatable {
             completedMissions: (defaults.stringArray(forKey: completedMissionsKey) ?? []).sorted(),
             missionDrafts: drafts,
             lessonActivity: store.lessonActivity.sorted(),
-            frozenDays: store.frozenDays.sorted()
+            frozenDays: store.frozenDays.sorted(),
+            lessonQuizzes: MasteryStore.shared.records
         )
     }
 
@@ -88,6 +90,7 @@ struct ProgressBackup: Codable, Equatable {
                              recallAnswers: Set(backup.quizAnswers))
         store.mergeLessonActivity(Set(backup.lessonActivity ?? []), frozenDays: Set(backup.frozenDays ?? []))
         SM2Engine.shared.merge(backup.reviewCards)
+        MasteryStore.shared.merge(backup.lessonQuizzes ?? [:])
         bookmarks.merge(bookmarks: Set(backup.bookmarks), notes: backup.notes)
         let defaults = UserDefaults.standard
         let missions = Set(defaults.stringArray(forKey: completedMissionsKey) ?? []).union(backup.completedMissions)
@@ -105,6 +108,7 @@ extension ProgressBackupService {
     static func erase(store: LearningStore, bookmarks: BookmarkStore) {
         store.eraseProgress()
         SM2Engine.shared.eraseAll()
+        MasteryStore.shared.eraseAll()
         bookmarks.eraseAll()
         let defaults = UserDefaults.standard
         defaults.removeObject(forKey: completedMissionsKey)
@@ -191,7 +195,7 @@ struct ProgressBackupSection: View {
                 message = "Progress erased. Lessons, streak, reviews, bookmarks and Studio missions start fresh."
             }
         } message: {
-            Text("Lessons, streak days, quiz answers, reviews, bookmarks, notes and Studio mission code are deleted. This can't be undone, so save a backup file first if you might want them back. Free-build projects and earned badges stay.")
+            Text("Lessons, streak days, quiz answers and scores, reviews, bookmarks, notes and Studio mission code are deleted. This can't be undone, so save a backup file first if you might want them back. Free-build projects and earned badges stay.")
         }
         .alert("Restore this backup?", isPresented: Binding(get: { pending != nil }, set: { if !$0 { pending = nil } }),
                presenting: pending) { backup in

@@ -99,7 +99,7 @@ struct RoomPacket: Codable {
     /// Free-track lessons in a deterministic order for a given seed.
     static func sharedQuestions(from lessons: [Lesson], seed: String) -> [Lesson] {
         var rng = SeededGenerator(seed: seed)
-        let free = lessons.filter { !PremiumStore.proTracks.contains($0.category) }.sorted { $0.id < $1.id }
+        let free = lessons.filter { !PremiumStore.paidTracks.contains($0.category) }.sorted { $0.id < $1.id }
         return Array(free.shuffled(using: &rng).prefix(questionsPerRound))
     }
 

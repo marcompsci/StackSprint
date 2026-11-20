@@ -64,7 +64,7 @@ struct ReviewHubView: View {
 
     private var lessons: [Lesson] { store.curriculum?.lessons ?? [] }
     private var tracks: [String] { store.tracks }
-    private func isLocked(_ track: String) -> Bool { PremiumStore.proTracks.contains(track) && !premiumStore.isPro }
+    private func isLocked(_ track: String) -> Bool { premiumStore.isLocked(track) }
     private var due: [Lesson] { reviews.dueCards(in: lessons).filter { !isLocked($0.category) } }
 
     private func questions(for track: String) -> [Question] { store.quiz(for: track) }
@@ -210,9 +210,9 @@ struct ReviewHubView: View {
             Text("Quiz by track").font(.title3.bold())
             ForEach(tracks, id: \.self) { track in
                 if isLocked(track) {
-                    Button { showingPaywall = true } label: { trackRow(track, count: nil) }
+                    Button { premiumStore.preparePaywall(for: track); showingPaywall = true } label: { trackRow(track, count: nil) }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("\(track) quiz, requires StackSprint Pro")
+                        .accessibilityLabel("\(track) quiz, requires \(PremiumStore.offer(for: track).title)")
                 } else {
                     let qs = questions(for: track)
                     NavigationLink { QuizView(questions: qs, title: "\(track) quiz", bestScoreID: "track.\(track)") } label: { trackRow(track, count: qs.count) }

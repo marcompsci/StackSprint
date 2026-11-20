@@ -53,6 +53,16 @@ import UserNotifications
     var practicedToday: () -> Bool = { false }
     /// The lesson "Continue" would open, so the next reminder can name it.
     var nextLessonTitle: () -> String? = { nil }
+    /// How many lessons will be due for review by a given date (from the review schedule).
+    var dueCountBy: (Date) -> Int = { _ in 0 }
+    /// Remind at the hour you usually study, once that's clear from your sessions.
+    @AppStorage("notifications.matchRoutine") var matchRoutine = true
+
+    /// The hour and minute reminders actually use.
+    var effectiveTime: (hour: Int, minute: Int) {
+        if matchRoutine, let hour = StudyRoutine.usualHour() { return (hour, 0) }
+        return (dailyHour, dailyMinute)
+    }
 
     /// One reminder a day for the next week at the chosen time, skipping today once
     /// you've practiced. (A repeating trigger can't skip a day, so it nagged even
@@ -61,21 +71,31 @@ import UserNotifications
         let ids = ["daily.reminder"] + (0..<Self.reminderDays).map { "daily.reminder.\($0)" }
         center.removePendingNotificationRequests(withIdentifiers: ids)
         guard enabled, permissionGranted else { return }
-        for (offset, date) in Self.reminderDates(hour: dailyHour, minute: dailyMinute, now: Date(),
+        let time = effectiveTime
+        var recent = UserDefaults.standard.stringArray(forKey: ReminderCopy.recentKey) ?? []
+        for (offset, date) in Self.reminderDates(hour: time.hour, minute: time.minute, now: Date(),
                                                   skipToday: practicedToday()).enumerated() {
             let content = UNMutableNotificationContent()
-            content.title = "Daily practice"
-            // The first reminder names your actual next lesson; later ones may be out of date by then.
-            if offset == 0, let next = nextLessonTitle() {
+            let due = dueCountBy(date)
+            if due > 0 {
+                // The review schedule is known ahead, so this count is right for that day
+                // unless you review earlier (then it's rescheduled).
+                content.title = "Time for a quick review"
+                content.body = ReminderCopy.fading(count: due)
+            } else if offset == 0, let next = nextLessonTitle() {
+                content.title = "Daily practice"
                 content.body = "Next up: \(next). It takes about two minutes."
             } else {
-                content.body = dailyMessages.randomElement() ?? dailyMessages[0]
+                content.title = "Daily practice"
+                content.body = ReminderCopy.pick(from: ReminderCopy.daily + dailyMessages, recent: recent)
+                recent.append(content.body)
             }
             content.sound = .default
             let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
             let trigger = UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)
             center.add(UNNotificationRequest(identifier: "daily.reminder.\(offset)", content: content, trigger: trigger))
         }
+        UserDefaults.standard.set(Array(recent.suffix(4)), forKey: ReminderCopy.recentKey)
     }
 
     nonisolated static let reminderDays = 7
@@ -226,6 +246,8 @@ struct NotificationSettingsSection: View {
                     }
 
                 if notifications.enabled {
+                    Toggle("Remind me when I usually study", isOn: $notifications.matchRoutine)
+                        .onChange(of: notifications.matchRoutine) { _, _ in notifications.scheduleDailyReminder() }
                     Toggle("Streak reminder", isOn: $notifications.streakNudge)
                         .onChange(of: notifications.streakNudge) { _, _ in notifications.refreshAfterPractice() }
                     Toggle("Weekly recap", isOn: $notifications.weeklyRecap)
@@ -258,8 +280,8 @@ struct NotificationSettingsSection: View {
     }
 
     private var reminderTimeLabel: String {
-        let h = notifications.dailyHour
-        let m = notifications.dailyMinute
+        let h = notifications.effectiveTime.hour
+        let m = notifications.effectiveTime.minute
         let suffix = h < 12 ? "AM" : "PM"
         let hour12 = h == 0 ? 12 : (h > 12 ? h - 12 : h)
         return String(format: "%d:%02d %@", hour12, m, suffix)

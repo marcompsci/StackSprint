@@ -356,7 +356,7 @@ struct PolishTests {
 
     @Test func storeIndexesTracksAndQuizzes() {
         let store = LearningStore()
-        #expect(store.tracks.count == 9)
+        #expect(store.tracks.count == 11) // 9 free/Pro tracks + Professional Practice + AI Skills
         #expect(store.tracks.first == "Web development")
         #expect(store.quiz(for: "Web development").count == 25 + 12)
         #expect(store.quiz(for: "Go").count == 4 + 10)
@@ -581,5 +581,133 @@ struct CourseContentTests {
 
     @Test func bestScoreKeysAreNamespaced() {
         #expect(QuizView.bestKey("track.Go") == "quiz.best.track.Go")
+    }
+}
+
+
+// MARK: - Phases 71–80
+
+@Suite("Lesson quiz")
+@MainActor
+struct LessonQuizTests {
+    private var lessons: [Lesson] { LearningStore().curriculum?.lessons ?? [] }
+
+    @Test func everyLessonGetsFivePriorityQuestions() {
+        let all = lessons
+        #expect(all.count > 100)
+        for lesson in all {
+            let track = all.filter { $0.category == lesson.category }
+            let quiz = LessonQuizBuilder.build(for: lesson, in: track)
+            #expect(quiz.count == 5, "\(lesson.id)")
+            #expect(quiz.map(\.kind.priority) == quiz.map(\.kind.priority).sorted(), "\(lesson.id) not in priority order")
+            #expect(quiz.first?.kind == .meaning)
+            for q in quiz {
+                #expect(q.choices.count >= 2, "\(q.id)")
+                #expect(Set(q.choices).count == q.choices.count, "duplicate choices in \(q.id)")
+                #expect(q.choices.indices.contains(q.answer), "\(q.id)")
+            }
+            let recall = quiz.first { $0.kind == .recall }
+            #expect(recall.map { $0.choices[$0.answer] } == lesson.term, "\(lesson.id)")
+            let discrimination = quiz.first { $0.kind == .discrimination }
+            #expect(discrimination.map { $0.choices[$0.answer] } == lesson.term, "\(lesson.id)")
+        }
+    }
+
+    @Test func meaningChoicesDontNameTheirOwnTerm() {
+        let all = lessons
+        let lesson = all.first { $0.id == "web-html" }!
+        let q = LessonQuizBuilder.build(for: lesson, in: all.filter { $0.category == lesson.category })[0]
+        #expect(!q.choices[q.answer].contains("HTML"))
+    }
+
+    @Test func stableForTheSameLesson() {
+        let all = lessons
+        let lesson = all[5]
+        let track = all.filter { $0.category == lesson.category }
+        #expect(LessonQuizBuilder.build(for: lesson, in: track) == LessonQuizBuilder.build(for: lesson, in: track))
+    }
+
+    @Test func scoreSetsTheReview() {
+        #expect(LessonQuizBuilder.reviewQuality(score: 5) == 5)
+        #expect(LessonQuizBuilder.reviewQuality(score: 4) == 4)
+        #expect(LessonQuizBuilder.reviewQuality(score: 3) == 3)
+        #expect(LessonQuizBuilder.reviewQuality(score: 2) < 3) // comes back tomorrow
+    }
+}
+
+@Suite("Memory and routine")
+@MainActor
+struct MemoryRoutineTests {
+    @Test func recallIsAboutNinetyPercentWhenDue() {
+        var card = SM2Card.initial(lessonID: "x")
+        card.update(quality: 5); card.update(quality: 5) // 6-day interval
+        let due = card.dueDate
+        #expect(abs(MemoryModel.recall(card: card, now: due) - 0.9) < 0.01)
+        #expect(MemoryModel.recall(card: card, now: due.addingTimeInterval(-3 * 86_400)) > 0.9)
+        #expect(MemoryModel.recall(card: card, now: due.addingTimeInterval(10 * 86_400)) < 0.9)
+        #expect(MemoryModel.band(0.97) == .strong && MemoryModel.band(0.92) == .okay && MemoryModel.band(0.5) == .fading)
+    }
+
+    @Test func usualHourNeedsFiveSessions() {
+        #expect(StudyRoutine.usualHour(from: [20, 20, 21]) == nil)
+        #expect(StudyRoutine.usualHour(from: [8, 20, 20, 21, 20]) == 20)
+        #expect(StudyRoutine.usualHour(from: [7, 7, 19, 19, 12]) == 19) // tie goes to the most recent
+    }
+
+    @Test func reminderWordingRotates() {
+        let options = ["a", "b", "c"]
+        #expect(ReminderCopy.pick(from: options, recent: ["a"]) == "b")
+        #expect(ReminderCopy.pick(from: options, recent: ["c", "a", "b"]) == "c")
+        #expect(ReminderCopy.fading(count: 1).contains("1 lesson"))
+    }
+
+    @Test func masteryLevels() {
+        let day1 = Date(timeIntervalSince1970: 1_800_000_000)
+        let day2 = day1.addingTimeInterval(2 * 86_400)
+        #expect(MasteryStore.level(for: []) == .new)
+        #expect(MasteryStore.level(for: [LessonQuizRecord(date: day1, score: 3, total: 5, missed: [.keyDetail])]) == .learning)
+        #expect(MasteryStore.level(for: [LessonQuizRecord(date: day1, score: 5, total: 5, missed: [])]) == .mastered)
+        #expect(MasteryStore.level(for: [LessonQuizRecord(date: day1, score: 4, total: 5, missed: [.recall]),
+                                         LessonQuizRecord(date: day2, score: 4, total: 5, missed: [.recall])]) == .mastered)
+    }
+}
+
+@Suite("Paid tracks")
+@MainActor
+struct PaidTrackTests {
+    @Test func contentIsWellFormed() {
+        let ids = PaidContent.lessons.map(\.id)
+        #expect(Set(ids).count == ids.count)
+        #expect(PaidContent.professional.count == 12)
+        #expect(PaidContent.ai.count == 16)
+        #expect(PaidContent.lessons.allSatisfy { !$0.term.isEmpty && !$0.definition.isEmpty && !$0.clue.isEmpty })
+        #expect(PromptMakeovers.all.allSatisfy { $0.options.indices.contains($0.best) })
+    }
+
+    @Test func lockingFollowsPurchases() {
+        #expect(PremiumStore.lockedTracks(pro: false, ai: false, professional: false) == PremiumStore.paidTracks)
+        #expect(PremiumStore.lockedTracks(pro: true, ai: true, professional: true).isEmpty)
+        let aiOnly = PremiumStore.lockedTracks(pro: false, ai: true, professional: false)
+        #expect(!aiOnly.contains("AI Skills") && aiOnly.contains("Professional Practice") && aiOnly.contains("Go"))
+        #expect(PremiumStore.offer(for: "AI Skills") == .aiSkills)
+        #expect(PremiumStore.offer(for: "Professional Practice") == .professional)
+        #expect(PremiumStore.offer(for: "Rust") == .pro)
+    }
+
+    @Test func everyProductHasAnOffer() {
+        #expect(StoreProductID.professionalPack.offer == .professional)
+        #expect(StoreProductID.aiMonthly.offer == .aiSkills && StoreProductID.aiYearly.offer == .aiSkills)
+        #expect(!PaywallOffer.professional.isSubscription && PaywallOffer.aiSkills.isSubscription)
+    }
+
+    @Test func curriculumIncludesPaidTracksOnce() throws {
+        let merged = try Curriculum.load().withPaidTracks().withPaidTracks()
+        #expect(merged.lessons.filter { $0.category == "AI Skills" }.count == 16)
+    }
+
+    @Test func freeContentNeverUsesPaidTracks() throws {
+        let lessons = try Curriculum.load().withPaidTracks().lessons
+        let room = StudyRoomManager.sharedQuestions(from: lessons, seed: "a|b")
+        #expect(room.allSatisfy { !PremiumStore.paidTracks.contains($0.category) })
     }
 }

@@ -84,7 +84,7 @@ struct AdaptiveQuizView: View {
     static let mixed = "Mixed (adaptive)"
 
     private var unlockedTracks: [String] {
-        store.tracks.filter { premiumStore.isPro || !PremiumStore.proTracks.contains($0) }
+        store.tracks.filter { !premiumStore.isLocked($0) }
     }
     /// Every track's questions (handwritten + term questions), never from a locked track.
     private var pool: [Question] {

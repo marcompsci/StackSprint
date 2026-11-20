@@ -110,13 +110,12 @@ func deindexAllLessons() {
 
 struct RoutedLessonSheet: View {
     let request: LessonRouter.Request
-    let isPro: Bool
+    let locked: Set<String>
     let preferredTrack: String
     @EnvironmentObject var store: LearningStore
     @Environment(\.dismiss) private var dismiss
 
     private var lessons: [Lesson] { store.curriculum?.lessons ?? [] }
-    private var locked: Set<String> { isPro ? [] : PremiumStore.proTracks }
     private var lesson: Lesson? {
         switch request {
         case .lesson(let id): return lessons.first { $0.id == id }

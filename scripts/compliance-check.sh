@@ -124,8 +124,13 @@ if uses 'product.purchase\(|Product.products'; then
   grep -q 'PrivacyPolicyView' "$APP/PremiumStore.swift" && pass "Paywall links the Privacy Policy" || fail "Paywall has no Privacy Policy link"
   grep -q 'restorePurchases' "$APP/PremiumStore.swift" && pass "Restore Purchases available" || fail "No Restore Purchases"
   grep -q 'productsLoaded' "$APP/PremiumStore.swift" && pass "Paywall handles products that fail to load" || fail "Paywall can spin forever when products don't load"
-  grep -qiE 'unlimited (ai|chats)|Pro crown' "$APP/PremiumStore.swift" && fail "Paywall advertises perks that don't exist" || pass "Paywall lists only what Pro unlocks"
-  manual "Create com.stacksprint.pro.monthly and .yearly in App Store Connect and attach them to the version"
+  grep -qiE 'unlimited (ai|chats)|Pro crown|certified|official anthropic' "$APP/PremiumStore.swift" "$APP/PaidContent.swift" && fail "Paywall advertises perks that don't exist" || pass "Paywall lists only what Pro unlocks"
+  grep -q 'revocationDate == nil' "$APP/PremiumStore.swift" && pass "Refunded purchases stop unlocking content" || fail "Refunded or revoked purchases still unlock content"
+  grep -q 'isSubscription' "$APP/PremiumStore.swift" && pass "One-time purchase isn't described as a subscription" || fail "Paywall uses subscription wording for the one-time purchase"
+  for id in com.stacksprint.pro.monthly com.stacksprint.pro.yearly com.stacksprint.ai.monthly com.stacksprint.ai.yearly com.stacksprint.pack.professional; do
+    grep -q "$id" "$APP/StackSprint.storekit" && pass "StoreKit test config has $id" || fail "StoreKit test config is missing $id"
+  done
+  manual "Create in App Store Connect: Pro (com.stacksprint.pro.monthly/.yearly), AI Skills (com.stacksprint.ai.monthly/.yearly, its own group), and the non-consumable com.stacksprint.pack.professional; attach them to the version"
 fi
 
 echo "== Privacy policy and support (5.1.1, 1.5)"

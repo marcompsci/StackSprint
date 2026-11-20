@@ -152,7 +152,7 @@ struct CreateChallengeView: View {
 
     /// Lessons from free tracks only, so whoever gets the link can play it.
     private var questions: [Lesson] {
-        let free = (store.curriculum?.lessons ?? []).filter { !PremiumStore.proTracks.contains($0.category) }
+        let free = (store.curriculum?.lessons ?? []).filter { !PremiumStore.paidTracks.contains($0.category) }
         return Array(free.shuffled().prefix(FriendChallengeStore.questionsPerChallenge))
     }
     @State private var sessionQuestions: [Lesson] = []

@@ -30,6 +30,12 @@ struct Curriculum: Codable {
         }
         return try JSONDecoder().decode(Self.self, from: Data(contentsOf: url))
     }
+
+    /// Adds the paid tracks (they ship in the app and unlock on purchase).
+    func withPaidTracks() -> Curriculum {
+        let existing = Set(lessons.map(\.id))
+        return Curriculum(lessons: lessons + PaidContent.lessons.filter { !existing.contains($0.id) }, questions: questions)
+    }
 }
 
 // MARK: - Remote Curriculum Loader
@@ -98,9 +104,9 @@ struct ProgressRow: Codable {
 
     init() {
         // Bundled JSON is always the safety net
-        do { curriculum = try Curriculum.load() } catch { self.error = "Lesson content could not load: \(error.localizedDescription)" }
+        do { curriculum = try Curriculum.load().withPaidTracks() } catch { self.error = "Lesson content could not load: \(error.localizedDescription)" }
         // Override with a cached remote version if one exists (it's more up to date)
-        if let cached = CurriculumLoader.cachedCurriculum() { curriculum = cached }
+        if let cached = CurriculumLoader.cachedCurriculum() { curriculum = cached.withPaidTracks() }
         rebuildIndex() // property observers don't run inside init
         switchUser(nil)
     }
@@ -110,7 +116,7 @@ struct ProgressRow: Codable {
     func refreshCurriculumIfNeeded() async {
         guard let urlString = BackendConfig.remoteCurriculumURL else { return }
         if let remote = await CurriculumLoader.fetchRemote(urlString: urlString) {
-            curriculum = remote
+            curriculum = remote.withPaidTracks()
         }
     }
 
@@ -193,14 +199,17 @@ struct ProgressRow: Codable {
 
     var practicedToday: Bool { practicedDays.contains(Self.dayKey(Date())) }
 
-    func recordDailyRecall(_ questionID: String) {
+    /// Records a correct quiz answer. Returns true when it earned XP (once per question per day).
+    @discardableResult
+    func recordDailyRecall(_ questionID: String) -> Bool {
         let key = "\(Self.dayKey(Date()))|\(questionID)"
-        guard !correctRecallAnswers.contains(key) else { return }
+        guard !correctRecallAnswers.contains(key) else { return false }
         correctRecallAnswers.insert(key)
         markPracticed(Self.dayKey(Date()))
         persist()
         onPractice?(5)
         onActivity?()
+        return true
     }
 
     func recalledToday(_ questionID: String) -> Bool {

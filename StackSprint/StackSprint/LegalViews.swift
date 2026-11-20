@@ -26,7 +26,7 @@ struct PrivacyPolicyView: View {
                 section("The short version",
                         "StackSprint works without an account. Your lessons, streaks, code and projects are stored on your device. We don’t sell data, show ads, or track you across apps or websites.")
                 section("What stays on your device",
-                        "Lesson progress, quiz scores, streaks, XP, season progress, Studio missions, free-build projects, code drafts and settings are saved locally on this device. Deleting the app deletes them. If you save a backup file from Account, it goes only where you choose to save it; we never receive it.")
+                        "Lesson progress, quiz scores (including each lesson quiz and when you usually study, used to time reminders), streaks, XP, season progress, Studio missions, free-build projects, code drafts and settings are saved locally on this device. Deleting the app deletes them. If you save a backup file from Account, it goes only where you choose to save it; we never receive it.")
                 section("Sign in with Apple",
                         "If you choose Sign in with Apple, Apple shares an identifier and, the first time only, the name and email you choose to share. StackSprint keeps these on your device to label your progress. They aren’t sent to us. Signing out removes them.")
                 section("Optional cloud account",
@@ -38,7 +38,7 @@ struct PrivacyPolicyView: View {
                 section("Python lessons",
                         "The first time you run Python, the app downloads the open-source Pyodide runtime from the jsDelivr network. Like any web request, this shares your IP address with jsDelivr. Your code runs on your device and isn’t uploaded.")
                 section("Purchases",
-                        "Subscriptions are handled by Apple. We receive no payment details. The app checks your subscription status with the App Store.")
+                        "Subscriptions and one-time purchases are handled by Apple. We receive no payment details. The app checks what you've bought with the App Store.")
                 section("Notifications",
                         "Reminders are scheduled on your device only if you allow notifications. We don’t send push notifications.")
                 section("Sharing",

@@ -25,6 +25,7 @@ struct AnalyticsDashboardView: View {
                 leaderboardLink
                 weeklyLeaderboardLink
                 trophyRoomLink
+                memoryLink
                 weeklyInsightsLink
                 seasonLink
                 portfolioLink
@@ -222,6 +223,23 @@ struct AnalyticsDashboardView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Pacers").font(.headline)
                     Text("Race computer pacers set around your level").font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+            }
+            .padding(16)
+            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var memoryLink: some View {
+        NavigationLink { MemoryView() } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "brain.head.profile").font(.title2).foregroundStyle(.mint)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Memory").font(.headline)
+                    Text("What's strong, what's fading, and your quiz accuracy over time").font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Image(systemName: "chevron.right").foregroundStyle(.secondary)
