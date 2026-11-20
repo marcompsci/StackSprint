@@ -1,6 +1,6 @@
 # StackSprint: how the app helps people remember (research notes)
 
-Last updated: November 19, 2026
+Last updated: November 19, 2026 (phases 81–100 added)
 
 This document summarizes the research behind StackSprint's learning and engagement features, and where each idea lives in the app.
 
@@ -88,6 +88,20 @@ There are 12 lessons on how working developers operate:
 - debugging and readable code
 - secrets, semantic versioning, accessibility and logging
 
+## 5. Added in phases 81–100
+
+| Finding | Evidence | In StackSprint |
+|---|---|---|
+| **Confidence checks.** Rating how sure you are shows what you only *think* you know. Mistakes made with high confidence are corrected especially well once feedback comes (the hypercorrection effect). | Butterfield & Metcalfe (2001), and later work reviewed by Metcalfe. | Each quiz answer asks **Sure / Guessing** (can be turned off). Correct guesses and confident mistakes bring the review sooner. |
+| **Typed recall.** Producing an answer is harder than recognising it, and harder retrieval builds stronger memory. | Retrieval-practice literature (the same meta-analyses as above). | Optional **Type answers** mode for the "Name it" question, forgiving small typos on longer terms. |
+| **Self-explanation.** Explaining in your own words improves understanding. | Bisra et al. (2018), 64 studies, about 6,000 learners: g ≈ 0.55. | **Explain it in your own words** box in every lesson, with a check of which key ideas you covered. |
+| **Interleaving.** Mixing similar topics helps tell them apart. Moderate overall effect; it varies by material and can reverse for word lists. | Brunmair & Richter (2019): g ≈ 0.42. | **Mixed review** in Practice: weakest lessons first, never the same lesson twice in a row. It's an option, not the default. |
+| **Spaced retest.** A second test a day or more later combines spacing and retrieval. | Same spacing research as above. | **Still remember…?** card on Learn for a lesson quizzed 1–3 days ago. |
+| **Sleep and memory.** Sleep helps consolidate what you learned that day. | Diekelmann & Born (2010), *Nature Reviews Neuroscience*. | Opt-in **evening review** reminder at 9 pm, only on days lessons are due. |
+| **Plans with a date.** A concrete plan makes follow-through more likely. | Implementation-intentions research. | **Study plan**: pick a track and a finish date, see lessons per day. |
+
+Engagement additions: "You vs. last week" (compete with your past self, not strangers), track certificates (clearly labelled as in-app achievements), and a free sample lesson for each paid offer so people can try before they buy.
+
 ## Sources
 
 - Roediger & Karpicke (2006), Test-enhanced learning — https://pubmed.ncbi.nlm.nih.gov/16507066/
@@ -99,4 +113,9 @@ There are 12 lessons on how working developers operate:
 - A Sleeping, Recovering Bandit Algorithm for Optimizing Recurring Notifications — https://paperswithcode.com/paper/a-sleeping-recovering-bandit-algorithm-for
 - How U.S. military linguists learn languages fast (DLI) — https://storylearning.com/blog/how-us-military-linguists-learn-languages-fast
 - AI Fluency course overview (eWeek) — https://www.eweek.com/news/anthropic-ai-fluency-course/
+- Bisra et al. (2018), Inducing self-explanation: a meta-analysis — https://doi.org/10.1007/s10648-018-9434-x
+- Self-explanation meta-analysis summary (BPS Research Digest) — https://www.bps.org.uk/research-digest/self-explanation-powerful-learning-technique-according-meta-analysis-64-studies
+- Brunmair & Richter (2019), Similarity matters: a meta-analysis of interleaved learning — https://pubmed.ncbi.nlm.nih.gov/31556629/
+- Hypercorrection of high-confidence errors (review) — https://pmc.ncbi.nlm.nih.gov/articles/PMC4084803
+- Diekelmann & Born (2010), The memory function of sleep — https://www.doi.org/10.1038/NRN2762
 - Claude prompting best practices — https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/be-clear-and-direct

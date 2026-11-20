@@ -130,6 +130,9 @@ if uses 'product.purchase\(|Product.products'; then
   for id in com.stacksprint.pro.monthly com.stacksprint.pro.yearly com.stacksprint.ai.monthly com.stacksprint.ai.yearly com.stacksprint.pack.professional; do
     grep -q "$id" "$APP/StackSprint.storekit" && pass "StoreKit test config has $id" || fail "StoreKit test config is missing $id"
   done
+  grep -q 'manageSubscriptionsSheet' "$APP/PurchaseExtras.swift" && pass "Subscriptions can be managed in the app" || fail "No in-app way to manage subscriptions"
+  grep -q 'isEligibleForIntroOffer' "$APP/PurchaseExtras.swift" && pass "Intro offers are only shown to eligible learners" || fail "Intro offer shown without an eligibility check"
+  grep -q 'not an accredited qualification' "$APP/RetentionViews.swift" && pass "Certificates say they're in-app achievements" || fail "Certificates could be mistaken for a qualification"
   manual "Create in App Store Connect: Pro (com.stacksprint.pro.monthly/.yearly), AI Skills (com.stacksprint.ai.monthly/.yearly, its own group), and the non-consumable com.stacksprint.pack.professional; attach them to the version"
 fi
 

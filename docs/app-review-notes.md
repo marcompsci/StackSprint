@@ -19,7 +19,11 @@ Paste the **Review notes** section into App Store Connect → TestFlight → Tes
 >
 > **In-app purchases:** (1) StackSprint Pro, monthly and yearly auto-renewing subscriptions, unlocks the Go, Rust and Interview Prep tracks and Pro season collectibles. (2) AI Skills, monthly and yearly auto-renewing subscriptions in their own group, unlocks 16 original lessons on prompting AI clearly, checking its answers, and using it safely and fairly, plus prompt-makeover practice. (3) Professional Practice, a one-time non-consumable purchase, unlocks 12 lessons on Git, code review, testing, CI and debugging. Everything else is free. The paywall (tap any locked track, or Account → Plans and purchases) has a picker for the three offers, Restore Purchases, Terms of Use and the Privacy Policy. AI Skills content is our own; it is not affiliated with or endorsed by any AI company.
 >
-> **After every lesson:** a 5-question quiz built from that lesson. Scores stay on the device and set the next review date.
+> **Trying paid content:** each offer on the paywall has a "Try a free lesson" button that opens one real lesson from that offer without a purchase. Introductory offers are shown only when the App Store reports the learner is eligible. Account → Plans and purchases has Manage subscriptions and Request a refund (Apple's own sheets).
+>
+> **After every lesson:** a 5-question quiz built from that lesson, which can ask how sure the learner is. Scores, confidence and the learner's own written explanations stay on the device and set the next review date.
+>
+> **Certificates** (Stats → Certificates) are in-app learning achievements; the image says it is not an accredited qualification.
 >
 > **Running code (guideline 2.5.2):** this is an educational app. Learner-written JavaScript and CSS run in sandboxed, network-blocked web views. The first time a learner runs Python, the app downloads the open-source Pyodide interpreter from jsDelivr. It is used only to run the learner's own Python and doesn't change the app's features.
 >

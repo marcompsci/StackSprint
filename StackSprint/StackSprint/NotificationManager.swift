@@ -11,6 +11,8 @@ import UserNotifications
     @AppStorage("notifications.dailyMinute") var dailyMinute = 0
     @AppStorage("notifications.streakNudge") var streakNudge = true
     @AppStorage("notifications.weeklyRecap") var weeklyRecap = true
+    /// Off until the learner turns it on: a short review at 9 pm on days lessons are due.
+    @AppStorage("notifications.eveningReview") var eveningReview = false
 
     private let center = UNUserNotificationCenter.current()
 
@@ -36,6 +38,7 @@ import UserNotifications
     func scheduleAll() {
         guard enabled, permissionGranted else { return }
         scheduleDailyReminder()
+        scheduleEveningReview()
         // A streak lasts until the end of the day after you practice, so the nudge
         // comes a day later, while there's still time to keep it.
         center.removePendingNotificationRequests(withIdentifiers: ["comeback.48h", "comeback.24h"])
@@ -114,6 +117,30 @@ import UserNotifications
         .map { $0 }
     }
 
+    // MARK: – Evening review (opt-in)
+
+    nonisolated static let eveningHour = 21
+
+    /// Memories settle during sleep, so a two-minute review before bed is a good habit.
+    /// Only on days with lessons due, and only when the learner turned it on.
+    func scheduleEveningReview() {
+        let ids = (0..<Self.reminderDays).map { "evening.review.\($0)" }
+        center.removePendingNotificationRequests(withIdentifiers: ids)
+        guard enabled, eveningReview, permissionGranted else { return }
+        for (offset, date) in Self.reminderDates(hour: Self.eveningHour, minute: 0, now: Date(), skipToday: false).enumerated() {
+            let due = dueCountBy(date)
+            guard due > 0 else { continue }
+            let content = UNMutableNotificationContent()
+            content.title = "A quick review before bed"
+            content.body = due == 1 ? "1 lesson is due. Reviewing before sleep helps it stick."
+                : "\(due) lessons are due. Reviewing before sleep helps them stick."
+            content.sound = .default
+            let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+            center.add(UNNotificationRequest(identifier: "evening.review.\(offset)", content: content,
+                                             trigger: UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)))
+        }
+    }
+
     // MARK: – Weekly recap
 
     /// A short recap on the last evening of the week. It's rescheduled after every practice,
@@ -160,6 +187,7 @@ import UserNotifications
     func refreshAfterPractice() {
         guard enabled, permissionGranted else { return }
         scheduleDailyReminder()
+        scheduleEveningReview()
         // Reset comeback timers so they count from NOW
         center.removePendingNotificationRequests(withIdentifiers: ["comeback.48h", "comeback.24h"])
         if streakNudge { scheduleComeback(afterHours: 23, id: "comeback.24h",
@@ -250,6 +278,8 @@ struct NotificationSettingsSection: View {
                         .onChange(of: notifications.matchRoutine) { _, _ in notifications.scheduleDailyReminder() }
                     Toggle("Streak reminder", isOn: $notifications.streakNudge)
                         .onChange(of: notifications.streakNudge) { _, _ in notifications.refreshAfterPractice() }
+                    Toggle("Evening review when lessons are due", isOn: $notifications.eveningReview)
+                        .onChange(of: notifications.eveningReview) { _, _ in notifications.scheduleEveningReview() }
                     Toggle("Weekly recap", isOn: $notifications.weeklyRecap)
                         .onChange(of: notifications.weeklyRecap) { _, on in
                             if !on { notifications.cancelWeeklyRecap() }

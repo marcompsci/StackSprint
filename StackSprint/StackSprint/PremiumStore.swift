@@ -198,6 +198,7 @@ enum PaywallOffer: String, CaseIterable, Identifiable {
 
 struct ProPaywallView: View {
     @EnvironmentObject var premiumStore: PremiumStore
+    @EnvironmentObject var store: LearningStore
     @Environment(\.dismiss) private var dismiss
     @State private var offer: PaywallOffer = .pro
     @State private var didSetOffer = false
@@ -208,6 +209,7 @@ struct ProPaywallView: View {
                 VStack(spacing: 28) {
                     paywallHeader
                     featureList
+                    sampleLink
                     productSection
                     if let err = premiumStore.purchaseError {
                         Text(err).font(.caption).foregroundStyle(.red).multilineTextAlignment(.center)
@@ -275,6 +277,18 @@ struct ProPaywallView: View {
         }
     }
 
+    /// One free lesson from this offer, so you can see what you'd get.
+    @ViewBuilder
+    private var sampleLink: some View {
+        if !premiumStore.owns(offer), let sample = offer.sampleLesson(in: store.lessonsByTrack) {
+            NavigationLink { LessonView(lesson: sample) } label: {
+                Label("Try a free lesson: \(sample.term)", systemImage: "play.circle.fill")
+                    .font(.subheadline.bold()).frame(maxWidth: .infinity).padding(.vertical, 10)
+            }
+            .buttonStyle(.bordered).tint(.mint)
+        }
+    }
+
     @ViewBuilder
     private var productSection: some View {
         let offerProducts = premiumStore.products(for: offer)
@@ -323,6 +337,7 @@ private struct ProFeatureRow: View {
 private struct PaywallProductButton: View {
     @EnvironmentObject var premiumStore: PremiumStore
     let product: Product
+    @State private var introOffer: String?
 
     private var isYearly: Bool { product.id == ProProductID.yearly.rawValue || product.id == StoreProductID.aiYearly.rawValue }
 
@@ -358,6 +373,9 @@ private struct PaywallProductButton: View {
                     }
                     Text(product.description.isEmpty ? (product.type == .nonConsumable ? "Yours to keep" : "Cancel anytime") : product.description)
                         .font(.caption).foregroundStyle(.secondary)
+                    if let introOffer {
+                        Text(introOffer).font(.caption.bold()).foregroundStyle(.mint)
+                    }
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
@@ -372,6 +390,7 @@ private struct PaywallProductButton: View {
                 .stroke(isYearly ? Color.mint.opacity(0.5) : Color.secondary.opacity(0.15)))
         }
         .buttonStyle(.plain)
+        .task(id: product.id) { introOffer = await IntroOffer.label(for: product) }
         .disabled(premiumStore.isPurchasing)
         .overlay(premiumStore.isPurchasing
                  ? RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.black.opacity(0.2))

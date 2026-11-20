@@ -65,31 +65,63 @@ struct LessonQuizResult {
     let score: Int
     let total: Int
     let missed: [LessonQuizQuestion]
+    /// Right answers marked "guessing".
+    var luckyGuesses = 0
+    /// Wrong answers marked "sure".
+    var confidentMisses = 0
+}
+
+/// Quiz preferences, shared by every lesson quiz.
+enum QuizPrefs {
+    static let confidenceKey = "quiz.askConfidence"
+    static let typedKey = "quiz.typedRecall"
 }
 
 struct LessonQuizView: View {
-    let lesson: Lesson
+    /// The lesson being tested. Nil for a mixed session that covers several lessons.
+    let lesson: Lesson?
     let questions: [LessonQuizQuestion]
     /// XP the lesson itself earned this visit (10 when it was finished for the first time).
-    let lessonXP: Int
+    var lessonXP = 0
+    /// Title for a mixed or retest session.
+    var title = "Lesson quiz"
     let onFinish: (LessonQuizResult) -> Void
 
     @EnvironmentObject var store: LearningStore
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AppStorage(QuizPrefs.confidenceKey) private var askConfidence = true
+    @AppStorage(QuizPrefs.typedKey) private var typedRecall = false
     @State private var index = 0
+    /// The revealed answer. -1 means a typed answer that didn't match.
     @State private var selected: Int?
+    /// Picked but not yet revealed, while the learner says how sure they are.
+    @State private var pending: Int?
+    @State private var confidence: AnswerConfidence?
+    @State private var typed = ""
     @State private var score = 0
     @State private var missed: [LessonQuizQuestion] = []
+    @State private var lucky = 0
+    @State private var confidentMisses = 0
     @State private var quizXP = 0
     @State private var finished: LessonQuizResult?
+    @FocusState private var typingFocused: Bool
+
+    private var pool: [Lesson] {
+        if let lesson { return store.lessonsByTrack[lesson.category] ?? [] }
+        return store.curriculum?.lessons ?? []
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     if let finished {
-                        SessionCompleteView(lesson: lesson, result: finished, xpEarned: lessonXP + quizXP) { dismiss() }
+                        if let lesson {
+                            SessionCompleteView(lesson: lesson, result: finished, xpEarned: lessonXP + quizXP) { dismiss() }
+                        } else {
+                            MixedSummaryView(title: title, result: finished, xpEarned: quizXP) { dismiss() }
+                        }
                     } else if questions.indices.contains(index) {
                         question(questions[index])
                     }
@@ -97,17 +129,28 @@ struct LessonQuizView: View {
                 .padding(24)
                 .frame(maxWidth: 700)
             }
-            .navigationTitle(finished == nil ? "Lesson quiz" : "Lesson complete")
+            .navigationTitle(finished == nil ? title : "Session complete")
             .navigationBarTitleDisplayMode(.inline)
             .modifier(SprintTheme())
             .toolbar {
                 if finished == nil {
                     ToolbarItem(placement: .cancellationAction) { Button("Later") { dismiss() } }
+                    ToolbarItem(placement: .primaryAction) {
+                        Menu {
+                            Toggle("Ask how sure I am", isOn: $askConfidence)
+                            Toggle("Type answers (harder)", isOn: $typedRecall)
+                        } label: {
+                            Label("Quiz options", systemImage: "slider.horizontal.3")
+                        }
+                        .disabled(pending != nil || selected != nil)
+                    }
                 }
             }
         }
         .interactiveDismissDisabled(finished == nil && index > 0)
     }
+
+    private func isTyped(_ q: LessonQuizQuestion) -> Bool { typedRecall && q.kind == .recall }
 
     @ViewBuilder
     private func question(_ q: LessonQuizQuestion) -> some View {
@@ -118,43 +161,138 @@ struct LessonQuizView: View {
         }
         ProgressView(value: Double(index), total: Double(questions.count)).tint(.mint)
         Text(q.prompt).font(.title3.bold()).fixedSize(horizontal: false, vertical: true)
-        ForEach(q.choices.indices, id: \.self) { i in
-            Button { answer(q, i) } label: {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(q.choices[i]).multilineTextAlignment(.leading)
-                    Spacer(minLength: 8)
-                    if selected != nil && i == q.answer { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) }
-                    else if selected == i { Image(systemName: "xmark.circle.fill").foregroundStyle(.red) }
+        if isTyped(q) {
+            typedField(q)
+        } else {
+            ForEach(q.choices.indices, id: \.self) { i in
+                Button { choose(i) } label: {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(q.choices[i]).multilineTextAlignment(.leading)
+                        Spacer(minLength: 8)
+                        if selected != nil && i == q.answer { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) }
+                        else if selected == i { Image(systemName: "xmark.circle.fill").foregroundStyle(.red) }
+                        else if pending == i { Image(systemName: "circle.inset.filled").foregroundStyle(.mint) }
+                    }
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(fill(i, q), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(pending == i ? Color.mint : Color.secondary.opacity(0.2), lineWidth: pending == i ? 2 : 1))
                 }
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(fill(i, q), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.secondary.opacity(0.2)))
+                .buttonStyle(.plain)
+                .disabled(selected != nil)
+                .keyboardShortcut(KeyEquivalent(Character("\(i + 1)")), modifiers: [])
+                .accessibilityLabel(label(i, q))
             }
-            .buttonStyle(.plain)
-            .disabled(selected != nil)
-            .keyboardShortcut(KeyEquivalent(Character("\(i + 1)")), modifiers: [])
-            .accessibilityLabel(label(i, q))
         }
-        if let selected {
-            Text(selected == q.answer ? "Right." : "The answer is \(q.choices[q.answer]).").font(.headline)
-            Text(q.explanation).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            Button(index + 1 < questions.count ? "Next question" : "See results") { next() }
-                .buttonStyle(.borderedProminent)
-                .keyboardShortcut(.defaultAction)
+        if pending != nil && selected == nil { confidencePrompt(q) }
+        if let selected { feedback(q, selected) }
+    }
+
+    private func typedField(_ q: LessonQuizQuestion) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TextField("Type the term", text: $typed)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .focused($typingFocused)
+                .padding(14)
+                .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .disabled(pending != nil || selected != nil)
+                .onSubmit { submitTyped(q) }
+                .onAppear { typingFocused = true }
+                .accessibilityHint("Type your answer, then submit")
+            if pending == nil && selected == nil {
+                Button("Submit") { submitTyped(q) }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(typed.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+            Text("Small typos are fine on longer terms.").font(.caption).foregroundStyle(.secondary)
         }
     }
 
-    private func answer(_ q: LessonQuizQuestion, _ choice: Int) {
+    private func confidencePrompt(_ q: LessonQuizQuestion) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("How sure are you?").font(.headline)
+            HStack(spacing: 12) {
+                Button { reveal(q, confidence: .sure) } label: {
+                    Label("Sure", systemImage: "hand.thumbsup.fill").frame(maxWidth: .infinity).padding(.vertical, 6)
+                }
+                .buttonStyle(.borderedProminent).tint(.mint)
+                .keyboardShortcut("s", modifiers: [])
+                Button { reveal(q, confidence: .guessing) } label: {
+                    Label("Guessing", systemImage: "questionmark.circle").frame(maxWidth: .infinity).padding(.vertical, 6)
+                }
+                .buttonStyle(.bordered)
+                .keyboardShortcut("g", modifiers: [])
+            }
+            Button("Change my answer") { pending = nil; if isTyped(q) { typingFocused = true } }
+                .font(.footnote).buttonStyle(.plain).foregroundStyle(.secondary)
+        }
+        .padding(14)
+        .background(Color.mint.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    @ViewBuilder
+    private func feedback(_ q: LessonQuizQuestion, _ choice: Int) -> some View {
+        let right = choice == q.answer
+        Text(right ? "Right." : "The answer is \(q.choices[q.answer]).").font(.headline)
+        if right && confidence == .guessing {
+            Label("Right, but you guessed. It'll come back a little sooner so it sticks.", systemImage: "questionmark.circle")
+                .font(.subheadline).foregroundStyle(.orange)
+        } else if !right && confidence == .sure {
+            Label("You were sure about this one. Mistakes you were confident about are the easiest to fix once you see why.",
+                  systemImage: "exclamationmark.triangle.fill")
+                .font(.subheadline).foregroundStyle(.orange)
+        }
+        if !right, q.choices.indices.contains(choice),
+           let whyNot = LessonQuizBuilder.whyNot(q.choices[choice], in: q, lessons: pool) {
+            Text(whyNot).font(.subheadline).fixedSize(horizontal: false, vertical: true)
+        }
+        Text(q.explanation).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        Button(index + 1 < questions.count ? "Next question" : "See results") { next() }
+            .buttonStyle(.borderedProminent)
+            .keyboardShortcut(.defaultAction)
+    }
+
+    private func choose(_ choice: Int) {
+        HapticManager.shared.selection()
+        if askConfidence {
+            pending = choice
+            AccessibilityNotification.Announcement("How sure are you?").post()
+        } else {
+            pending = choice
+            reveal(questions[index], confidence: nil)
+        }
+    }
+
+    private func submitTyped(_ q: LessonQuizQuestion) {
+        guard !typed.trimmingCharacters(in: .whitespaces).isEmpty, selected == nil else { return }
+        typingFocused = false
+        let choice = TypedAnswer.matches(typed, q.choices[q.answer]) ? q.answer : -1
+        if askConfidence {
+            pending = choice
+            AccessibilityNotification.Announcement("How sure are you?").post()
+        } else {
+            pending = choice
+            reveal(q, confidence: nil)
+        }
+    }
+
+    private func reveal(_ q: LessonQuizQuestion, confidence level: AnswerConfidence?) {
+        guard let choice = pending else { return }
+        confidence = level
         selected = choice
+        pending = nil
         if choice == q.answer {
             score += 1
+            if level == .guessing { lucky += 1 }
             // Same rule as every quiz: 5 XP per question answered right, once a day.
             if store.recordDailyRecall(q.id) { quizXP += 5 }
             HapticManager.shared.notification(.success)
             AccessibilityNotification.Announcement("Correct").post()
         } else {
             missed.append(q)
+            if level == .sure { confidentMisses += 1 }
             HapticManager.shared.notification(.warning)
             AccessibilityNotification.Announcement("Not quite. The answer is \(q.choices[q.answer]).").post()
         }
@@ -163,9 +301,13 @@ struct LessonQuizView: View {
     private func next() {
         withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) {
             selected = nil
+            pending = nil
+            confidence = nil
+            typed = ""
             index += 1
             if index >= questions.count {
-                let result = LessonQuizResult(score: score, total: questions.count, missed: missed)
+                let result = LessonQuizResult(score: score, total: questions.count, missed: missed,
+                                              luckyGuesses: lucky, confidentMisses: confidentMisses)
                 finished = result
                 onFinish(result)
             }
@@ -173,17 +315,53 @@ struct LessonQuizView: View {
     }
 
     private func fill(_ i: Int, _ q: LessonQuizQuestion) -> Color {
-        guard let selected else { return SprintPalette.card }
+        guard let selected else { return pending == i ? Color.mint.opacity(0.10) : SprintPalette.card }
         if i == q.answer { return .green.opacity(0.16) }
         if i == selected { return .red.opacity(0.14) }
         return SprintPalette.card
     }
 
     private func label(_ i: Int, _ q: LessonQuizQuestion) -> String {
-        guard let selected else { return q.choices[i] }
+        guard let selected else { return pending == i ? "\(q.choices[i]), selected" : q.choices[i] }
         if i == q.answer { return "\(q.choices[i]), correct answer" }
         if i == selected { return "\(q.choices[i]), your answer, incorrect" }
         return q.choices[i]
+    }
+}
+
+/// Results for a session that covered several lessons.
+struct MixedSummaryView: View {
+    let title: String
+    let result: LessonQuizResult
+    let xpEarned: Int
+    let onDone: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("\(result.score) of \(result.total)").font(.system(.largeTitle, design: .rounded, weight: .bold))
+            Text(title).font(.title3)
+            Label("+\(xpEarned) XP", systemImage: "bolt.fill").font(.headline).foregroundStyle(.yellow)
+            if result.confidentMisses > 0 {
+                Label("\(result.confidentMisses) answer\(result.confidentMisses == 1 ? "" : "s") you were sure about were wrong. Those lessons come back soon.",
+                      systemImage: "exclamationmark.triangle.fill")
+                    .font(.subheadline).foregroundStyle(.orange)
+            }
+            Text("Mixing lessons is harder than studying one at a time, and that's the point: it trains you to tell ideas apart.")
+                .font(.subheadline).foregroundStyle(.secondary)
+            if !result.missed.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Remember this").font(.headline)
+                    ForEach(result.missed) { q in
+                        Text("\u{2022} \(q.explanation)").font(.subheadline).fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            Button(action: onDone) {
+                Text("Done").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12)
+            }
+            .buttonStyle(.borderedProminent).tint(.mint)
+            .keyboardShortcut(.defaultAction)
+        }
     }
 }
 
@@ -239,6 +417,11 @@ struct SessionCompleteView: View {
                     .font(.subheadline).foregroundStyle(.secondary)
             }
 
+            if result.luckyGuesses > 0 || result.confidentMisses > 0 {
+                Label(confidenceNote, systemImage: "gauge.with.needle")
+                    .font(.subheadline).foregroundStyle(.secondary)
+            }
+
             if !result.missed.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Remember this").font(.headline)
@@ -254,6 +437,13 @@ struct SessionCompleteView: View {
             .buttonStyle(.borderedProminent).tint(.mint)
             .keyboardShortcut(.defaultAction)
         }
+    }
+
+    private var confidenceNote: String {
+        var parts: [String] = []
+        if result.luckyGuesses > 0 { parts.append("\(result.luckyGuesses) right answer\(result.luckyGuesses == 1 ? " was a guess" : "s were guesses")") }
+        if result.confidentMisses > 0 { parts.append("\(result.confidentMisses) wrong answer\(result.confidentMisses == 1 ? " you were" : "s you were") sure about") }
+        return parts.joined(separator: " and ") + ". The review schedule takes that into account."
     }
 
     private var headline: String {

@@ -18,6 +18,7 @@ struct AnalyticsDashboardView: View {
                 if store.practicedDays.isEmpty { EmptyStatsState() }
                 else {
                     streakStatsCard
+                    WeekComparisonCard()
                     heatmapSection
                     categoryProgressSection
                     xpBreakdownChart
@@ -26,6 +27,8 @@ struct AnalyticsDashboardView: View {
                 weeklyLeaderboardLink
                 trophyRoomLink
                 memoryLink
+                planLink
+                certificatesLink
                 weeklyInsightsLink
                 seasonLink
                 portfolioLink
@@ -223,6 +226,34 @@ struct AnalyticsDashboardView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Pacers").font(.headline)
                     Text("Race computer pacers set around your level").font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+            }
+            .padding(16)
+            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var planLink: some View {
+        dashboardLink("Study plan", "Pick a finish date and see how many lessons a day gets you there",
+                      "calendar.badge.checkmark", .indigo) { StudyPlannerView() }
+    }
+
+    private var certificatesLink: some View {
+        dashboardLink("Certificates", "Earn one for each track you finish with strong quiz scores",
+                      "rosette", .yellow) { CertificatesView() }
+    }
+
+    private func dashboardLink<D: View>(_ title: String, _ subtitle: String, _ icon: String, _ color: Color,
+                                        @ViewBuilder destination: @escaping () -> D) -> some View {
+        NavigationLink(destination: destination) {
+            HStack(spacing: 14) {
+                Image(systemName: icon).font(.title2).foregroundStyle(color)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title).font(.headline)
+                    Text(subtitle).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Image(systemName: "chevron.right").foregroundStyle(.secondary)

@@ -1854,6 +1854,7 @@ struct LearnView: View {
                     searchResults
                 } else {
                     heroCard
+                    RetestCard()
                     if let challenge = challengeStore.incomingChallenge {
                         IncomingChallengeBanner(challenge: challenge) {
                             showingChallenge = true
@@ -2402,6 +2403,7 @@ struct LessonView: View {
                     LessonNoteEditor(lessonID: lesson.id)
                         .padding(12)
                         .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    ExplainBackCard(lesson: lesson)
                     if typingPractice { practiceArea } else {
                         if !lesson.code.isEmpty {
                             Text(lesson.category == PaidContent.aiTrack ? "Example" : "Example code").font(.headline)
@@ -2559,10 +2561,7 @@ struct LessonView: View {
     private func finishQuiz(_ result: LessonQuizResult) {
         quizDone = true
         quizTaken = true
-        MasteryStore.shared.record(lessonID: lesson.id, score: result.score, total: result.total,
-                                   missed: result.missed.map(\.kind))
-        SM2Engine.shared.recordReview(lessonID: lesson.id,
-                                      quality: LessonQuizBuilder.reviewQuality(score: result.score, of: result.total))
+        LessonQuizRecorder.record(lesson.id, result)
         for missed in result.missed { AdaptiveEngine.shared.recordWrong(missed.id) }
         store.recordPractice()
     }
@@ -2909,6 +2908,7 @@ struct AccountView: View {
                         .foregroundStyle(.primary)
                     }
                 }
+                PurchaseManagementRows()
             } header: {
                 Label("Plans and purchases", systemImage: "crown.fill")
             } footer: {
