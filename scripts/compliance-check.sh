@@ -131,6 +131,7 @@ if uses 'product.purchase\(|Product.products'; then
     grep -q "$id" "$APP/StackSprint.storekit" && pass "StoreKit test config has $id" || fail "StoreKit test config is missing $id"
   done
   grep -q 'earn no XP' "$APP/StudyToolsViews.swift" && pass "Placement check doesn't award XP for skipped lessons" || fail "Placement check may award unearned XP"
+  grep -q 'offerCodeRedemption' "$APP/PurchaseExtras.swift" && pass "Offer codes can be redeemed in the app" || warn "No in-app offer code redemption"
   grep -q 'manageSubscriptionsSheet' "$APP/PurchaseExtras.swift" && pass "Subscriptions can be managed in the app" || fail "No in-app way to manage subscriptions"
   grep -q 'isEligibleForIntroOffer' "$APP/PurchaseExtras.swift" && pass "Intro offers are only shown to eligible learners" || fail "Intro offer shown without an eligibility check"
   grep -q 'not an accredited qualification' "$APP/RetentionViews.swift" && pass "Certificates say they're in-app achievements" || fail "Certificates could be mistaken for a qualification"

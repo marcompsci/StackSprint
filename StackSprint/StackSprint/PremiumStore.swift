@@ -64,9 +64,9 @@ enum PaywallOffer: String, CaseIterable, Identifiable {
         case .pro: return [("Go and Rust lesson tracks", "chevron.left.forwardslash.chevron.right"),
                            ("Interview Prep track", "briefcase.fill"), ("Pro season collectibles", "rosette")]
         case .aiSkills: return [("\(PaidContent.ai.count) lessons on prompting, checking and safe use", "text.bubble.fill"),
-                                ("Prompt makeover practice", "wand.and.stars"), ("New AI lessons as they're added", "plus.circle.fill")]
-        case .professional: return [("\(PaidContent.professional.count) lessons: Git, reviews, tests, CI, debugging", "hammer.fill"),
-                                    ("5-question quiz after every lesson", "checkmark.circle.fill"), ("One purchase, no subscription", "infinity")]
+                                ("Prompt builder, makeovers and Check the AI drills", "wand.and.stars"), ("New AI lessons as they're added", "plus.circle.fill")]
+        case .professional: return [("\(PaidContent.professional.count) lessons: Git, reviews, tests, CI, docs, incidents", "hammer.fill"),
+                                    ("Bug hunt drills and a quiz after every lesson", "ant.fill"), ("One purchase, no subscription", "infinity")]
         }
     }
     var tracks: Set<String> {
@@ -173,7 +173,7 @@ enum PaywallOffer: String, CaseIterable, Identifiable {
         }
     }
 
-    private func refreshEntitlements() async {
+    func refreshEntitlements() async {
         var owned: Set<PaywallOffer> = []
         for await result in StoreKit.Transaction.currentEntitlements {
             // Refunded or revoked purchases carry a revocation date and don't count.
@@ -305,12 +305,20 @@ struct ProPaywallView: View {
             .padding(.vertical, 12)
         } else {
             VStack(spacing: 12) {
+                let monthly = offerProducts.first { $0.subscription?.subscriptionPeriod.unit == .month && $0.subscription?.subscriptionPeriod.value == 1 }
                 ForEach(offerProducts, id: \.id) { product in
-                    PaywallProductButton(product: product)
+                    PaywallProductButton(product: product, savings: savings(for: product, monthly: monthly))
                 }
             }
         }
     }
+}
+
+/// "Save 33%" on a yearly plan, from the App Store's own prices.
+private func savings(for product: Product, monthly: Product?) -> Int? {
+    guard let monthly, let period = product.subscription?.subscriptionPeriod,
+          period.unit == .year, period.value == 1 else { return nil }
+    return YearlySavings.percent(monthly: monthly.price, yearly: product.price)
 }
 
 private struct ProFeatureRow: View {
@@ -337,6 +345,7 @@ private struct ProFeatureRow: View {
 private struct PaywallProductButton: View {
     @EnvironmentObject var premiumStore: PremiumStore
     let product: Product
+    var savings: Int? = nil
     @State private var introOffer: String?
 
     private var isYearly: Bool { product.id == ProProductID.yearly.rawValue || product.id == StoreProductID.aiYearly.rawValue }
@@ -365,7 +374,7 @@ private struct PaywallProductButton: View {
                     HStack(spacing: 6) {
                         Text(product.displayName).font(.headline)
                         if isYearly {
-                            Text("BEST VALUE").font(.caption2.bold())
+                            Text(savings.map { "SAVE \($0)%" } ?? "BEST VALUE").font(.caption2.bold())
                                 .padding(.horizontal, 6).padding(.vertical, 2)
                                 .background(Color.mint.opacity(0.15), in: Capsule())
                                 .foregroundStyle(.mint)

@@ -504,6 +504,7 @@ struct StudyToolsSection: View {
             Text("Study tools").font(.title3.bold())
             link("My terms", "Every term you've learned, with memory strength and your notes", "character.book.closed.fill") { MyTermsView() }
             link("Focus timer", "10, 15 or 25 minutes of distraction-free study", "timer") { FocusTimerView() }
+            link("Reflections", "Your one-line notes on what you learned each day", "book.closed.fill") { JournalView() }
             Button { placementTrack = startingTrack } label: {
                 row("Placement check", "Skip lessons you already know in \(startingTrack)", "forward.end.circle.fill")
             }

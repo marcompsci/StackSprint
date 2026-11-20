@@ -106,6 +106,7 @@ struct LessonQuizView: View {
     @State private var lucky = 0
     @State private var confidentMisses = 0
     @State private var answers: [QuizAnswer] = []
+    @State private var combo = 0
     @State private var quizXP = 0
     @State private var finished: LessonQuizResult?
     @FocusState private var typingFocused: Bool
@@ -245,7 +246,15 @@ struct LessonQuizView: View {
     @ViewBuilder
     private func feedback(_ q: LessonQuizQuestion, _ choice: Int) -> some View {
         let right = choice == q.answer
-        Text(right ? "Right." : "The answer is \(q.choices[q.answer]).").font(.headline)
+        HStack {
+            Text(right ? "Right." : "The answer is \(q.choices[q.answer]).").font(.headline)
+            if right, let cheer = QuizCombo.message(for: combo) {
+                Spacer()
+                Label(cheer, systemImage: "flame.fill").font(.caption.bold())
+                    .padding(.horizontal, 10).padding(.vertical, 4)
+                    .background(Color.orange.opacity(0.15), in: Capsule()).foregroundStyle(.orange)
+            }
+        }
         if right && confidence == .guessing {
             Label("Right, but you guessed. It'll come back a little sooner so it sticks.", systemImage: "questionmark.circle")
                 .font(.subheadline).foregroundStyle(.orange)
@@ -296,6 +305,7 @@ struct LessonQuizView: View {
         answers.append(QuizAnswer(question: q, chosen: choice, confidence: level))
         if choice == q.answer {
             score += 1
+            combo += 1
             if level == .guessing { lucky += 1 }
             // Same rule as every quiz: 5 XP per question answered right, once a day.
             if store.recordDailyRecall(q.id) { quizXP += 5 }
@@ -303,6 +313,7 @@ struct LessonQuizView: View {
             AccessibilityNotification.Announcement("Correct").post()
         } else {
             missed.append(q)
+            combo = 0
             if level == .sure { confidentMisses += 1 }
             HapticManager.shared.notification(.warning)
             AccessibilityNotification.Announcement("Not quite. The answer is \(q.choices[q.answer]).").post()

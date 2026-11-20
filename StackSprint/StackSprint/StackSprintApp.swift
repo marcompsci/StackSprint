@@ -56,7 +56,7 @@ import WebKit
                     if let lessons = store.curriculum?.lessons { indexLessonsInSpotlightIfChanged(lessons) }
                     // Donate Siri Shortcuts
                     StackSprintShortcuts.updateAppShortcutParameters()
-                    store.onPractice = { [weak notifications, weak store, weak backend, weak celebrations, weak seasonStore] xp in
+                    store.onPractice = { [weak notifications, weak store, weak backend, weak celebrations, weak seasonStore, weak premiumStore] xp in
                         notifications?.refreshAfterPractice()
                         if let total = store?.curriculum?.lessons.count, total > 0,
                            let done = store?.completed.count {
@@ -74,7 +74,7 @@ import WebKit
                         WeeklyXPStore.shared.recordXP(xp)
                         if let s = store {
                             let hour = Calendar.current.component(.hour, from: Date())
-                            let ctx = AchievementContext(
+                            var ctx = AchievementContext(
                                 completedLessons: s.completed.count,
                                 streak: s.currentStreak,
                                 correctRecalls: s.correctRecallAnswers.count,
@@ -84,6 +84,8 @@ import WebKit
                                 curriculum: s.curriculum,
                                 hourOfDay: hour
                             )
+                            ctx.extras = AchievementContext.currentExtras(lessonsByTrack: s.lessonsByTrack, completed: s.completed,
+                                                                          locked: premiumStore?.lockedTracks ?? PremiumStore.paidTracks)
                             AchievementStore.shared.check(context: ctx)
                         }
                         if backend?.session != nil {
@@ -1864,6 +1866,8 @@ struct LearnView: View {
                     RetestCard()
                     QuickReviewCard()
                     PlacementPromptCard()
+                    LessonOfTheDayCard()
+                    ReflectionCard()
                     if let challenge = challengeStore.incomingChallenge {
                         IncomingChallengeBanner(challenge: challenge) {
                             showingChallenge = true
@@ -2414,6 +2418,9 @@ struct LessonView: View {
                         .padding(12)
                         .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     ExplainBackCard(lesson: lesson)
+                    CompleteTheCodeCard(lesson: lesson)
+                    RelatedLessonsSection(lesson: lesson)
+                    TeachAFriendButton(lesson: lesson)
                     if typingPractice { practiceArea } else {
                         if !lesson.code.isEmpty {
                             Text(lesson.category == PaidContent.aiTrack ? "Example" : "Example code").font(.headline)

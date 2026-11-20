@@ -47,6 +47,8 @@ struct MemoryView: View {
                     accuracyChart
                     weakKinds
                     MemoryInsightsSection()
+                    ReviewForecastSection()
+                    ToughLessonsSection()
                     lessonList(all)
                 }
                 HowMemoryWorksSection()

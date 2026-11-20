@@ -1,6 +1,6 @@
 # StackSprint: how the app helps people remember (research notes)
 
-Last updated: November 19, 2026 (phases 81–120 added)
+Last updated: November 19, 2026 (phases 81–145 added)
 
 This document summarizes the research behind StackSprint's learning and engagement features, and where each idea lives in the app.
 
@@ -77,11 +77,11 @@ StackSprint's AI Skills track is **original, beginner-level content** on these g
 - hallucinations and checking answers
 - privacy, bias, being open about AI use, safe use, and respecting creators
 
-It doesn't reproduce course materials, and it doesn't claim affiliation with or endorsement by any AI company. The track has 16 lessons plus 8 "prompt makeover" exercises.
+It doesn't reproduce course materials, and it doesn't claim affiliation with or endorsement by any AI company. The track has 22 lessons (including agents, sources, deepfakes, AI at work, summarising and learning with AI) plus 8 "prompt makeover" exercises.
 
 ## 4. Professional Practice (one-time purchase)
 
-There are 12 lessons on how working developers operate:
+There are 16 lessons on how working developers operate (now including documentation, dependencies, estimating and incident response):
 
 - commits, branches, pull requests and code review
 - unit tests and CI
@@ -112,6 +112,18 @@ Engagement additions: "You vs. last week" (compete with your past self, not stra
 - **My terms and notes export.** Every finished term, searchable, with memory strength, plus a Markdown export of the learner's own notes and explanations.
 - **Next-day retest reminders.** The daily reminder names a lesson that's due for its retest.
 
+## 7. Added in phases 121–145
+
+| Finding | Evidence | In StackSprint |
+|---|---|---|
+| **Reflection.** Spending a few minutes writing about what you learned improves later performance. | Di Stefano, Gino, Pisano & Staats (2014), "Learning by Thinking" (Harvard Business School working paper): reflecting led to better performance than extra practice. | **Today's reflection** on Learn after you study (one sentence), and a Reflections list in Study tools. |
+| **Teaching others (the protégé effect).** Preparing to explain something to someone else improves your own learning. | Nestojko et al. (2014), *Memory & Cognition*: expecting to teach improved recall and organisation. | **Teach a friend** shares a picture card of a lesson. **Explain it back** is the private version. |
+| **Faded worked examples.** Studying an example, then completing a partly blanked version, builds skill faster than starting from scratch. | Worked-example and completion-problem research (Renkl; Sweller). | **Complete the code** blanks one meaningful word of each example. |
+| **Elaboration.** Connecting new ideas to existing knowledge makes them easier to recall. | Dunlosky et al. (2013) review of learning techniques. | **Connects to** lists related lessons inside each lesson. |
+| **Leeches.** In spaced repetition, items that fail again and again need a new approach, not more of the same reviews. | Common practice in spaced-repetition systems (e.g. Anki's leech handling). | **Tough lessons** in Memory, with four ways to try it differently. |
+
+Also added: a two-week review forecast, a daily lesson-of-the-day flashcard, a "3 in a row" combo during quizzes, six new achievements, an offer-code redemption sheet, and the yearly-plan saving shown from the App Store's own prices. The AI Skills track grew to 22 lessons and Professional Practice to 16, with 12 Check the AI cases and 12 Bug hunt snippets.
+
 ## Sources
 
 - Roediger & Karpicke (2006), Test-enhanced learning — https://pubmed.ncbi.nlm.nih.gov/16507066/
@@ -128,4 +140,7 @@ Engagement additions: "You vs. last week" (compete with your past self, not stra
 - Brunmair & Richter (2019), Similarity matters: a meta-analysis of interleaved learning — https://pubmed.ncbi.nlm.nih.gov/31556629/
 - Hypercorrection of high-confidence errors (review) — https://pmc.ncbi.nlm.nih.gov/articles/PMC4084803
 - Diekelmann & Born (2010), The memory function of sleep — https://www.doi.org/10.1038/NRN2762
+- Di Stefano, Gino, Pisano & Staats (2014), Learning by Thinking — https://papers.ssrn.com/abstract=2414478
+- Nestojko, Bui, Kornell & Bjork (2014), Expecting to teach enhances learning — https://source.washu.edu/2014/07/expecting-to-teach-enhances-learning-recall/
+- Dunlosky et al. (2013), Improving students' learning with effective learning techniques — https://doi.org/10.1177/1529100612453266
 - Claude prompting best practices — https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/be-clear-and-direct

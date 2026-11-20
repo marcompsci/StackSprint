@@ -8,7 +8,7 @@ import SwiftUI
 
 enum WhatsNew {
     /// Bump when the list below changes.
-    static let revision = 4
+    static let revision = 5
     static let seenKey = "whatsnew.seenRevision"
 
     struct Item: Identifiable {
@@ -19,6 +19,16 @@ enum WhatsNew {
     }
 
     static let items: [Item] = [
+        Item(icon: "curlybraces.square.fill", title: "Complete the code",
+             detail: "Lessons with an example now ask you to fill in a missing word from memory."),
+        Item(icon: "point.3.connected.trianglepath.dotted", title: "Connected lessons",
+             detail: "Each lesson shows related ones, and \"Teach a friend\" shares a picture card of it."),
+        Item(icon: "book.closed.fill", title: "Daily reflection and lesson of the day",
+             detail: "One quick question after you study, and a daily flashcard from lessons you've finished."),
+        Item(icon: "calendar", title: "Review forecast and tough lessons",
+             detail: "Memory shows reviews coming up over two weeks and gives a new approach for lessons that keep slipping."),
+        Item(icon: "sparkles", title: "More AI Skills and Professional lessons",
+             detail: "AI agents, sources, deepfakes, AI at work and more, plus documentation, dependencies, estimating and incident response."),
         Item(icon: "forward.end.circle.fill", title: "Placement check",
              detail: "Already know some of a track? Take a short check and skip what you know."),
         Item(icon: "character.book.closed.fill", title: "My terms and notes export",
@@ -29,16 +39,6 @@ enum WhatsNew {
              detail: "See how often your Sure answers are right, fix mistakes you were sure about, and drill your weakest question type."),
         Item(icon: "timer", title: "Two-minute review and focus timer",
              detail: "A 3-question review for busy days (also in Siri: \"Quick review in StackSprint\"), plus a 10, 15 or 25-minute focus timer."),
-        Item(icon: "gauge.with.needle", title: "How sure are you?",
-             detail: "Quizzes ask how confident you are. Guesses and confident mistakes bring a lesson back sooner."),
-        Item(icon: "text.bubble.fill", title: "Explain it back",
-             detail: "Write a lesson in your own words and see which key ideas you covered."),
-        Item(icon: "shuffle", title: "Mixed review and retests",
-             detail: "Practice → Mixed review blends lessons together, and Learn suggests a quick retest a day later."),
-        Item(icon: "rosette", title: "Study plans and certificates",
-             detail: "Stats → Study plan sets a finish date. Finish a track with strong quiz scores to earn a certificate."),
-        Item(icon: "ant.fill", title: "Practice lab",
-             detail: "Prompt builder, Check the AI and Bug hunt drills, plus a free sample lesson for each paid track."),
     ]
 
     static func shouldShow(onboarded: Bool, defaults: UserDefaults = .standard) -> Bool {

@@ -47,6 +47,8 @@ struct AchievementContext {
     var customLessonsCount: Int
     var curriculum: Curriculum?
     var hourOfDay: Int
+    /// Counts from quizzes, explanations, focus sessions, reflections and certificates.
+    var extras = Extras()
 }
 
 // MARK: - Achievement Store
@@ -89,6 +91,7 @@ struct AchievementContext {
 
     private static func condition(for id: String, context: AchievementContext) -> Bool {
         let c = context
+        if let learning = LearningAchievements.condition(id, c.extras) { return learning }
         switch id {
         // Learner
         case "first-spark":        return c.completedLessons >= 1
@@ -141,6 +144,9 @@ struct AchievementContext {
             "ai-apprentice": (c.customLessonsCount, 1), "ai-scholar": (c.customLessonsCount, 5),
             "season-pioneer": (c.seasonTier, 5), "season-champion": (c.seasonTier, 10),
         ]
+        if let learning = LearningAchievements.progress(id, c.extras) {
+            return (min(learning.current, learning.goal), learning.goal)
+        }
         guard let (current, goal) = goals[id], goal > 0 else { return nil }
         return (min(current, goal), goal)
     }
@@ -206,7 +212,7 @@ struct AchievementContext {
         // Time-based
         Achievement(id: "night-owl",        title: "Night Owl",        description: "Practice after 10 PM",                     icon: "moon.stars.fill", rarity: .bronze),
         Achievement(id: "early-bird",       title: "Early Bird",       description: "Practice before 7 AM",                     icon: "sunrise.fill", rarity: .bronze),
-    ]
+    ] + LearningAchievements.all
 }
 
 // MARK: - Trophy Room View
@@ -218,11 +224,16 @@ struct TrophyRoomView: View {
     @EnvironmentObject var customLessons: CustomLessonsStore
     @State private var filterRarity: AchievementRarity? = nil
 
+    @EnvironmentObject var premiumStore: PremiumStore
+
     private var context: AchievementContext {
-        AchievementContext(completedLessons: learning.completed.count, streak: learning.currentStreak,
+        var ctx = AchievementContext(completedLessons: learning.completed.count, streak: learning.currentStreak,
                            correctRecalls: learning.correctRecallAnswers.count, practiceXP: learning.practiceXP,
                            seasonTier: seasonStore.tier, customLessonsCount: customLessons.lessons.count,
                            curriculum: learning.curriculum, hourOfDay: Calendar.current.component(.hour, from: Date()))
+        ctx.extras = AchievementContext.currentExtras(lessonsByTrack: learning.lessonsByTrack, completed: learning.completed,
+                                                      locked: premiumStore.lockedTracks)
+        return ctx
     }
 
     private var filtered: [Achievement] {

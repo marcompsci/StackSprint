@@ -68,9 +68,15 @@ struct PurchaseManagementRows: View {
     @State private var choosingRefund = false
     @State private var refundID: UInt64?
     @State private var showingRefund = false
+    @State private var redeeming = false
 
     var body: some View {
         Group {
+            Button {
+                redeeming = true
+            } label: {
+                Label("Redeem an offer code", systemImage: "giftcard")
+            }
             if premiumStore.isPro || premiumStore.hasAISkills {
                 Button {
                     showingManage = true
@@ -87,6 +93,9 @@ struct PurchaseManagementRows: View {
             }
         }
         .manageSubscriptionsSheet(isPresented: $showingManage)
+        .offerCodeRedemption(isPresented: $redeeming) { _ in
+            Task { await premiumStore.refreshEntitlements() }
+        }
         .refundRequestSheet(for: refundID ?? 0, isPresented: $showingRefund)
         .confirmationDialog("Which purchase?", isPresented: $choosingRefund, titleVisibility: .visible) {
             ForEach(owned) { item in
