@@ -103,7 +103,14 @@ import WebKit
                         let locked = premiumStore?.lockedTracks ?? PremiumStore.paidTracks
                         return LessonFlow.continueLesson(in: store.curriculum?.lessons ?? [], completed: store.completed,
                                                          preferredTrack: UserDefaults.standard.string(forKey: "goal.startingTrack") ?? "Web development",
-                                                         locked: locked)?.term
+                                                         locked: locked, known: PlacementStore.shared.known)?.term
+                    }
+                    notifications.retestTitle = { [weak store, weak premiumStore] in
+                        guard let store else { return nil }
+                        let locked = premiumStore?.lockedTracks ?? PremiumStore.paidTracks
+                        let lessons = (store.curriculum?.lessons ?? []).filter { !locked.contains($0.category) }
+                        guard let id = Retest.candidate(records: MasteryStore.shared.records, allowed: Set(lessons.map(\.id))) else { return nil }
+                        return lessons.first { $0.id == id }?.term
                     }
                     // Learn the permission state first: scheduling while it's unknown would clear reminders.
                     Task { await notifications.checkStatus(); notifications.scheduleDailyReminder() }
@@ -1855,6 +1862,8 @@ struct LearnView: View {
                 } else {
                     heroCard
                     RetestCard()
+                    QuickReviewCard()
+                    PlacementPromptCard()
                     if let challenge = challengeStore.incomingChallenge {
                         IncomingChallengeBanner(challenge: challenge) {
                             showingChallenge = true
@@ -2060,7 +2069,8 @@ struct LearnView: View {
             .buttonStyle(.borderedProminent).tint(.orange)
         } else if let next = LessonFlow.continueLesson(in: lessons, completed: store.completed,
                                                        preferredTrack: category,
-                                                       locked: premiumStore.lockedTracks) {
+                                                       locked: premiumStore.lockedTracks,
+                                                       known: PlacementStore.shared.known) {
             NavigationLink { LessonView(lesson: next) } label: {
                 Label("Continue: \(next.term)", systemImage: "play.fill")
                     .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12)

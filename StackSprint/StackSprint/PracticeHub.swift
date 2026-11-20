@@ -87,6 +87,7 @@ struct ReviewHubView: View {
                 mistakesSection
                 quickSection
                 PracticeLabSection()
+                StudyToolsSection()
                 tracksSection
             }
             .padding(.horizontal, 18).padding(.top, 8).padding(.bottom, 110)

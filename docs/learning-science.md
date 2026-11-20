@@ -1,6 +1,6 @@
 # StackSprint: how the app helps people remember (research notes)
 
-Last updated: November 19, 2026 (phases 81–100 added)
+Last updated: November 19, 2026 (phases 81–120 added)
 
 This document summarizes the research behind StackSprint's learning and engagement features, and where each idea lives in the app.
 
@@ -101,6 +101,16 @@ There are 12 lessons on how working developers operate:
 | **Plans with a date.** A concrete plan makes follow-through more likely. | Implementation-intentions research. | **Study plan**: pick a track and a finish date, see lessons per day. |
 
 Engagement additions: "You vs. last week" (compete with your past self, not strangers), track certificates (clearly labelled as in-app achievements), and a free sample lesson for each paid offer so people can try before they buy.
+
+## 6. Added in phases 101–120
+
+- **Placement check.** Learners who already know part of a track take a short "what it means" check. Only answers that are right *and* marked Sure count; those lessons are skipped by Continue but come back for a review in a few days, so prior knowledge is verified rather than assumed. They earn no XP.
+- **Calibration.** Memory shows how often "Sure" answers are right, and lists lessons with mistakes the learner was sure about (the ones most worth revisiting).
+- **Targeted practice.** A drill of the learner's weakest question type, and a full answer review after every quiz.
+- **Two-minute review.** On days without practice, a 3-question review (due lessons first) keeps the habit alive with minimal effort. Also available from Siri and Shortcuts.
+- **Focus timer.** 10, 15 or 25-minute sessions with a clear end, tracked on the device.
+- **Glossary and notes export.** Every finished term, searchable, with memory strength, plus a Markdown export of the learner's own notes and explanations.
+- **Next-day retest reminders.** The daily reminder names a lesson that's due for its retest.
 
 ## Sources
 

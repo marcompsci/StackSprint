@@ -26,6 +26,8 @@ struct ProgressBackup: Codable, Equatable {
     var frozenDays: [String]? = nil
     var lessonQuizzes: [String: [LessonQuizRecord]]? = nil
     var explanations: [String: String]? = nil
+    var placementKnown: [String]? = nil
+    var focusMinutes: [String: Int]? = nil
 
     enum BackupError: LocalizedError {
         case newerVersion, notABackup
@@ -81,7 +83,9 @@ struct ProgressBackup: Codable, Equatable {
             lessonActivity: store.lessonActivity.sorted(),
             frozenDays: store.frozenDays.sorted(),
             lessonQuizzes: MasteryStore.shared.records,
-            explanations: ExplainBackStore.shared.notes
+            explanations: ExplainBackStore.shared.notes,
+            placementKnown: Array(PlacementStore.shared.known).sorted(),
+            focusMinutes: FocusStore.shared.minutesByDay
         )
     }
 
@@ -94,6 +98,8 @@ struct ProgressBackup: Codable, Equatable {
         SM2Engine.shared.merge(backup.reviewCards)
         MasteryStore.shared.merge(backup.lessonQuizzes ?? [:])
         ExplainBackStore.shared.merge(backup.explanations ?? [:])
+        PlacementStore.shared.merge(backup.placementKnown ?? [])
+        FocusStore.shared.merge(backup.focusMinutes ?? [:])
         bookmarks.merge(bookmarks: Set(backup.bookmarks), notes: backup.notes)
         let defaults = UserDefaults.standard
         let missions = Set(defaults.stringArray(forKey: completedMissionsKey) ?? []).union(backup.completedMissions)
@@ -113,6 +119,8 @@ extension ProgressBackupService {
         SM2Engine.shared.eraseAll()
         MasteryStore.shared.eraseAll()
         ExplainBackStore.shared.eraseAll()
+        PlacementStore.shared.eraseAll()
+        FocusStore.shared.eraseAll()
         bookmarks.eraseAll()
         let defaults = UserDefaults.standard
         defaults.removeObject(forKey: completedMissionsKey)

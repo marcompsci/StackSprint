@@ -46,6 +46,7 @@ struct MemoryView: View {
                     }
                     accuracyChart
                     weakKinds
+                    MemoryInsightsSection()
                     lessonList(all)
                 }
                 HowMemoryWorksSection()
@@ -123,7 +124,7 @@ struct MemoryView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Every lesson").font(.headline)
             ForEach(all) { item in
-                NavigationLink { LessonView(lesson: item.lesson) } label: {
+                NavigationLink { LessonHistoryView(lesson: item.lesson) } label: {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.lesson.term).font(.subheadline.bold())

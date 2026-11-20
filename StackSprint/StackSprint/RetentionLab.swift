@@ -355,7 +355,8 @@ enum PromptCheck {
     static func record(_ lessonID: String, _ result: LessonQuizResult) {
         MasteryStore.shared.record(lessonID: lessonID, score: result.score, total: result.total,
                                    missed: result.missed.map(\.kind),
-                                   luckyGuesses: result.luckyGuesses, confidentMisses: result.confidentMisses)
+                                   luckyGuesses: result.luckyGuesses, confidentMisses: result.confidentMisses,
+                                   sureAnswers: result.answers.isEmpty ? nil : result.answers.filter { $0.confidence == .sure }.count)
         var quality = LessonQuizBuilder.reviewQuality(score: result.score, of: result.total, luckyGuesses: result.luckyGuesses)
         if result.confidentMisses > 0 { quality = min(quality, 3) }
         SM2Engine.shared.recordReview(lessonID: lessonID, quality: quality)

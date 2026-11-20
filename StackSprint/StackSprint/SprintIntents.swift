@@ -20,6 +20,44 @@ struct StartDailySprintIntent: AppIntent {
     }
 }
 
+struct QuickReviewIntent: AppIntent {
+    static let title: LocalizedStringResource = "Two-Minute Review"
+    static let description = IntentDescription(
+        "Open StackSprint for a 3-question review of your due and recent lessons.",
+        categoryName: "Learning"
+    )
+    static let openAppWhenRun: Bool = true
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        LessonRouter.shared.openQuickReview()
+        return .result()
+    }
+}
+
+/// The two-minute review opened from Siri or Shortcuts.
+struct QuickReviewSheet: View {
+    let locked: Set<String>
+    @EnvironmentObject var store: LearningStore
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        let questions = QuickReviewBuilder.questions(store: store, locked: locked)
+        if questions.isEmpty {
+            NavigationStack {
+                ContentUnavailableView("Nothing to review yet", systemImage: "checkmark.seal",
+                                       description: Text("Finish a couple of lessons first, then quick reviews will be ready."))
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+            }
+        } else {
+            LessonQuizView(lesson: nil, questions: questions, title: "Two-minute review") { result in
+                for missed in result.missed { AdaptiveEngine.shared.recordWrong(missed.id) }
+                store.recordPractice()
+            }
+        }
+    }
+}
+
 struct StackSprintShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
@@ -31,6 +69,15 @@ struct StackSprintShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Daily Sprint",
             systemImageName: "bolt.fill"
+        )
+        AppShortcut(
+            intent: QuickReviewIntent(),
+            phrases: [
+                "Quick review in \(.applicationName)",
+                "Start a two-minute review in \(.applicationName)"
+            ],
+            shortTitle: "Two-Minute Review",
+            systemImageName: "timer"
         )
     }
 }
@@ -90,10 +137,12 @@ func deindexAllLessons() {
     enum Request: Identifiable, Equatable {
         case lesson(String)
         case continueLearning
+        case quickReview
         var id: String {
             switch self {
             case .lesson(let id): return "lesson-\(id)"
             case .continueLearning: return "continue"
+            case .quickReview: return "quick-review"
             }
         }
     }
@@ -101,6 +150,7 @@ func deindexAllLessons() {
     @Published var request: Request?
 
     func openContinue() { request = .continueLearning }
+    func openQuickReview() { request = .quickReview }
 
     func open(spotlightIdentifier: String) {
         guard spotlightIdentifier.hasPrefix(Self.spotlightPrefix) else { return }
@@ -119,15 +169,20 @@ struct RoutedLessonSheet: View {
     private var lesson: Lesson? {
         switch request {
         case .lesson(let id): return lessons.first { $0.id == id }
+        case .quickReview:
+            return nil
         case .continueLearning:
             let due = SM2Engine.shared.dueCards(in: lessons).first { !locked.contains($0.category) }
             return due ?? LessonFlow.continueLesson(in: lessons, completed: store.completed,
-                                                    preferredTrack: preferredTrack, locked: locked)
+                                                    preferredTrack: preferredTrack, locked: locked,
+                                                    known: PlacementStore.shared.known)
         }
     }
 
     var body: some View {
-        if let lesson, locked.contains(lesson.category) {
+        if request == .quickReview {
+            QuickReviewSheet(locked: locked)
+        } else if let lesson, locked.contains(lesson.category) {
             ProPaywallView()
         } else {
             NavigationStack {

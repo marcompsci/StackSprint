@@ -56,6 +56,8 @@ import UserNotifications
     var practicedToday: () -> Bool = { false }
     /// The lesson "Continue" would open, so the next reminder can name it.
     var nextLessonTitle: () -> String? = { nil }
+    /// A lesson worth a next-day retest, if any.
+    var retestTitle: () -> String? = { nil }
     /// How many lessons will be due for review by a given date (from the review schedule).
     var dueCountBy: (Date) -> Int = { _ in 0 }
     /// Remind at the hour you usually study, once that's clear from your sessions.
@@ -85,6 +87,9 @@ import UserNotifications
                 // unless you review earlier (then it's rescheduled).
                 content.title = "Time for a quick review"
                 content.body = ReminderCopy.fading(count: due)
+            } else if offset == 0, let term = retestTitle() {
+                content.title = "Quick check"
+                content.body = ReminderCopy.retest(term)
             } else if offset == 0, let next = nextLessonTitle() {
                 content.title = "Daily practice"
                 content.body = "Next up: \(next). It takes about two minutes."

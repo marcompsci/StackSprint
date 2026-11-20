@@ -107,12 +107,14 @@ enum LessonFlow {
 
     /// What "Continue" should open: the first unfinished lesson in the preferred
     /// track, otherwise in any unlocked track. Nil when everything is done.
+    /// Lessons in `known` (tested out of in a placement check) are skipped too.
     static func continueLesson(in lessons: [Lesson], completed: Set<String>,
-                               preferredTrack: String, locked: Set<String>) -> Lesson? {
-        if let lesson = lessons.first(where: { $0.category == preferredTrack && !locked.contains($0.category) && !completed.contains($0.id) }) {
+                               preferredTrack: String, locked: Set<String>, known: Set<String> = []) -> Lesson? {
+        let done = completed.union(known)
+        if let lesson = lessons.first(where: { $0.category == preferredTrack && !locked.contains($0.category) && !done.contains($0.id) }) {
             return lesson
         }
-        return lessons.first { !locked.contains($0.category) && !completed.contains($0.id) }
+        return lessons.first { !locked.contains($0.category) && !done.contains($0.id) }
     }
 }
 

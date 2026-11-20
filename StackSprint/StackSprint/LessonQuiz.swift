@@ -69,6 +69,8 @@ struct LessonQuizResult {
     var luckyGuesses = 0
     /// Wrong answers marked "sure".
     var confidentMisses = 0
+    /// Every answer, in order, for the answer review.
+    var answers: [QuizAnswer] = []
 }
 
 /// Quiz preferences, shared by every lesson quiz.
@@ -103,6 +105,7 @@ struct LessonQuizView: View {
     @State private var missed: [LessonQuizQuestion] = []
     @State private var lucky = 0
     @State private var confidentMisses = 0
+    @State private var answers: [QuizAnswer] = []
     @State private var quizXP = 0
     @State private var finished: LessonQuizResult?
     @FocusState private var typingFocused: Bool
@@ -158,6 +161,13 @@ struct LessonQuizView: View {
             Text("\(index + 1) of \(questions.count)").font(.caption.bold().monospacedDigit()).foregroundStyle(.secondary)
             Spacer()
             Text(q.kind.label).font(.caption.bold()).foregroundStyle(.mint)
+            Button {
+                VoiceManager.shared.speak(isTyped(q) ? q.prompt : ([q.prompt] + q.choices).joined(separator: ". "))
+            } label: {
+                Image(systemName: "speaker.wave.2.fill")
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel("Read the question aloud")
         }
         ProgressView(value: Double(index), total: Double(questions.count)).tint(.mint)
         Text(q.prompt).font(.title3.bold()).fixedSize(horizontal: false, vertical: true)
@@ -283,6 +293,7 @@ struct LessonQuizView: View {
         confidence = level
         selected = choice
         pending = nil
+        answers.append(QuizAnswer(question: q, chosen: choice, confidence: level))
         if choice == q.answer {
             score += 1
             if level == .guessing { lucky += 1 }
@@ -307,7 +318,7 @@ struct LessonQuizView: View {
             index += 1
             if index >= questions.count {
                 let result = LessonQuizResult(score: score, total: questions.count, missed: missed,
-                                              luckyGuesses: lucky, confidentMisses: confidentMisses)
+                                              luckyGuesses: lucky, confidentMisses: confidentMisses, answers: answers)
                 finished = result
                 onFinish(result)
             }
@@ -356,6 +367,7 @@ struct MixedSummaryView: View {
                     }
                 }
             }
+            AnswerReviewList(answers: result.answers)
             Button(action: onDone) {
                 Text("Done").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12)
             }
@@ -430,6 +442,8 @@ struct SessionCompleteView: View {
                     }
                 }
             }
+
+            AnswerReviewList(answers: result.answers)
 
             Button(action: onDone) {
                 Text("Continue").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12)

@@ -217,6 +217,8 @@ struct LessonQuizRecord: Codable, Equatable {
     var luckyGuesses: Int? = nil
     /// Wrong answers the learner was sure about: the ones most worth a second look.
     var confidentMisses: Int? = nil
+    /// How many answers were marked "Sure" (nil when confidence wasn't asked).
+    var sureAnswers: Int? = nil
 }
 
 @MainActor final class MasteryStore: ObservableObject {
@@ -233,9 +235,10 @@ struct LessonQuizRecord: Codable, Equatable {
     }
 
     func record(lessonID: String, score: Int, total: Int, missed: [LessonQuizKind], date: Date = Date(),
-                luckyGuesses: Int? = nil, confidentMisses: Int? = nil) {
+                luckyGuesses: Int? = nil, confidentMisses: Int? = nil, sureAnswers: Int? = nil) {
         records[lessonID, default: []].append(LessonQuizRecord(date: date, score: score, total: total, missed: missed,
-                                                               luckyGuesses: luckyGuesses, confidentMisses: confidentMisses))
+                                                               luckyGuesses: luckyGuesses, confidentMisses: confidentMisses,
+                                                               sureAnswers: sureAnswers))
         if records[lessonID]!.count > 20 { records[lessonID]!.removeFirst(records[lessonID]!.count - 20) }
         persist()
     }
