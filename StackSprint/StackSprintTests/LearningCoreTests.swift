@@ -702,7 +702,7 @@ struct PaidTrackTests {
 
     @Test func curriculumIncludesPaidTracksOnce() throws {
         let merged = try Curriculum.load().withPaidTracks().withPaidTracks()
-        #expect(merged.lessons.filter { $0.category == "AI Skills" }.count == 16)
+        #expect(merged.lessons.filter { $0.category == "AI Skills" }.count == PaidContent.ai.count)
     }
 
     @Test func freeContentNeverUsesPaidTracks() throws {
