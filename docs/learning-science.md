@@ -109,7 +109,7 @@ Engagement additions: "You vs. last week" (compete with your past self, not stra
 - **Targeted practice.** A drill of the learner's weakest question type, and a full answer review after every quiz.
 - **Two-minute review.** On days without practice, a 3-question review (due lessons first) keeps the habit alive with minimal effort. Also available from Siri and Shortcuts.
 - **Focus timer.** 10, 15 or 25-minute sessions with a clear end, tracked on the device.
-- **Glossary and notes export.** Every finished term, searchable, with memory strength, plus a Markdown export of the learner's own notes and explanations.
+- **My terms and notes export.** Every finished term, searchable, with memory strength, plus a Markdown export of the learner's own notes and explanations.
 - **Next-day retest reminders.** The daily reminder names a lesson that's due for its retest.
 
 ## Sources

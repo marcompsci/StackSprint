@@ -21,8 +21,8 @@ enum WhatsNew {
     static let items: [Item] = [
         Item(icon: "forward.end.circle.fill", title: "Placement check",
              detail: "Already know some of a track? Take a short check and skip what you know."),
-        Item(icon: "character.book.closed.fill", title: "Glossary and notes export",
-             detail: "Practice → Glossary lists every term you've learned. Export your notes as a Markdown file."),
+        Item(icon: "character.book.closed.fill", title: "My terms and notes export",
+             detail: "Practice → My terms lists every term you've learned, with how well you remember it. Export your notes as a Markdown file."),
         Item(icon: "list.bullet.clipboard", title: "Review every answer",
              detail: "After a quiz, see each question, your answer and how sure you were. Tap the speaker to hear questions read aloud."),
         Item(icon: "target", title: "Smarter Memory",

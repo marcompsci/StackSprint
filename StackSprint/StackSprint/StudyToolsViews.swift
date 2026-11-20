@@ -197,9 +197,9 @@ enum QuickReviewBuilder {
     }
 }
 
-// MARK: - Glossary
+// MARK: - My terms (a personal glossary)
 
-struct GlossaryView: View {
+struct MyTermsView: View {
     @EnvironmentObject var store: LearningStore
     @EnvironmentObject var premiumStore: PremiumStore
     @EnvironmentObject var bookmarks: BookmarkStore
@@ -238,7 +238,7 @@ struct GlossaryView: View {
             }
         }
         .searchable(text: $query, prompt: "Search terms and definitions")
-        .navigationTitle("Glossary")
+        .navigationTitle("My terms")
         .modifier(SprintTheme())
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -502,7 +502,7 @@ struct StudyToolsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Study tools").font(.title3.bold())
-            link("Glossary", "Every term you've learned, searchable, with your notes", "character.book.closed.fill") { GlossaryView() }
+            link("My terms", "Every term you've learned, with memory strength and your notes", "character.book.closed.fill") { MyTermsView() }
             link("Focus timer", "10, 15 or 25 minutes of distraction-free study", "timer") { FocusTimerView() }
             Button { placementTrack = startingTrack } label: {
                 row("Placement check", "Skip lessons you already know in \(startingTrack)", "forward.end.circle.fill")
