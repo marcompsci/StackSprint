@@ -1867,6 +1867,7 @@ struct LearnView: View {
                     searchResults
                 } else {
                     heroCard
+                    FirstWeekCard()
                     NextCertificateCard()
                     RetestCard()
                     QuickReviewCard()
@@ -2309,6 +2310,7 @@ struct LearnView: View {
         switch value {
         case "Web development": return "Web"
         case "Interview Prep": return "Interview"
+        case "SQL & Data": return "SQL"
         case "Professional Practice": return "Professional"
         default: return value
         }
@@ -2322,6 +2324,7 @@ struct LearnView: View {
         case "Interview Prep": return "briefcase.fill"
         case "Professional Practice": return "hammer.fill"
         case "AI Skills": return "sparkles"
+        case "SQL & Data": return "cylinder.split.1x2"
         case "TypeScript", "React", "Swift": return "curlybraces"
         default: return "shield.fill"
         }
@@ -2428,6 +2431,7 @@ struct LessonView: View {
                         .padding(12)
                         .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     ExplainBackCard(lesson: lesson)
+                    LessonFeelPicker(lesson: lesson)
                     CompleteTheCodeCard(lesson: lesson)
                     RelatedLessonsSection(lesson: lesson)
                     TeachAFriendButton(lesson: lesson)

@@ -1,6 +1,6 @@
 # StackSprint: how the app helps people remember (research notes)
 
-Last updated: November 19, 2026 (phases 81–230 added)
+Last updated: November 19, 2026 (phases 81–255 added)
 
 This document summarizes the research behind StackSprint's learning and engagement features, and where each idea lives in the app.
 
@@ -152,6 +152,14 @@ Also added: a two-week review forecast, a daily lesson-of-the-day flashcard, a "
 | **Goal gradient.** People speed up as they get close to a goal. | Kivetz, Urminsky & Zheng (2006), *Journal of Marketing Research*. | A **next certificate** card on Learn, and reminders that say how close you are. |
 
 Also: a **Week in review** quiz on everything studied in the last 7 days; **My prompts** (save prompts from the builder, refusing ones with private details); **Code review** and **Commit message** drills for Professional Practice; and a **Match system** appearance option.
+
+## 11. Added in phases 231–255
+
+- **Learner-rated difficulty.** After a lesson, learners rate it Easy, OK or Hard. Hard lessons are scheduled for review the next day and weighted to come first in mixed reviews and Listen & recall (the same idea as the Again/Hard/Good/Easy buttons in Anki-style spaced-repetition apps).
+- **Listen & recall.** A hands-free review: the app reads a clue, pauses five seconds so the learner answers in their head, then says the answer. It keeps retrieval active rather than passive listening.
+- **Your first week.** A seven-item checklist for new learners covering the habits that matter early: a first lesson, a quiz, reminders, explaining in your own words, the Arcade, a brain dump and a 3-day streak (early habit formation; Duolingo's 7-day finding).
+- **Best study time.** From the learner's own quiz results: the part of the day (morning, afternoon, evening, night) with clearly higher accuracy, shown only when there's enough data.
+- **New free track, SQL & Data:** 10 lessons from tables and SELECT to JOIN, GROUP BY, keys and parameterised queries, plus two SQL output puzzles.
 
 ## Sources
 

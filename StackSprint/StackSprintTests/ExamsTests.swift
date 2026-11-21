@@ -96,9 +96,9 @@ struct HintTrialBreakTests {
     }
 
     @Test func newContentIsWellFormed() {
-        #expect(PredictOutput.all.count == 20 && ErrorDecoder.all.count == 14)
+        #expect(PredictOutput.all.count == 22 && ErrorDecoder.all.count == 14)
         for item in PredictOutput.all { #expect(item.options.indices.contains(item.answer)) }
-        #expect(Set(PredictOutput.all.map(\.id)).count == 20)
+        #expect(Set(PredictOutput.all.map(\.id)).count == PredictOutput.all.count)
         let paid = (PaidContent.ai + PaidContent.professional).map(\.id)
         #expect(Set(paid).count == paid.count)
     }

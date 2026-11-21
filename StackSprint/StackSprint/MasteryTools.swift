@@ -249,6 +249,8 @@ extension AchievementContext {
         var examsPassed = 0
         var solidLessons = 0
         var bestBrainDump = 0
+        var listened = 0
+        var firstWeekDone = false
     }
 
     @MainActor static func currentExtras(lessonsByTrack: [String: [Lesson]], completed: Set<String>,
@@ -268,7 +270,9 @@ extension AchievementContext {
                       checkpointsPassed: ExamStore.shared.passedCheckpoints,
                       examsPassed: ExamStore.shared.passedExams,
                       solidLessons: Solid.solidCount(records),
-                      bestBrainDump: BrainDumpStore.shared.best.values.max() ?? 0)
+                      bestBrainDump: BrainDumpStore.shared.best.values.max() ?? 0,
+                      listened: UserDefaults.standard.integer(forKey: "listen.count"),
+                      firstWeekDone: UserDefaults.standard.bool(forKey: FirstWeek.completedKey))
     }
 }
 
@@ -287,6 +291,8 @@ enum LearningAchievements {
         Achievement(id: "checkpoint", title: "Checkpoint", description: "Pass a checkpoint test", icon: "flag.checkered", rarity: .bronze),
         Achievement(id: "graduate", title: "Graduate", description: "Pass a track's final exam", icon: "graduationcap.fill", rarity: .gold),
         Achievement(id: "rock-solid", title: "Rock Solid", description: "Make 10 lessons solid (4/5+ on 3 different days)", icon: "checkmark.shield.fill", rarity: .gold),
+        Achievement(id: "good-ears", title: "Good Ears", description: "Review 50 lessons with Listen & recall", icon: "headphones", rarity: .silver),
+        Achievement(id: "first-week", title: "Strong Start", description: "Finish the first-week checklist", icon: "map.fill", rarity: .bronze),
         Achievement(id: "total-recall", title: "Total Recall", description: "Recall 80% of a track in a brain dump", icon: "brain.head.profile", rarity: .silver),
     ]
 
@@ -306,6 +312,8 @@ enum LearningAchievements {
         case "graduate": return e.examsPassed >= 1
         case "rock-solid": return e.solidLessons >= 10
         case "total-recall": return e.bestBrainDump >= 80
+        case "good-ears": return e.listened >= 50
+        case "first-week": return e.firstWeekDone
         default: return nil
         }
     }
@@ -326,6 +334,8 @@ enum LearningAchievements {
         case "graduate": return (e.examsPassed, 1)
         case "rock-solid": return (e.solidLessons, 10)
         case "total-recall": return (e.bestBrainDump, 80)
+        case "good-ears": return (e.listened, 50)
+        case "first-week": return (e.firstWeekDone ? 1 : 0, 1)
         default: return nil
         }
     }

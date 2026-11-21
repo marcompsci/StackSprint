@@ -64,6 +64,10 @@ enum PredictOutput {
                     options: ["undefined", "unknown", "null", "Error"], answer: 1, why: "?? uses the right side when the left is null or undefined."),
         PredictItem(id: "po-20", language: "Python", code: "nums = [1, 2, 3, 4]\nprint(nums[1:3])",
                     options: ["[1, 2, 3]", "[2, 3]", "[2, 3, 4]", "[1, 2]"], answer: 1, why: "A slice includes the start index and stops before the end: items 1 and 2."),
+        PredictItem(id: "po-21", language: "SQL", code: "-- scores: (Ada, 90), (Bo, 75), (Cy, 82)\nSELECT name FROM scores\nORDER BY score DESC\nLIMIT 1;",
+                    options: ["Ada", "Bo", "Cy", "All three"], answer: 0, why: "DESC puts the highest score first, and LIMIT 1 keeps only that row."),
+        PredictItem(id: "po-22", language: "SQL", code: "-- orders has 3 rows for user 1 and 2 rows for user 2\nSELECT COUNT(*) FROM orders WHERE user_id = 2;",
+                    options: ["5", "3", "2", "1"], answer: 2, why: "WHERE keeps only user 2's rows, and COUNT(*) counts them: 2."),
     ]
 }
 

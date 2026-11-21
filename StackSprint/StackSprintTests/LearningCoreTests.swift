@@ -356,7 +356,7 @@ struct PolishTests {
 
     @Test func storeIndexesTracksAndQuizzes() {
         let store = LearningStore()
-        #expect(store.tracks.count == 11) // 9 free/Pro tracks + Professional Practice + AI Skills
+        #expect(store.tracks.count == 12) // 9 free/Pro tracks + SQL & Data + Professional Practice + AI Skills
         #expect(store.tracks.first == "Web development")
         #expect(store.quiz(for: "Web development").count == 25 + 12)
         #expect(store.quiz(for: "Go").count == 4 + 10)

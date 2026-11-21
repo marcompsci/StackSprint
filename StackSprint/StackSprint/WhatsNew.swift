@@ -8,7 +8,7 @@ import SwiftUI
 
 enum WhatsNew {
     /// Bump when the list below changes.
-    static let revision = 8
+    static let revision = 9
     static let seenKey = "whatsnew.seenRevision"
 
     struct Item: Identifiable {
@@ -19,6 +19,16 @@ enum WhatsNew {
     }
 
     static let items: [Item] = [
+        Item(icon: "cylinder.split.1x2", title: "New free track: SQL & Data",
+             detail: "Ten lessons on tables, SELECT, WHERE, JOIN, GROUP BY and writing safe queries."),
+        Item(icon: "headphones", title: "Listen & recall",
+             detail: "Hands-free review: hear a clue, answer in your head, then hear the answer. Great for walks."),
+        Item(icon: "tortoise.fill", title: "How did it feel?",
+             detail: "Rate each lesson Easy, OK or Hard. Hard ones come back tomorrow and go first in reviews."),
+        Item(icon: "map.fill", title: "Your first week",
+             detail: "New learners get a short checklist of the habits that help most in the first days."),
+        Item(icon: "clock.fill", title: "Your best study time",
+             detail: "Memory shows the part of the day when your quiz scores are highest."),
         Item(icon: "brain.head.profile", title: "Brain dump",
              detail: "Write down everything you remember about a track, then see what you recalled and what to review."),
         Item(icon: "checkmark.shield.fill", title: "Solid lessons",
@@ -29,16 +39,6 @@ enum WhatsNew {
              detail: "Save prompts you build, and practise code review comments and commit messages."),
         Item(icon: "circle.lefthalf.filled", title: "Match system appearance",
              detail: "The menu now offers Light, Dark or Match system."),
-        Item(icon: "graduationcap.fill", title: "Checkpoints and final exams",
-             detail: "Practice → Study tools: test four lessons at a time, then the whole track. Pass at 80%."),
-        Item(icon: "lightbulb.fill", title: "Hints",
-             detail: "Stuck on a quiz question? Ask for a hint. A hinted answer brings the lesson back a little sooner."),
-        Item(icon: "doc.text.fill", title: "Cheat sheets and a bookmarks quiz",
-             detail: "Turn a track into a one-page PDF, and quiz yourself on the lessons you bookmarked."),
-        Item(icon: "leaf.fill", title: "Calm mode and colour-blind colours",
-             detail: "Hide XP and streak counts after quizzes, or show right and wrong in blue and orange."),
-        Item(icon: "cup.and.saucer.fill", title: "Break reminders and more lessons",
-             detail: "A nudge to rest after 25 minutes, plus 8 new paid lessons, 10 more code puzzles and 2 new mini projects."),
     ]
 
     static func shouldShow(onboarded: Bool, defaults: UserDefaults = .standard) -> Bool {

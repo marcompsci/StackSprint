@@ -178,7 +178,7 @@ struct MixedReviewSection: View {
         let candidates = lessons.map { lesson in
             (lesson: lesson, recall: reviews.card(for: lesson.id).map { MemoryModel.recall(card: $0) } ?? 0.5)
         }
-        return MixedReview.pickLessons(candidates)
+        return MixedReview.pickLessons(MixedReview.weighted(candidates, hard: LessonFeelStore.shared.hardLessons))
     }
 
     var body: some View {

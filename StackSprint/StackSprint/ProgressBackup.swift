@@ -33,6 +33,7 @@ struct ProgressBackup: Codable, Equatable {
     var examBest: [String: Int]? = nil
     var brainDumpBest: [String: Int]? = nil
     var savedPrompts: [SavedPrompt]? = nil
+    var lessonFeel: [String: String]? = nil
 
     enum BackupError: LocalizedError {
         case newerVersion, notABackup
@@ -95,7 +96,8 @@ struct ProgressBackup: Codable, Equatable {
             projectSteps: Array(MiniProjectStore.shared.done).sorted(),
             examBest: ExamStore.shared.best,
             brainDumpBest: BrainDumpStore.shared.best,
-            savedPrompts: PromptLibrary.shared.prompts
+            savedPrompts: PromptLibrary.shared.prompts,
+            lessonFeel: LessonFeelStore.shared.exported
         )
     }
 
@@ -115,6 +117,7 @@ struct ProgressBackup: Codable, Equatable {
         ExamStore.shared.merge(backup.examBest ?? [:])
         BrainDumpStore.shared.merge(backup.brainDumpBest ?? [:])
         PromptLibrary.shared.merge(backup.savedPrompts ?? [])
+        LessonFeelStore.shared.merge(backup.lessonFeel ?? [:])
         bookmarks.merge(bookmarks: Set(backup.bookmarks), notes: backup.notes)
         let defaults = UserDefaults.standard
         let missions = Set(defaults.stringArray(forKey: completedMissionsKey) ?? []).union(backup.completedMissions)
@@ -141,6 +144,7 @@ extension ProgressBackupService {
         ExamStore.shared.eraseAll()
         BrainDumpStore.shared.eraseAll()
         PromptLibrary.shared.eraseAll()
+        LessonFeelStore.shared.eraseAll()
         bookmarks.eraseAll()
         let defaults = UserDefaults.standard
         defaults.removeObject(forKey: completedMissionsKey)

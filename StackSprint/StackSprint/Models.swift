@@ -34,7 +34,8 @@ struct Curriculum: Codable {
     /// Adds the paid tracks (they ship in the app and unlock on purchase).
     func withPaidTracks() -> Curriculum {
         let existing = Set(lessons.map(\.id))
-        return Curriculum(lessons: lessons + PaidContent.lessons.filter { !existing.contains($0.id) }, questions: questions)
+        let extras = FreeContent.sql + PaidContent.lessons
+        return Curriculum(lessons: lessons + extras.filter { !existing.contains($0.id) }, questions: questions)
     }
 }
 

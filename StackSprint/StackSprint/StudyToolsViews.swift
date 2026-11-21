@@ -511,6 +511,7 @@ struct StudyToolsSection: View {
             link("Cheat sheets", "One page of everything you've learned in a track, as a PDF", "doc.text.fill") { CheatSheetView() }
             BookmarksQuizButton()
             WeekInReviewButton()
+            link("Listen & recall", "Hands-free review: hear a clue, answer in your head, hear the answer", "headphones") { ListenRecallView() }
             link("Brain dump", "Write everything you remember about a track, then check it", "brain.head.profile") { BrainDumpView() }
             Text("Display").font(.headline).padding(.top, 6)
             DisplaySettingsSection()

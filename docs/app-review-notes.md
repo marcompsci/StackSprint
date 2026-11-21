@@ -19,6 +19,8 @@ Paste the **Review notes** section into App Store Connect → TestFlight → Tes
 >
 > **In-app purchases:** (1) StackSprint Pro, monthly and yearly auto-renewing subscriptions, unlocks the Go, Rust and Interview Prep tracks and Pro season collectibles. (2) AI Skills, monthly and yearly auto-renewing subscriptions in their own group, unlocks 26 original lessons on prompting AI clearly, checking its answers, and using it safely and fairly, plus prompt-makeover practice. (3) Professional Practice, a one-time non-consumable purchase, unlocks 20 lessons on Git, code review, testing, CI, debugging, documentation, incident response and feature flags. Everything else is free. The paywall (tap any locked track, or Account → Plans and purchases) has a picker for the three offers, Restore Purchases, Terms of Use and the Privacy Policy. AI Skills content is our own; it is not affiliated with or endorsed by any AI company.
 >
+> **Free tracks** include a SQL & Data track (10 lessons) added in this version.
+>
 > **Trying paid content:** each offer on the paywall has a "Try a free lesson" button that opens one real lesson from that offer without a purchase. Introductory offers are shown only when the App Store reports the learner is eligible. Account → Plans and purchases has Manage subscriptions and Request a refund (Apple's own sheets).
 >
 > **After every lesson:** a 5-question quiz built from that lesson, which can ask how sure the learner is. Scores, confidence and the learner's own written explanations stay on the device and set the next review date.
