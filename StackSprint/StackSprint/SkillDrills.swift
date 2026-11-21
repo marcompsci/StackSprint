@@ -151,6 +151,12 @@ struct PracticeLabSection: View {
                   track: PaidContent.aiTrack) { ClaimCheckView() }
             drill("Bug hunt", "Find the bug in a short snippet, like a code reviewer", "ant.fill",
                   track: PaidContent.professionalTrack) { BugHuntView() }
+            drill("Code review", "Pick the most helpful review comment", "text.bubble.fill",
+                  track: PaidContent.professionalTrack) { ReviewDrillView(title: "Code review", items: CodeReviewDrills.reviews) }
+            drill("Commit messages", "Choose the clearest commit message", "point.3.filled.connected.trianglepath.dotted",
+                  track: PaidContent.professionalTrack) { ReviewDrillView(title: "Commit messages", items: CodeReviewDrills.commits) }
+            drill("My prompts", "Your saved prompts, ready to copy", "tray.full.fill",
+                  track: PaidContent.aiTrack) { PromptLibraryView() }
         }
         .sheet(isPresented: $showingPaywall) { ProPaywallView() }
     }
@@ -233,6 +239,7 @@ struct PromptBuilderView: View {
                         HapticManager.shared.notification(.success)
                     }
                     .disabled(!PromptCheck.privacyWarnings(prompt).isEmpty)
+                    SavePromptButton(prompt: prompt)
                 } header: {
                     Text("Your prompt")
                 } footer: {

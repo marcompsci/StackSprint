@@ -290,6 +290,7 @@ struct LessonHistoryView: View {
         List {
             Section {
                 LabeledContent("Status", value: mastery.level(lesson.id).rawValue.capitalized)
+                LabeledContent("Solid", value: Solid.isSolid(records) ? "Yes" : "\(Solid.goodDays(records)) of \(Solid.daysNeeded) good days")
                 if let card = reviews.card(for: lesson.id) {
                     LabeledContent("Recall now", value: "\(Int((MemoryModel.recall(card: card) * 100).rounded()))%")
                     LabeledContent("Next review", value: card.dueDate.formatted(date: .abbreviated, time: .omitted))
@@ -509,6 +510,8 @@ struct StudyToolsSection: View {
             link("Checkpoints & exams", "Test several lessons at once, then the whole track", "graduationcap.fill") { TrackTestsView() }
             link("Cheat sheets", "One page of everything you've learned in a track, as a PDF", "doc.text.fill") { CheatSheetView() }
             BookmarksQuizButton()
+            WeekInReviewButton()
+            link("Brain dump", "Write everything you remember about a track, then check it", "brain.head.profile") { BrainDumpView() }
             Text("Display").font(.headline).padding(.top, 6)
             DisplaySettingsSection()
             Button { placementTrack = startingTrack } label: {

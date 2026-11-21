@@ -48,7 +48,7 @@ import WebKit
                         LessonRouter.shared.open(spotlightIdentifier: id)
                     }
                 }
-                .preferredColorScheme(appearance == "light" ? .light : .dark)
+                .preferredColorScheme(AppearanceMode.scheme(appearance))
                 .modifier(SprintTheme())
                 .onAppear {
                     store.switchUser(backend.session?.user.id)
@@ -113,6 +113,14 @@ import WebKit
                         let lessons = (store.curriculum?.lessons ?? []).filter { !locked.contains($0.category) }
                         guard let id = Retest.candidate(records: MasteryStore.shared.records, allowed: Set(lessons.map(\.id))) else { return nil }
                         return lessons.first { $0.id == id }?.term
+                    }
+                    notifications.certificateNudge = { [weak store, weak premiumStore] in
+                        guard let store else { return nil }
+                        guard let goal = NextCertificate.closest(lessonsByTrack: store.lessonsByTrack,
+                                                                 locked: premiumStore?.lockedTracks ?? PremiumStore.paidTracks,
+                                                                 completed: store.completed, best: { MasteryStore.shared.best($0) }),
+                              goal.remaining <= 3 else { return nil }
+                        return NextCertificate.message(goal)
                     }
                     // Learn the permission state first: scheduling while it's unknown would clear reminders.
                     Task { await notifications.checkStatus(); notifications.scheduleDailyReminder() }
@@ -1859,6 +1867,7 @@ struct LearnView: View {
                     searchResults
                 } else {
                     heroCard
+                    NextCertificateCard()
                     RetestCard()
                     QuickReviewCard()
                     PlacementPromptCard()
@@ -1915,10 +1924,7 @@ struct LearnView: View {
                     Button("Ask Bite AI tutor", systemImage: "sparkles") { showingTutor = true }
                     Button("Generate a lesson", systemImage: "wand.and.sparkles") { showingGenerator = true }
                     Divider()
-                    Button(appearance == "dark" ? "Light mode" : "Dark mode",
-                           systemImage: appearance == "dark" ? "sun.max" : "moon") {
-                        withAnimation(.smooth(duration: 0.2)) { appearance = appearance == "dark" ? "light" : "dark" }
-                    }
+                    AppearanceMenuSection(appearance: $appearance)
                 } label: {
                     Image(systemName: "line.3.horizontal")
                 }

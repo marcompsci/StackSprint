@@ -58,6 +58,8 @@ import UserNotifications
     var nextLessonTitle: () -> String? = { nil }
     /// A lesson worth a next-day retest, if any.
     var retestTitle: () -> String? = { nil }
+    /// "2 lessons to go for your Python certificate", when one is close.
+    var certificateNudge: () -> String? = { nil }
     /// How many lessons will be due for review by a given date (from the review schedule).
     var dueCountBy: (Date) -> Int = { _ in 0 }
     /// Remind at the hour you usually study, once that's clear from your sessions.
@@ -96,7 +98,8 @@ import UserNotifications
             } else {
                 content.title = "Daily practice"
                 let why = LearningWhy(rawValue: UserDefaults.standard.string(forKey: LearningWhy.key) ?? "").map { [$0.reminder] } ?? []
-                content.body = ReminderCopy.pick(from: ReminderCopy.daily + dailyMessages + why, recent: recent)
+                let nudge = certificateNudge().map { [$0] } ?? []
+                content.body = ReminderCopy.pick(from: ReminderCopy.daily + dailyMessages + why + nudge, recent: recent)
                 recent.append(content.body)
             }
             content.sound = .default

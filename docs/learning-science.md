@@ -1,6 +1,6 @@
 # StackSprint: how the app helps people remember (research notes)
 
-Last updated: November 19, 2026 (phases 81–200 added)
+Last updated: November 19, 2026 (phases 81–230 added)
 
 This document summarizes the research behind StackSprint's learning and engagement features, and where each idea lives in the app.
 
@@ -143,6 +143,16 @@ Also added: a two-week review forecast, a daily lesson-of-the-day flashcard, a "
 - **Honest trials.** An opt-in reminder two days before a free trial converts, with the price and how to cancel.
 - **Content.** AI Skills grew to 26 lessons (standing instructions, breaking tasks into steps, judging output, knowing AI's limits); Professional Practice to 20 (feature flags, measuring performance, code ownership, asking good questions); 20 Predict-the-output puzzles, 14 error messages and 7 mini projects.
 
+## 10. Added in phases 201–230
+
+| Finding | Evidence | In StackSprint |
+|---|---|---|
+| **Free recall.** Writing down everything you can remember, with no cues, is among the most effortful and effective kinds of retrieval practice. | Retrieval-practice research (e.g. Karpicke & Blunt, 2011, *Science*: retrieval beat concept mapping for learning). | **Brain dump**: write all you remember about a track, then see which terms you recalled and which to review. |
+| **Successive relearning.** Recalling material to a criterion across several separate sessions produces long-lasting retention. | Rawson & Dunlosky's successive-relearning studies. | A lesson is **solid** after scoring 4/5+ on 3 different days. Memory shows the count; each lesson's history shows its progress. |
+| **Goal gradient.** People speed up as they get close to a goal. | Kivetz, Urminsky & Zheng (2006), *Journal of Marketing Research*. | A **next certificate** card on Learn, and reminders that say how close you are. |
+
+Also: a **Week in review** quiz on everything studied in the last 7 days; **My prompts** (save prompts from the builder, refusing ones with private details); **Code review** and **Commit message** drills for Professional Practice; and a **Match system** appearance option.
+
 ## Sources
 
 - Roediger & Karpicke (2006), Test-enhanced learning — https://pubmed.ncbi.nlm.nih.gov/16507066/
@@ -162,4 +172,7 @@ Also added: a two-week review forecast, a daily lesson-of-the-day flashcard, a "
 - Di Stefano, Gino, Pisano & Staats (2014), Learning by Thinking — https://papers.ssrn.com/abstract=2414478
 - Nestojko, Bui, Kornell & Bjork (2014), Expecting to teach enhances learning — https://source.washu.edu/2014/07/expecting-to-teach-enhances-learning-recall/
 - Dunlosky et al. (2013), Improving students' learning with effective learning techniques — https://doi.org/10.1177/1529100612453266
+- Karpicke & Blunt (2011), Retrieval practice produces more learning than elaborative studying with concept mapping — https://pubmed.ncbi.nlm.nih.gov/21252317/
+- Successive relearning (Dunlosky, Rawson et al., summary) — https://www.retrievalpractice.org/archive/2018/successive-relearning
+- Kivetz, Urminsky & Zheng (2006), The goal-gradient hypothesis resurrected — https://business.columbia.edu/faculty/research/goal-gradient-hypothesis-resurrected-purchase-acceleration-illusionary-goal
 - Claude prompting best practices — https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/be-clear-and-direct

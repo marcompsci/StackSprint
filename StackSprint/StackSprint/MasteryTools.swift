@@ -247,6 +247,8 @@ extension AchievementContext {
         var projectsBuilt = 0
         var checkpointsPassed = 0
         var examsPassed = 0
+        var solidLessons = 0
+        var bestBrainDump = 0
     }
 
     @MainActor static func currentExtras(lessonsByTrack: [String: [Lesson]], completed: Set<String>,
@@ -264,7 +266,9 @@ extension AchievementContext {
                       speedBest: UserDefaults.standard.integer(forKey: SpeedRound.bestKey),
                       projectsBuilt: MiniProjectStore.shared.completedCount,
                       checkpointsPassed: ExamStore.shared.passedCheckpoints,
-                      examsPassed: ExamStore.shared.passedExams)
+                      examsPassed: ExamStore.shared.passedExams,
+                      solidLessons: Solid.solidCount(records),
+                      bestBrainDump: BrainDumpStore.shared.best.values.max() ?? 0)
     }
 }
 
@@ -282,6 +286,8 @@ enum LearningAchievements {
         Achievement(id: "builder", title: "Builder", description: "Finish a mini project", icon: "hammer.fill", rarity: .silver),
         Achievement(id: "checkpoint", title: "Checkpoint", description: "Pass a checkpoint test", icon: "flag.checkered", rarity: .bronze),
         Achievement(id: "graduate", title: "Graduate", description: "Pass a track's final exam", icon: "graduationcap.fill", rarity: .gold),
+        Achievement(id: "rock-solid", title: "Rock Solid", description: "Make 10 lessons solid (4/5+ on 3 different days)", icon: "checkmark.shield.fill", rarity: .gold),
+        Achievement(id: "total-recall", title: "Total Recall", description: "Recall 80% of a track in a brain dump", icon: "brain.head.profile", rarity: .silver),
     ]
 
     static func condition(_ id: String, _ e: AchievementContext.Extras) -> Bool? {
@@ -298,6 +304,8 @@ enum LearningAchievements {
         case "builder": return e.projectsBuilt >= 1
         case "checkpoint": return e.checkpointsPassed >= 1
         case "graduate": return e.examsPassed >= 1
+        case "rock-solid": return e.solidLessons >= 10
+        case "total-recall": return e.bestBrainDump >= 80
         default: return nil
         }
     }
@@ -316,6 +324,8 @@ enum LearningAchievements {
         case "builder": return (e.projectsBuilt, 1)
         case "checkpoint": return (e.checkpointsPassed, 1)
         case "graduate": return (e.examsPassed, 1)
+        case "rock-solid": return (e.solidLessons, 10)
+        case "total-recall": return (e.bestBrainDump, 80)
         default: return nil
         }
     }

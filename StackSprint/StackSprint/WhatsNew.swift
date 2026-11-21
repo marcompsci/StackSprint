@@ -8,7 +8,7 @@ import SwiftUI
 
 enum WhatsNew {
     /// Bump when the list below changes.
-    static let revision = 7
+    static let revision = 8
     static let seenKey = "whatsnew.seenRevision"
 
     struct Item: Identifiable {
@@ -19,6 +19,16 @@ enum WhatsNew {
     }
 
     static let items: [Item] = [
+        Item(icon: "brain.head.profile", title: "Brain dump",
+             detail: "Write down everything you remember about a track, then see what you recalled and what to review."),
+        Item(icon: "checkmark.shield.fill", title: "Solid lessons",
+             detail: "A lesson becomes solid after strong quiz scores on 3 different days. Memory shows how many you have."),
+        Item(icon: "calendar.badge.checkmark", title: "Week in review",
+             detail: "A 10-question quiz on everything you studied this week, plus a nudge when a certificate is close."),
+        Item(icon: "tray.full.fill", title: "My prompts and review drills",
+             detail: "Save prompts you build, and practise code review comments and commit messages."),
+        Item(icon: "circle.lefthalf.filled", title: "Match system appearance",
+             detail: "The menu now offers Light, Dark or Match system."),
         Item(icon: "graduationcap.fill", title: "Checkpoints and final exams",
              detail: "Practice → Study tools: test four lessons at a time, then the whole track. Pass at 80%."),
         Item(icon: "lightbulb.fill", title: "Hints",
@@ -29,16 +39,6 @@ enum WhatsNew {
              detail: "Hide XP and streak counts after quizzes, or show right and wrong in blue and orange."),
         Item(icon: "cup.and.saucer.fill", title: "Break reminders and more lessons",
              detail: "A nudge to rest after 25 minutes, plus 8 new paid lessons, 10 more code puzzles and 2 new mini projects."),
-        Item(icon: "line.3.horizontal", title: "Cleaner top bar",
-             detail: "The buttons at the top of Learn are now one tidy menu: courses, Bite, lesson generator and light or dark mode."),
-        Item(icon: "gamecontroller.fill", title: "Arcade",
-             detail: "Practice → Arcade: predict what code prints, decode error messages, match pairs and a 60-second speed round."),
-        Item(icon: "hammer.fill", title: "Mini projects",
-             detail: "Five small builds that pull several lessons together, from a profile page to securing your own accounts."),
-        Item(icon: "heart.text.square.fill", title: "Your why",
-             detail: "Stats → Study plan asks why you're learning. Your reason shows up in reminders, with a suggested place to start."),
-        Item(icon: "person.2.fill", title: "Study buddy and exports",
-             detail: "Share your week with a friend who'll check in, and export your quiz history as a spreadsheet."),
     ]
 
     static func shouldShow(onboarded: Bool, defaults: UserDefaults = .standard) -> Bool {
