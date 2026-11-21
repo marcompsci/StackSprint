@@ -245,6 +245,8 @@ extension AchievementContext {
         var errorsBest = 0
         var speedBest = 0
         var projectsBuilt = 0
+        var checkpointsPassed = 0
+        var examsPassed = 0
     }
 
     @MainActor static func currentExtras(lessonsByTrack: [String: [Lesson]], completed: Set<String>,
@@ -260,7 +262,9 @@ extension AchievementContext {
                       predictBest: UserDefaults.standard.integer(forKey: ArcadeKeys.predictBest),
                       errorsBest: UserDefaults.standard.integer(forKey: ArcadeKeys.errorsBest),
                       speedBest: UserDefaults.standard.integer(forKey: SpeedRound.bestKey),
-                      projectsBuilt: MiniProjectStore.shared.completedCount)
+                      projectsBuilt: MiniProjectStore.shared.completedCount,
+                      checkpointsPassed: ExamStore.shared.passedCheckpoints,
+                      examsPassed: ExamStore.shared.passedExams)
     }
 }
 
@@ -276,6 +280,8 @@ enum LearningAchievements {
         Achievement(id: "decoder", title: "Error Whisperer", description: "Get 6 right in Error decoder", icon: "exclamationmark.bubble.fill", rarity: .silver),
         Achievement(id: "speedster", title: "Speedster", description: "Score 20 in a speed round", icon: "bolt.circle.fill", rarity: .gold),
         Achievement(id: "builder", title: "Builder", description: "Finish a mini project", icon: "hammer.fill", rarity: .silver),
+        Achievement(id: "checkpoint", title: "Checkpoint", description: "Pass a checkpoint test", icon: "flag.checkered", rarity: .bronze),
+        Achievement(id: "graduate", title: "Graduate", description: "Pass a track's final exam", icon: "graduationcap.fill", rarity: .gold),
     ]
 
     static func condition(_ id: String, _ e: AchievementContext.Extras) -> Bool? {
@@ -290,6 +296,8 @@ enum LearningAchievements {
         case "decoder": return e.errorsBest >= 6
         case "speedster": return e.speedBest >= 20
         case "builder": return e.projectsBuilt >= 1
+        case "checkpoint": return e.checkpointsPassed >= 1
+        case "graduate": return e.examsPassed >= 1
         default: return nil
         }
     }
@@ -306,6 +314,8 @@ enum LearningAchievements {
         case "decoder": return (e.errorsBest, 6)
         case "speedster": return (e.speedBest, 20)
         case "builder": return (e.projectsBuilt, 1)
+        case "checkpoint": return (e.checkpointsPassed, 1)
+        case "graduate": return (e.examsPassed, 1)
         default: return nil
         }
     }

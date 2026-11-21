@@ -678,8 +678,8 @@ struct PaidTrackTests {
     @Test func contentIsWellFormed() {
         let ids = PaidContent.lessons.map(\.id)
         #expect(Set(ids).count == ids.count)
-        #expect(PaidContent.professional.count == 16)
-        #expect(PaidContent.ai.count == 22)
+        #expect(PaidContent.professional.count == 20)
+        #expect(PaidContent.ai.count == 26)
         #expect(PaidContent.lessons.allSatisfy { !$0.term.isEmpty && !$0.definition.isEmpty && !$0.clue.isEmpty })
         #expect(PromptMakeovers.all.allSatisfy { $0.options.indices.contains($0.best) })
     }

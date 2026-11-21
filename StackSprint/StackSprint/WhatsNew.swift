@@ -8,7 +8,7 @@ import SwiftUI
 
 enum WhatsNew {
     /// Bump when the list below changes.
-    static let revision = 6
+    static let revision = 7
     static let seenKey = "whatsnew.seenRevision"
 
     struct Item: Identifiable {
@@ -19,6 +19,16 @@ enum WhatsNew {
     }
 
     static let items: [Item] = [
+        Item(icon: "graduationcap.fill", title: "Checkpoints and final exams",
+             detail: "Practice → Study tools: test four lessons at a time, then the whole track. Pass at 80%."),
+        Item(icon: "lightbulb.fill", title: "Hints",
+             detail: "Stuck on a quiz question? Ask for a hint. A hinted answer brings the lesson back a little sooner."),
+        Item(icon: "doc.text.fill", title: "Cheat sheets and a bookmarks quiz",
+             detail: "Turn a track into a one-page PDF, and quiz yourself on the lessons you bookmarked."),
+        Item(icon: "leaf.fill", title: "Calm mode and colour-blind colours",
+             detail: "Hide XP and streak counts after quizzes, or show right and wrong in blue and orange."),
+        Item(icon: "cup.and.saucer.fill", title: "Break reminders and more lessons",
+             detail: "A nudge to rest after 25 minutes, plus 8 new paid lessons, 10 more code puzzles and 2 new mini projects."),
         Item(icon: "line.3.horizontal", title: "Cleaner top bar",
              detail: "The buttons at the top of Learn are now one tidy menu: courses, Bite, lesson generator and light or dark mode."),
         Item(icon: "gamecontroller.fill", title: "Arcade",
@@ -29,16 +39,6 @@ enum WhatsNew {
              detail: "Stats → Study plan asks why you're learning. Your reason shows up in reminders, with a suggested place to start."),
         Item(icon: "person.2.fill", title: "Study buddy and exports",
              detail: "Share your week with a friend who'll check in, and export your quiz history as a spreadsheet."),
-        Item(icon: "curlybraces.square.fill", title: "Complete the code",
-             detail: "Lessons with an example now ask you to fill in a missing word from memory."),
-        Item(icon: "point.3.connected.trianglepath.dotted", title: "Connected lessons",
-             detail: "Each lesson shows related ones, and \"Teach a friend\" shares a picture card of it."),
-        Item(icon: "book.closed.fill", title: "Daily reflection and lesson of the day",
-             detail: "One quick question after you study, and a daily flashcard from lessons you've finished."),
-        Item(icon: "calendar", title: "Review forecast and tough lessons",
-             detail: "Memory shows reviews coming up over two weeks and gives a new approach for lessons that keep slipping."),
-        Item(icon: "sparkles", title: "More AI Skills and Professional lessons",
-             detail: "AI agents, sources, deepfakes, AI at work and more, plus documentation, dependencies, estimating and incident response."),
     ]
 
     static func shouldShow(onboarded: Bool, defaults: UserDefaults = .standard) -> Bool {

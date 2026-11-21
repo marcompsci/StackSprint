@@ -150,6 +150,8 @@ struct RootView: View {
     @EnvironmentObject var celebrations: CelebrationManager
     @EnvironmentObject var store: LearningStore
     @Environment(\.scenePhase) private var scenePhase
+    @State private var sessionStart: Date? = Date()
+    @State private var breakDismissedAt: Date?
     @ObservedObject private var themeStore = ThemeStore.shared
     @ObservedObject private var challengeStore = FriendChallengeStore.shared
     @ObservedObject private var achievementStore = AchievementStore.shared
@@ -226,7 +228,21 @@ struct RootView: View {
         .onChange(of: challengeStore.incomingChallenge != nil) { _, hasChallenge in
             if hasChallenge { showingChallenge = true }
         }
+        .overlay(alignment: .top) {
+            if welcomed {
+                TimelineView(.periodic(from: .now, by: 60)) { context in
+                    if StudyBreak.isDue(sessionStart: sessionStart, dismissedAt: breakDismissedAt, now: context.date) {
+                        StudyBreakBanner { breakDismissedAt = Date() }
+                            .padding(.top, 4)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+                }
+            }
+        }
         .onChange(of: scenePhase) { _, phase in
+            // A study session starts when the app comes to the front; leaving it counts as a break.
+            if phase == .active { sessionStart = Date(); breakDismissedAt = nil }
+            if phase == .background { sessionStart = nil }
             // Start a fresh week if one began while the app was in the background.
             if phase == .active {
                 WeeklyXPStore.shared.checkWeekReset()

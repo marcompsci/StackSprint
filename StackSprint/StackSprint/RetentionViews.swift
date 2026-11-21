@@ -293,6 +293,7 @@ struct CertificatesView: View {
     @EnvironmentObject var premiumStore: PremiumStore
     @EnvironmentObject var socialAuth: SocialAuthManager
     @ObservedObject private var mastery = MasteryStore.shared
+    @State private var images: [String: Image] = [:]
 
     private var tracks: [String] { store.tracks.filter { !premiumStore.isLocked($0) } }
 
@@ -315,7 +316,7 @@ struct CertificatesView: View {
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
-                    if earned, let image = certificateImage(track: track) {
+                    if earned, let image = images[track] {
                         ShareLink(item: image, preview: SharePreview("\(track) certificate", image: image)) {
                             Image(systemName: "square.and.arrow.up")
                         }
@@ -327,6 +328,15 @@ struct CertificatesView: View {
         }
         .navigationTitle("Certificates")
         .modifier(SprintTheme())
+        .task {
+            // Draw each earned certificate once, rather than on every redraw of the list.
+            for track in tracks where images[track] == nil {
+                let lessons = store.lessonsByTrack[track] ?? []
+                if TrackCertificate.isEarned(lessons: lessons, completed: store.completed, best: { mastery.best($0) }) {
+                    images[track] = certificateImage(track: track)
+                }
+            }
+        }
     }
 
     private func certificateImage(track: String) -> Image? {

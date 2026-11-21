@@ -498,7 +498,6 @@ struct FocusTimerView: View {
 /// Links for Practice: glossary, placement, focus timer.
 struct StudyToolsSection: View {
     @AppStorage("goal.startingTrack") private var startingTrack = "Web development"
-    @AppStorage(ArcadeKeys.relaxedReading) private var relaxedReading = false
     @State private var placementTrack: String?
 
     var body: some View {
@@ -507,14 +506,11 @@ struct StudyToolsSection: View {
             link("My terms", "Every term you've learned, with memory strength and your notes", "character.book.closed.fill") { MyTermsView() }
             link("Focus timer", "10, 15 or 25 minutes of distraction-free study", "timer") { FocusTimerView() }
             link("Reflections", "Your one-line notes on what you learned each day", "book.closed.fill") { JournalView() }
-            Toggle(isOn: $relaxedReading) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Relaxed reading").font(.headline)
-                    Text("More space between lines and letters in lesson text").font(.caption).foregroundStyle(.secondary)
-                }
-            }
-            .padding(14)
-            .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            link("Checkpoints & exams", "Test several lessons at once, then the whole track", "graduationcap.fill") { TrackTestsView() }
+            link("Cheat sheets", "One page of everything you've learned in a track, as a PDF", "doc.text.fill") { CheatSheetView() }
+            BookmarksQuizButton()
+            Text("Display").font(.headline).padding(.top, 6)
+            DisplaySettingsSection()
             Button { placementTrack = startingTrack } label: {
                 row("Placement check", "Skip lessons you already know in \(startingTrack)", "forward.end.circle.fill")
             }

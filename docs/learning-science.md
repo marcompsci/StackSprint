@@ -1,6 +1,6 @@
 # StackSprint: how the app helps people remember (research notes)
 
-Last updated: November 19, 2026 (phases 81–170 added)
+Last updated: November 19, 2026 (phases 81–200 added)
 
 This document summarizes the research behind StackSprint's learning and engagement features, and where each idea lives in the app.
 
@@ -77,11 +77,11 @@ StackSprint's AI Skills track is **original, beginner-level content** on these g
 - hallucinations and checking answers
 - privacy, bias, being open about AI use, safe use, and respecting creators
 
-It doesn't reproduce course materials, and it doesn't claim affiliation with or endorsement by any AI company. The track has 22 lessons (including agents, sources, deepfakes, AI at work, summarising and learning with AI) plus 8 "prompt makeover" exercises.
+It doesn't reproduce course materials, and it doesn't claim affiliation with or endorsement by any AI company. The track has 26 lessons (including agents, sources, deepfakes, AI at work, summarising and learning with AI) plus 8 "prompt makeover" exercises.
 
 ## 4. Professional Practice (one-time purchase)
 
-There are 16 lessons on how working developers operate (now including documentation, dependencies, estimating and incident response):
+There are 20 lessons on how working developers operate (now including documentation, dependencies, estimating and incident response):
 
 - commits, branches, pull requests and code review
 - unit tests and CI
@@ -133,6 +133,15 @@ Also added: a two-week review forecast, a daily lesson-of-the-day flashcard, a "
 - **Your why.** Learners pick a reason (career, school, own project, curiosity). It suggests a first track and appears in reminder wording; goals with personal meaning are more likely to be kept (self-determination theory).
 - **Study buddy.** Share your week with someone and ask them to check in; reporting progress to another person increases goal follow-through.
 - **Relaxed reading**, CSV export of quiz history, subscription renewal dates in Account, a "what's in this offer" lesson list on the paywall, and a "What's due in StackSprint" Siri shortcut.
+
+## 9. Added in phases 171–200
+
+- **Cumulative testing.** Checkpoints test four lessons at once, and a final exam covers the whole track (pass mark 80%). Tests that span a unit force retrieval of older material alongside new, which strengthens long-term retention more than testing each lesson alone.
+- **Hints as scaffolding.** A hint (first letter and length, or one wrong option ruled out) helps when stuck; a hinted correct answer is scheduled like a guess, so it comes back sooner.
+- **Bookmarks quiz** and **cheat sheets** (a one-page PDF per track of finished lessons).
+- **Wellbeing and accessibility.** Calm mode hides XP, streak counts and combo badges after quizzes. Colour-blind mode shows right and wrong in blue and orange; icons always accompany colour. A banner suggests a short break after 25 minutes of continuous use.
+- **Honest trials.** An opt-in reminder two days before a free trial converts, with the price and how to cancel.
+- **Content.** AI Skills grew to 26 lessons (standing instructions, breaking tasks into steps, judging output, AI and other people's work); Professional Practice to 20 (feature flags, measuring performance, code ownership, asking good questions); 20 Predict-the-output puzzles, 14 error messages and 7 mini projects.
 
 ## Sources
 

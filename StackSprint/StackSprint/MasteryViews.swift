@@ -99,16 +99,21 @@ struct RelatedLessonsSection: View {
 
 struct TeachAFriendButton: View {
     let lesson: Lesson
+    /// Drawn once per lesson, not on every redraw of the lesson screen.
+    @State private var image: Image?
 
     var body: some View {
-        if let image = render() {
+        Group {
+            if let image {
             ShareLink(item: image, preview: SharePreview("\(lesson.term) in one card", image: image)) {
                 Label("Teach a friend", systemImage: "person.2.wave.2.fill")
                     .font(.subheadline.bold()).frame(maxWidth: .infinity).padding(.vertical, 10)
             }
             .buttonStyle(.bordered).tint(.indigo)
             .accessibilityHint("Shares a picture card explaining \(lesson.term)")
+            }
         }
+        .task(id: lesson.id) { image = render() }
     }
 
     private func render() -> Image? {

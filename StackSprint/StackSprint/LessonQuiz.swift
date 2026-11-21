@@ -107,6 +107,9 @@ struct LessonQuizView: View {
     @State private var confidentMisses = 0
     @State private var answers: [QuizAnswer] = []
     @State private var combo = 0
+    @State private var hintShown = false
+    @AppStorage(DisplayPrefs.colorBlindKey) private var colorBlind = false
+    @AppStorage(DisplayPrefs.calmKey) private var calmMode = false
     @State private var quizXP = 0
     @State private var finished: LessonQuizResult?
     @FocusState private var typingFocused: Bool
@@ -155,6 +158,7 @@ struct LessonQuizView: View {
     }
 
     private func isTyped(_ q: LessonQuizQuestion) -> Bool { typedRecall && q.kind == .recall }
+    private var palette: (right: Color, wrong: Color) { DisplayPrefs.feedback(colorBlind: colorBlind) }
 
     @ViewBuilder
     private func question(_ q: LessonQuizQuestion) -> some View {
@@ -180,8 +184,8 @@ struct LessonQuizView: View {
                     HStack(alignment: .firstTextBaseline) {
                         Text(q.choices[i]).multilineTextAlignment(.leading)
                         Spacer(minLength: 8)
-                        if selected != nil && i == q.answer { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) }
-                        else if selected == i { Image(systemName: "xmark.circle.fill").foregroundStyle(.red) }
+                        if selected != nil && i == q.answer { Image(systemName: "checkmark.circle.fill").foregroundStyle(palette.right) }
+                        else if selected == i { Image(systemName: "xmark.circle.fill").foregroundStyle(palette.wrong) }
                         else if pending == i { Image(systemName: "circle.inset.filled").foregroundStyle(.mint) }
                     }
                     .padding(14)
@@ -194,6 +198,16 @@ struct LessonQuizView: View {
                 .disabled(selected != nil)
                 .keyboardShortcut(KeyEquivalent(Character("\(i + 1)")), modifiers: [])
                 .accessibilityLabel(label(i, q))
+            }
+        }
+        if selected == nil && pending == nil {
+            if hintShown {
+                Label(QuizHint.text(for: q), systemImage: "lightbulb.fill")
+                    .font(.subheadline).foregroundStyle(.yellow)
+            } else {
+                Button("Need a hint?", systemImage: "lightbulb") { hintShown = true }
+                    .font(.subheadline).buttonStyle(.borderless)
+                    .accessibilityHint("Shows a clue. A hinted answer counts like a guess.")
             }
         }
         if pending != nil && selected == nil { confidencePrompt(q) }
@@ -248,7 +262,7 @@ struct LessonQuizView: View {
         let right = choice == q.answer
         HStack {
             Text(right ? "Right." : "The answer is \(q.choices[q.answer]).").font(.headline)
-            if right, let cheer = QuizCombo.message(for: combo) {
+            if right, !calmMode, let cheer = QuizCombo.message(for: combo) {
                 Spacer()
                 Label(cheer, systemImage: "flame.fill").font(.caption.bold())
                     .padding(.horizontal, 10).padding(.vertical, 4)
@@ -306,7 +320,8 @@ struct LessonQuizView: View {
         if choice == q.answer {
             score += 1
             combo += 1
-            if level == .guessing { lucky += 1 }
+            // A hinted answer is treated like a guess: the lesson comes back a bit sooner.
+            if level == .guessing || hintShown { lucky += 1 }
             // Same rule as every quiz: 5 XP per question answered right, once a day.
             if store.recordDailyRecall(q.id) { quizXP += 5 }
             HapticManager.shared.notification(.success)
@@ -325,6 +340,7 @@ struct LessonQuizView: View {
             selected = nil
             pending = nil
             confidence = nil
+            hintShown = false
             typed = ""
             index += 1
             if index >= questions.count {
@@ -338,8 +354,8 @@ struct LessonQuizView: View {
 
     private func fill(_ i: Int, _ q: LessonQuizQuestion) -> Color {
         guard let selected else { return pending == i ? Color.mint.opacity(0.10) : SprintPalette.card }
-        if i == q.answer { return .green.opacity(0.16) }
-        if i == selected { return .red.opacity(0.14) }
+        if i == q.answer { return palette.right.opacity(0.16) }
+        if i == selected { return palette.wrong.opacity(0.14) }
         return SprintPalette.card
     }
 
@@ -353,6 +369,7 @@ struct LessonQuizView: View {
 
 /// Results for a session that covered several lessons.
 struct MixedSummaryView: View {
+    @AppStorage(DisplayPrefs.calmKey) private var calmMode = false
     let title: String
     let result: LessonQuizResult
     let xpEarned: Int
@@ -362,7 +379,9 @@ struct MixedSummaryView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("\(result.score) of \(result.total)").font(.system(.largeTitle, design: .rounded, weight: .bold))
             Text(title).font(.title3)
-            Label("+\(xpEarned) XP", systemImage: "bolt.fill").font(.headline).foregroundStyle(.yellow)
+            if !calmMode {
+                Label("+\(xpEarned) XP", systemImage: "bolt.fill").font(.headline).foregroundStyle(.yellow)
+            }
             if result.confidentMisses > 0 {
                 Label("\(result.confidentMisses) answer\(result.confidentMisses == 1 ? "" : "s") you were sure about were wrong. Those lessons come back soon.",
                       systemImage: "exclamationmark.triangle.fill")
@@ -395,6 +414,7 @@ struct MixedSummaryView: View {
 // (Duolingo found a milestone celebration lifts 7-day retention).
 
 struct SessionCompleteView: View {
+    @AppStorage(DisplayPrefs.calmKey) private var calmMode = false
     let lesson: Lesson
     let result: LessonQuizResult
     let xpEarned: Int
@@ -417,12 +437,14 @@ struct SessionCompleteView: View {
             .accessibilityElement(children: .combine)
 
             HStack(spacing: 12) {
-                stat("+\(xpEarned)", "XP", "bolt.fill", .yellow)
-                stat("\(streak)", streak == 1 ? "day streak" : "day streak", "flame.fill", .orange)
+                if !calmMode {
+                    stat("+\(xpEarned)", "XP", "bolt.fill", .yellow)
+                    stat("\(streak)", streak == 1 ? "day streak" : "day streak", "flame.fill", .orange)
+                }
                 stat(mastery.level(lesson.id).rawValue, "this lesson", "brain.head.profile", .mint)
             }
 
-            if Self.milestones.contains(streak) && store.practicedToday {
+            if !calmMode && Self.milestones.contains(streak) && store.practicedToday {
                 Label("\(streak)-day streak! You're building a real habit.", systemImage: "flame.circle.fill")
                     .font(.headline).foregroundStyle(.orange)
                     .padding(12).frame(maxWidth: .infinity, alignment: .leading)
@@ -455,6 +477,7 @@ struct SessionCompleteView: View {
             }
 
             AnswerReviewList(answers: result.answers)
+            ShareResultButton(lesson: lesson, result: result)
 
             Button(action: onDone) {
                 Text("Continue").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12)

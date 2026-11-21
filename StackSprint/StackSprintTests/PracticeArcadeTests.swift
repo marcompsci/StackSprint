@@ -28,7 +28,7 @@ struct ArcadeContentTests {
     }
 
     @Test func miniProjectsHaveSteps() {
-        #expect(MiniProjects.all.count == 5)
+        #expect(MiniProjects.all.count == 7)
         #expect(MiniProjects.all.allSatisfy { $0.steps.count >= 4 })
     }
 }

@@ -30,6 +30,7 @@ struct ProgressBackup: Codable, Equatable {
     var focusMinutes: [String: Int]? = nil
     var reflections: [String: String]? = nil
     var projectSteps: [String]? = nil
+    var examBest: [String: Int]? = nil
 
     enum BackupError: LocalizedError {
         case newerVersion, notABackup
@@ -89,7 +90,8 @@ struct ProgressBackup: Codable, Equatable {
             placementKnown: Array(PlacementStore.shared.known).sorted(),
             focusMinutes: FocusStore.shared.minutesByDay,
             reflections: JournalStore.shared.entries,
-            projectSteps: Array(MiniProjectStore.shared.done).sorted()
+            projectSteps: Array(MiniProjectStore.shared.done).sorted(),
+            examBest: ExamStore.shared.best
         )
     }
 
@@ -106,6 +108,7 @@ struct ProgressBackup: Codable, Equatable {
         FocusStore.shared.merge(backup.focusMinutes ?? [:])
         JournalStore.shared.merge(backup.reflections ?? [:])
         MiniProjectStore.shared.merge(backup.projectSteps ?? [])
+        ExamStore.shared.merge(backup.examBest ?? [:])
         bookmarks.merge(bookmarks: Set(backup.bookmarks), notes: backup.notes)
         let defaults = UserDefaults.standard
         let missions = Set(defaults.stringArray(forKey: completedMissionsKey) ?? []).union(backup.completedMissions)
@@ -129,6 +132,7 @@ extension ProgressBackupService {
         FocusStore.shared.eraseAll()
         JournalStore.shared.eraseAll()
         MiniProjectStore.shared.eraseAll()
+        ExamStore.shared.eraseAll()
         bookmarks.eraseAll()
         let defaults = UserDefaults.standard
         defaults.removeObject(forKey: completedMissionsKey)
