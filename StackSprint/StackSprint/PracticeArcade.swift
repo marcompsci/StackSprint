@@ -276,13 +276,21 @@ enum QuizHistoryCSV {
             s.contains(",") || s.contains("\"") ? "\"\(s.replacingOccurrences(of: "\"", with: "\"\""))\"" : s
         }
         let formatter = ISO8601DateFormatter()
-        let rows = records.flatMap { id, list in list.map { (id, $0) } }
-            .sorted { $0.1.date == $1.1.date ? $0.0 < $1.0 : $0.1.date < $1.1.date }
-            .map { id, r in
-                [formatter.string(from: r.date), field(terms[id] ?? id), "\(r.score)", "\(r.total)",
-                 r.sureAnswers.map(String.init) ?? "", r.luckyGuesses.map(String.init) ?? "", r.confidentMisses.map(String.init) ?? ""]
-                    .joined(separator: ",")
-            }
+        var entries: [(id: String, record: LessonQuizRecord)] = []
+        for (id, list) in records {
+            for record in list { entries.append((id: id, record: record)) }
+        }
+        entries.sort { a, b in a.record.date == b.record.date ? a.id < b.id : a.record.date < b.record.date }
+        var rows: [String] = []
+        for entry in entries {
+            let r = entry.record
+            let sure = r.sureAnswers.map { String($0) } ?? ""
+            let lucky = r.luckyGuesses.map { String($0) } ?? ""
+            let confident = r.confidentMisses.map { String($0) } ?? ""
+            let cells: [String] = [formatter.string(from: r.date), field(terms[entry.id] ?? entry.id),
+                                   String(r.score), String(r.total), sure, lucky, confident]
+            rows.append(cells.joined(separator: ","))
+        }
         return (["date,lesson,score,total,sure_answers,lucky_guesses,confident_misses"] + rows).joined(separator: "\n") + "\n"
     }
 }
