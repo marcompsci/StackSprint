@@ -36,10 +36,12 @@ struct ListenTests {
 struct FirstWeekTests {
     @Test func tasksReflectState() {
         var s = FirstWeekState()
-        #expect(FirstWeek.tasks(s).allSatisfy { !$0.done })
+        let noneDone = FirstWeek.tasks(s).filter(\.done).isEmpty
+        #expect(noneDone)
         s.lessonsDone = 1; s.quizzesTaken = 1; s.remindersOn = true; s.explanations = 1
         s.arcadePlayed = true; s.brainDumps = 1; s.streak = 3
-        #expect(FirstWeek.tasks(s).allSatisfy(\.done))
+        let allDone = FirstWeek.tasks(s).filter { !$0.done }.isEmpty
+        #expect(allDone)
         #expect(FirstWeek.tasks(s).count == 7)
     }
 
