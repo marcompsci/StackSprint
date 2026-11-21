@@ -227,6 +227,7 @@ struct WeekComparisonCard: View {
             .frame(height: 90)
             .accessibilityLabel("Lessons this week \(comparison.thisWeek), last week \(comparison.lastWeek)")
             Text(comparison.message).font(.subheadline).foregroundStyle(.secondary)
+            BuddyShareButton()
         }
         .padding(16)
         .background(SprintPalette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
@@ -246,6 +247,7 @@ struct StudyPlannerView: View {
 
     var body: some View {
         Form {
+            WhyPickerSection()
             Section {
                 Picker("Track", selection: $track) {
                     Text("Choose a track").tag("")

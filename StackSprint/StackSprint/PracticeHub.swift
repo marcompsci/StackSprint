@@ -87,6 +87,7 @@ struct ReviewHubView: View {
                 mistakesSection
                 quickSection
                 PracticeLabSection()
+                ArcadeSection()
                 StudyToolsSection()
                 tracksSection
             }

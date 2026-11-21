@@ -8,7 +8,7 @@ import SwiftUI
 
 enum WhatsNew {
     /// Bump when the list below changes.
-    static let revision = 5
+    static let revision = 6
     static let seenKey = "whatsnew.seenRevision"
 
     struct Item: Identifiable {
@@ -19,6 +19,16 @@ enum WhatsNew {
     }
 
     static let items: [Item] = [
+        Item(icon: "line.3.horizontal", title: "Cleaner top bar",
+             detail: "The buttons at the top of Learn are now one tidy menu: courses, Bite, lesson generator and light or dark mode."),
+        Item(icon: "gamecontroller.fill", title: "Arcade",
+             detail: "Practice → Arcade: predict what code prints, decode error messages, match pairs and a 60-second speed round."),
+        Item(icon: "hammer.fill", title: "Mini projects",
+             detail: "Five small builds that pull several lessons together, from a profile page to securing your own accounts."),
+        Item(icon: "heart.text.square.fill", title: "Your why",
+             detail: "Stats → Study plan asks why you're learning. Your reason shows up in reminders, with a suggested place to start."),
+        Item(icon: "person.2.fill", title: "Study buddy and exports",
+             detail: "Share your week with a friend who'll check in, and export your quiz history as a spreadsheet."),
         Item(icon: "curlybraces.square.fill", title: "Complete the code",
              detail: "Lessons with an example now ask you to fill in a missing word from memory."),
         Item(icon: "point.3.connected.trianglepath.dotted", title: "Connected lessons",
@@ -29,16 +39,6 @@ enum WhatsNew {
              detail: "Memory shows reviews coming up over two weeks and gives a new approach for lessons that keep slipping."),
         Item(icon: "sparkles", title: "More AI Skills and Professional lessons",
              detail: "AI agents, sources, deepfakes, AI at work and more, plus documentation, dependencies, estimating and incident response."),
-        Item(icon: "forward.end.circle.fill", title: "Placement check",
-             detail: "Already know some of a track? Take a short check and skip what you know."),
-        Item(icon: "character.book.closed.fill", title: "My terms and notes export",
-             detail: "Practice → My terms lists every term you've learned, with how well you remember it. Export your notes as a Markdown file."),
-        Item(icon: "list.bullet.clipboard", title: "Review every answer",
-             detail: "After a quiz, see each question, your answer and how sure you were. Tap the speaker to hear questions read aloud."),
-        Item(icon: "target", title: "Smarter Memory",
-             detail: "See how often your Sure answers are right, fix mistakes you were sure about, and drill your weakest question type."),
-        Item(icon: "timer", title: "Two-minute review and focus timer",
-             detail: "A 3-question review for busy days (also in Siri: \"Quick review in StackSprint\"), plus a 10, 15 or 25-minute focus timer."),
     ]
 
     static func shouldShow(onboarded: Bool, defaults: UserDefaults = .standard) -> Bool {

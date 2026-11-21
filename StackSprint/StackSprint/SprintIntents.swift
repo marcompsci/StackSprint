@@ -58,6 +58,17 @@ struct QuickReviewSheet: View {
     }
 }
 
+struct DueTodayIntent: AppIntent {
+    static let title: LocalizedStringResource = "What's Due Today"
+    static let description = IntentDescription("Hear how many lessons are due for review today.", categoryName: "Learning")
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        let count = DueToday.count(dueDates: SM2Engine.shared.cards.values.map(\.dueDate))
+        return .result(dialog: IntentDialog(stringLiteral: DueToday.dialog(count)))
+    }
+}
+
 struct StackSprintShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
@@ -78,6 +89,15 @@ struct StackSprintShortcuts: AppShortcutsProvider {
             ],
             shortTitle: "Two-Minute Review",
             systemImageName: "timer"
+        )
+        AppShortcut(
+            intent: DueTodayIntent(),
+            phrases: [
+                "What's due in \(.applicationName)",
+                "What do I need to review in \(.applicationName)"
+            ],
+            shortTitle: "What's Due Today",
+            systemImageName: "calendar.badge.clock"
         )
     }
 }

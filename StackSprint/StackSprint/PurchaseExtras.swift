@@ -72,6 +72,7 @@ struct PurchaseManagementRows: View {
 
     var body: some View {
         Group {
+            SubscriptionStatusRows()
             Button {
                 redeeming = true
             } label: {

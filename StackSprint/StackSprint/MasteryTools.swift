@@ -241,6 +241,10 @@ extension AchievementContext {
         var focusMinutes = 0
         var journalDays = 0
         var certificates = 0
+        var predictBest = 0
+        var errorsBest = 0
+        var speedBest = 0
+        var projectsBuilt = 0
     }
 
     @MainActor static func currentExtras(lessonsByTrack: [String: [Lesson]], completed: Set<String>,
@@ -252,7 +256,11 @@ extension AchievementContext {
         }.count
         return Extras(perfectQuizzes: perfect, explanations: ExplainBackStore.shared.notes.count,
                       focusMinutes: FocusStore.shared.minutesByDay.values.reduce(0, +),
-                      journalDays: JournalStore.shared.entries.count, certificates: certificates)
+                      journalDays: JournalStore.shared.entries.count, certificates: certificates,
+                      predictBest: UserDefaults.standard.integer(forKey: ArcadeKeys.predictBest),
+                      errorsBest: UserDefaults.standard.integer(forKey: ArcadeKeys.errorsBest),
+                      speedBest: UserDefaults.standard.integer(forKey: SpeedRound.bestKey),
+                      projectsBuilt: ProjectStore.shared.completedCount)
     }
 }
 
@@ -264,6 +272,10 @@ enum LearningAchievements {
         Achievement(id: "deep-focus", title: "Deep Focus", description: "Spend 100 minutes in focus sessions", icon: "timer", rarity: .silver),
         Achievement(id: "reflective", title: "Reflective", description: "Write 7 daily reflections", icon: "book.closed.fill", rarity: .silver),
         Achievement(id: "certified", title: "Certified", description: "Earn your first track certificate", icon: "rosette", rarity: .gold),
+        Achievement(id: "predictor", title: "Code Reader", description: "Get 8 right in Predict the output", icon: "eye.fill", rarity: .silver),
+        Achievement(id: "decoder", title: "Error Whisperer", description: "Get 6 right in Error decoder", icon: "exclamationmark.bubble.fill", rarity: .silver),
+        Achievement(id: "speedster", title: "Speedster", description: "Score 20 in a speed round", icon: "bolt.circle.fill", rarity: .gold),
+        Achievement(id: "builder", title: "Builder", description: "Finish a mini project", icon: "hammer.fill", rarity: .silver),
     ]
 
     static func condition(_ id: String, _ e: AchievementContext.Extras) -> Bool? {
@@ -274,6 +286,10 @@ enum LearningAchievements {
         case "deep-focus": return e.focusMinutes >= 100
         case "reflective": return e.journalDays >= 7
         case "certified": return e.certificates >= 1
+        case "predictor": return e.predictBest >= 8
+        case "decoder": return e.errorsBest >= 6
+        case "speedster": return e.speedBest >= 20
+        case "builder": return e.projectsBuilt >= 1
         default: return nil
         }
     }
@@ -286,6 +302,10 @@ enum LearningAchievements {
         case "deep-focus": return (e.focusMinutes, 100)
         case "reflective": return (e.journalDays, 7)
         case "certified": return (e.certificates, 1)
+        case "predictor": return (e.predictBest, 8)
+        case "decoder": return (e.errorsBest, 6)
+        case "speedster": return (e.speedBest, 20)
+        case "builder": return (e.projectsBuilt, 1)
         default: return nil
         }
     }

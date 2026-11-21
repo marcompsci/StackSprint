@@ -95,7 +95,8 @@ import UserNotifications
                 content.body = "Next up: \(next). It takes about two minutes."
             } else {
                 content.title = "Daily practice"
-                content.body = ReminderCopy.pick(from: ReminderCopy.daily + dailyMessages, recent: recent)
+                let why = LearningWhy(rawValue: UserDefaults.standard.string(forKey: LearningWhy.key) ?? "").map { [$0.reminder] } ?? []
+                content.body = ReminderCopy.pick(from: ReminderCopy.daily + dailyMessages + why, recent: recent)
                 recent.append(content.body)
             }
             content.sound = .default

@@ -1,6 +1,6 @@
 # StackSprint: how the app helps people remember (research notes)
 
-Last updated: November 19, 2026 (phases 81–145 added)
+Last updated: November 19, 2026 (phases 81–170 added)
 
 This document summarizes the research behind StackSprint's learning and engagement features, and where each idea lives in the app.
 
@@ -123,6 +123,16 @@ Engagement additions: "You vs. last week" (compete with your past self, not stra
 | **Leeches.** In spaced repetition, items that fail again and again need a new approach, not more of the same reviews. | Common practice in spaced-repetition systems (e.g. Anki's leech handling). | **Tough lessons** in Memory, with four ways to try it differently. |
 
 Also added: a two-week review forecast, a daily lesson-of-the-day flashcard, a "3 in a row" combo during quizzes, six new achievements, an offer-code redemption sheet, and the yearly-plan saving shown from the App Store's own prices. The AI Skills track grew to 22 lessons and Professional Practice to 16, with 12 Check the AI cases and 12 Bug hunt snippets.
+
+## 8. Added in phases 146–170
+
+- **Predict the output (code tracing).** Reading code and predicting its result before running it builds an accurate mental model of how code executes. 10 items across Python, JavaScript, TypeScript and Swift.
+- **Error decoder.** Beginners struggle most with reading error messages; 8 common errors matched to their cause and fix.
+- **Match pairs and speed round.** Quick, game-like retrieval of learned terms (retrieval practice in a lower-pressure format). Wrong answers in the speed round cost nothing.
+- **Mini projects.** Five small builds that combine several lessons, with step checklists (project-based learning, transfer).
+- **Your why.** Learners pick a reason (career, school, own project, curiosity). It suggests a first track and appears in reminder wording; goals with personal meaning are more likely to be kept (self-determination theory).
+- **Study buddy.** Share your week with someone and ask them to check in; reporting progress to another person increases goal follow-through.
+- **Relaxed reading**, CSV export of quiz history, subscription renewal dates in Account, a "what's in this offer" lesson list on the paywall, and a "What's due in StackSprint" Siri shortcut.
 
 ## Sources
 

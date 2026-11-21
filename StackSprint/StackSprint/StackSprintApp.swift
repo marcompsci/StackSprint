@@ -164,7 +164,6 @@ struct RootView: View {
     @AppStorage("goal.startingTrack") private var startingTrack = "Web development"
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @State private var showingBite = false
-    @State private var showingMenu = false
     @State private var showingChallenge = false
     @State private var showingWhatsNew = false
     @AppStorage("onboarding.finished") private var welcomed = false
@@ -205,26 +204,6 @@ struct RootView: View {
             }
         }
         .animation(.smooth(duration: 0.2), value: hideFloatingControls)
-        .overlay(alignment: .topTrailing) {
-            if welcomed && !hideFloatingControls { HStack(spacing: 10) {
-                Button { withAnimation(.smooth(duration: 0.2)) { appearance = appearance == "dark" ? "light" : "dark" } } label: {
-                    Image(systemName: appearance == "dark" ? "sun.max.fill" : "moon.fill")
-                        .font(.title3.bold()).frame(width: 52, height: 52)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(appearance == "dark" ? "Turn on light mode" : "Turn on dark mode")
-                Button { showingMenu = true } label: {
-                    Image(systemName: "line.3.horizontal")
-                        .font(.title2.bold())
-                        .frame(width: 52, height: 52)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Open course navigation")
-            }
-            .padding(.top, 8).padding(.trailing, 16) }
-        }
         .sheet(isPresented: $showingBite) { BiteAssistantView() }
         .sheet(isPresented: $showingWhatsNew) { WhatsNewSheet() }
         .task {
@@ -238,7 +217,6 @@ struct RootView: View {
         .sheet(item: $router.request) { request in
             RoutedLessonSheet(request: request, locked: premiumStore.lockedTracks, preferredTrack: startingTrack)
         }
-        .sheet(isPresented: $showingMenu) { CourseMenuView() }
         .sheet(isPresented: $showingChallenge, onDismiss: { challengeStore.reset() }) {
             if let challenge = challengeStore.incomingChallenge ?? challengeStore.activeChallenge {
                 AcceptChallengeSheet(challenge: challenge).environmentObject(store)
@@ -1837,6 +1815,8 @@ struct LearnView: View {
     @State private var showingTutor = false
     @State private var showingPaywall = false
     @State private var showingGenerator = false
+    @State private var showingCourseMenu = false
+    @AppStorage("appearance.mode") private var appearance = "dark"
     @ObservedObject private var challengeStore = FriendChallengeStore.shared
     @ObservedObject private var reviews = SM2Engine.shared
     @State private var difficultyFilter: String? = nil
@@ -1903,28 +1883,33 @@ struct LearnView: View {
                     recallArcadeSection
                 }
             }
-            .padding(.horizontal, 18).padding(.top, 72).padding(.bottom, 110).frame(maxWidth: 980)
+            .padding(.horizontal, 18).padding(.top, 12).padding(.bottom, 110).frame(maxWidth: 980)
         }.navigationTitle("StackSprint").navigationBarTitleDisplayMode(.inline)
         .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search lessons")
         .toolbar {
+            // Two native items in one Liquid Glass group: no custom tiles, so the system
+            // handles size, spacing and the pressed state.
             ToolbarItemGroup(placement: .topBarTrailing) {
-                Button { showingGenerator = true } label: {
-                    Image(systemName: "wand.and.sparkles")
-                        .foregroundStyle(.purple)
-                }
-                .accessibilityLabel("Generate a lesson with Bite AI")
-                Button { showingTutor = true } label: {
-                    Image(systemName: "sparkles")
-                        .foregroundStyle(.mint)
-                }
-                .accessibilityLabel("Ask Bite AI Tutor")
                 Button { showingBookmarks = true } label: {
                     Image(systemName: bookmarks.bookmarks.isEmpty ? "bookmark" : "bookmark.fill")
-                        .foregroundStyle(bookmarks.bookmarks.isEmpty ? Color.secondary : Color.yellow)
                 }
                 .accessibilityLabel("My bookmarks")
+                Menu {
+                    Button("Browse all courses", systemImage: "books.vertical") { showingCourseMenu = true }
+                    Button("Ask Bite AI tutor", systemImage: "sparkles") { showingTutor = true }
+                    Button("Generate a lesson", systemImage: "wand.and.sparkles") { showingGenerator = true }
+                    Divider()
+                    Button(appearance == "dark" ? "Light mode" : "Dark mode",
+                           systemImage: appearance == "dark" ? "sun.max" : "moon") {
+                        withAnimation(.smooth(duration: 0.2)) { appearance = appearance == "dark" ? "light" : "dark" }
+                    }
+                } label: {
+                    Image(systemName: "line.3.horizontal")
+                }
+                .accessibilityLabel("Menu")
             }
         }
+        .sheet(isPresented: $showingCourseMenu) { CourseMenuView() }
         .sheet(isPresented: $showingGenerator) { GenerateLessonView().environmentObject(customLessons) }
         .sheet(isPresented: $showingChallenge, onDismiss: { challengeStore.reset() }) {
             if let ch = challengeStore.incomingChallenge ?? challengeStore.activeChallenge {
@@ -2351,6 +2336,7 @@ struct LessonView: View {
     var sessionLabel: String? = nil
     @EnvironmentObject var store: LearningStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AppStorage(ArcadeKeys.relaxedReading) private var relaxedReading = false
     @State private var revealed = false
     @State private var code = ""
     @State private var result: CodeCheck.Result?
@@ -2413,6 +2399,8 @@ struct LessonView: View {
                 }
                 if revealed {
                     Text(lesson.definition).font(.title3)
+                        .lineSpacing(relaxedReading ? 8 : 0)
+                        .tracking(relaxedReading ? 0.5 : 0)
                     ReadAloudButton(text: "\(lesson.term). \(lesson.definition)")
                     LessonNoteEditor(lessonID: lesson.id)
                         .padding(12)

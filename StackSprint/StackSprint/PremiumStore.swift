@@ -209,6 +209,7 @@ struct ProPaywallView: View {
                 VStack(spacing: 28) {
                     paywallHeader
                     featureList
+                    OfferOutline(offer: offer)
                     sampleLink
                     productSection
                     if let err = premiumStore.purchaseError {
