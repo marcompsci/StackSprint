@@ -141,7 +141,7 @@ Also added: a two-week review forecast, a daily lesson-of-the-day flashcard, a "
 - **Bookmarks quiz** and **cheat sheets** (a one-page PDF per track of finished lessons).
 - **Wellbeing and accessibility.** Calm mode hides XP, streak counts and combo badges after quizzes. Colour-blind mode shows right and wrong in blue and orange; icons always accompany colour. A banner suggests a short break after 25 minutes of continuous use.
 - **Honest trials.** An opt-in reminder two days before a free trial converts, with the price and how to cancel.
-- **Content.** AI Skills grew to 26 lessons (standing instructions, breaking tasks into steps, judging output, AI and other people's work); Professional Practice to 20 (feature flags, measuring performance, code ownership, asking good questions); 20 Predict-the-output puzzles, 14 error messages and 7 mini projects.
+- **Content.** AI Skills grew to 26 lessons (standing instructions, breaking tasks into steps, judging output, knowing AI's limits); Professional Practice to 20 (feature flags, measuring performance, code ownership, asking good questions); 20 Predict-the-output puzzles, 14 error messages and 7 mini projects.
 
 ## Sources
 

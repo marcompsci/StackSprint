@@ -205,10 +205,10 @@ enum PaidContent {
                clue: "Checking whether an answer is accurate, complete and fits the task.",
                definition: "Before using an AI answer, check it against what you asked: is it accurate, does it cover everything, is the tone right, is anything made up? Decide what 'good' looks like before you read it.",
                code: "Checklist: accurate? complete? right length? sources real? anything invented?", difficulty: "beginner"),
-        Lesson(id: "ai-copyright", term: "AI and other people's work", category: aiTrack,
-               clue: "Being careful with copyrighted text, images and code.",
-               definition: "AI output can resemble existing work. Don't ask it to copy books, songs or someone's art, check licences before using generated code, and credit sources and AI help where your school or workplace expects it.",
-               code: "Instead of \"Write the lyrics of…\" try \"Explain the themes of…\"", difficulty: "beginner"),
+        Lesson(id: "ai-limits", term: "Knowing AI's limits", category: aiTrack,
+               clue: "What an AI tool can't know or do on its own.",
+               definition: "A chat AI may not know recent events, can't see your files or accounts unless you share them, and can't truly check its own work. Knowing the limits tells you when to look elsewhere or verify.",
+               code: "\"What happened yesterday?\" → may be out of date.\n\"Is my code right?\" → run the tests yourself.", difficulty: "beginner"),
     ]
 }
 
