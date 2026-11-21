@@ -260,7 +260,7 @@ extension AchievementContext {
                       predictBest: UserDefaults.standard.integer(forKey: ArcadeKeys.predictBest),
                       errorsBest: UserDefaults.standard.integer(forKey: ArcadeKeys.errorsBest),
                       speedBest: UserDefaults.standard.integer(forKey: SpeedRound.bestKey),
-                      projectsBuilt: ProjectStore.shared.completedCount)
+                      projectsBuilt: MiniProjectStore.shared.completedCount)
     }
 }
 

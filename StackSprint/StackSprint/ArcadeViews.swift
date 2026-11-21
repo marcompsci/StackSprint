@@ -11,7 +11,7 @@ enum ArcadeKeys {
 
 struct ArcadeSection: View {
     @EnvironmentObject var store: LearningStore
-    @ObservedObject private var projects = ProjectStore.shared
+    @ObservedObject private var projects = MiniProjectStore.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -357,7 +357,7 @@ struct SpeedRoundView: View {
 // MARK: - Mini projects
 
 struct MiniProjectsView: View {
-    @ObservedObject private var projects = ProjectStore.shared
+    @ObservedObject private var projects = MiniProjectStore.shared
 
     var body: some View {
         List {
@@ -387,7 +387,7 @@ struct MiniProjectsView: View {
 struct MiniProjectDetail: View {
     let project: MiniProject
     @EnvironmentObject var store: LearningStore
-    @ObservedObject private var projects = ProjectStore.shared
+    @ObservedObject private var projects = MiniProjectStore.shared
 
     var body: some View {
         List {

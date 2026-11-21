@@ -179,9 +179,9 @@ enum MiniProjects {
     ]
 }
 
-@MainActor final class ProjectStore: ObservableObject {
-    static let shared = ProjectStore()
-    static let key = "projects.doneSteps"
+@MainActor final class MiniProjectStore: ObservableObject {
+    static let shared = MiniProjectStore()
+    static let key = "miniProjects.doneSteps"
     /// "projectID|stepIndex" for every ticked step.
     @Published private(set) var done: Set<String> = []
 
