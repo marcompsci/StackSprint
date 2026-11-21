@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import SwiftUI
 @testable import StackSprint
 
 private func lessons(_ n: Int, track: String = "T") -> [Lesson] {
